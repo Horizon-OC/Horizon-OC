@@ -1,5 +1,5 @@
 /*
- * Copyright (C) hanai3bi (meha)
+ * Copyright (C) hanai3bi (meha) and Souldbminer
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
