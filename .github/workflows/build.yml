@@ -113,13 +113,14 @@ jobs:
           echo "TITLE_ID: $TITLE_ID"
 
           pushd "$ROOT_DIR/sysmodule"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           make -j$(($(nproc) * 2)) CXX="ccache aarch64-none-elf-g++" CC="ccache aarch64-none-elf-gcc"
           popd
 
           mkdir -p "$DIST_DIR/atmosphere/contents/$TITLE_ID/flags"
 
           cp -vf \
-            "$ROOT_DIR/sysmodule/out/horizon-oc.nsp" \
+            "$ROOT_DIR/sysmodule/out/hoc-clk.nsp" \
             "$DIST_DIR/atmosphere/contents/$TITLE_ID/exefs.nsp"
 
           : >"$DIST_DIR/atmosphere/contents/$TITLE_ID/flags/boot2.flag"
