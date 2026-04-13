@@ -95,6 +95,7 @@ jobs:
           popd
 
       - name: Build hoc-clk sysmodule and overlay
+        shell: bash
         run: |
           export CC="ccache aarch64-none-elf-gcc"
           export CXX="ccache aarch64-none-elf-g++"
