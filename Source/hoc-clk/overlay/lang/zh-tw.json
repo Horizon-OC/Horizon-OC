@@ -265,6 +265,20 @@
 
     "X: %u Y: %u": "X: %u Y: %u",
     "%u.%u%u mV": "%u.%u%u mV",
-    "Compiling with minimal features": "以最小功能編譯",
-    "THE BEER-WARE LICENSE": "啤酒軟體許可協議"
+    "Compiling with minimal features": "使用最少的功能進行編譯",
+    "THE BEER-WARE LICENSE": "啤酒製品許可證",
+    "Horizon OC\nKip opening failed": "Horizon OC\n無法開啟 KIP",
+    "Horizon OC\nKip read failed": "Horizon OC\n讀取 KIP 失敗",
+    "Horizon OC\nOutdated kip detected!\nPlease update Horizon OC": "Horizon OC\n偵測到過時的 KIP！\n請更新 Horizon OC",
+    "Horizon OC\nOutdated sysmodule detected!\nPlease update Horizon OC": "Horizon OC\n偵測到過時的系統模組！\n請更新 Horizon OC",
+    "Horizon OC\nKip write failed": "Horizon OC\n寫入 KIP 失敗",
+    "Horizon OC\nKip config set failed": "Horizon OC\n設定 KIP 組態失敗",
+    "Kip is not loaded!": "KIP 尚未載入！",
+    "Horizon OC\nKIP has been updated\nPlease reboot your console": "Horizon OC\nKIP 已更新\n請重新啟動主機",
+    "Horizon OC has been installed": "Horizon OC 已安裝",
+    "Horizon OC\nConfig Buffer Mismatch": "Horizon OC\n組態緩衝區不符",
+    "Horizon OC\nDeactivated frequency.\nReboot to apply.": "Horizon OC\n已停用頻率。\n重新啟動以套用。",
+    "Horizon OC\nSecmon read failed!\n This may be a hardware issue!": "Horizon OC\n讀取 Secmon 失敗！\n 這可能是硬體問題！",
+    "Horizon OC\nFailed to write I2C\nwhile setting vddq": "Horizon OC\n設定 VDDQ 時\nI2C 寫入失敗",
+    "Horizon OC\nKip version mismatch\nPlease reinstall Horizon OC": "Horizon OC\nKIP 版本不符\n請重新安裝 Horizon OC"
 }

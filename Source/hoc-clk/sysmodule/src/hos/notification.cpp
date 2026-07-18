@@ -15,6 +15,7 @@
  *
  */
 
+#include "lang.hpp"
 #include "notification.h"
 
 namespace notification {
@@ -27,13 +28,15 @@ namespace notification {
         }
         fclose(flagFile);
 
+        const std::string translated = lang::Translate(message);
+
         std::string filename = "hoc-" + std::to_string(std::time(nullptr)) + ".notify";
         std::string fullPath = "sdmc:/config/ultrahand/notifications/" + filename;
 
         FILE *file = fopen(fullPath.c_str(), "w");
         if (file) {
             fprintf(file, "{\n");
-            fprintf(file, "  \"text\": \"%s\",\n", message.c_str());
+            fprintf(file, "  \"text\": \"%s\",\n", translated.c_str());
             fprintf(file, "  \"fontSize\": 28\n");
             fprintf(file, "}\n");
             fclose(file);
