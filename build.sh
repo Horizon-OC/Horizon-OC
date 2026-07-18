@@ -108,13 +108,14 @@ cp -r dist/ ../../
 
 cd "$ROOT_DIR"
 
-echo "*** Compiling horizon-oc-monitor ***"
-cd Source/Horizon-OC-Monitor/
-make -j$CORES
-cp -v Horizon-OC-Monitor.ovl ../../dist/switch/.overlays/Horizon-OC-Monitor.ovl
+echo "*** Downloading Status-Monitor ***"
+wget "https://github.com/ppkantorski/Status-monitor-overlay/releases/latest/download/Status-Monitor-Overlay.ovl"
+mv -v Status-Monitor-Overlay.ovl "$DIST_DIR"/switch/.overlays/Status-Monitor-Overlay.ovl
+
 
 if [ "$EXT" -eq 1 ]; then
-    cd ../
+    cd Source/
+
     echo
     echo "*** Compiling extensions ***"
 
