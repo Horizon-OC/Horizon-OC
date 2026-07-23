@@ -96,6 +96,15 @@ class AppOverlay : public tsl::Overlay {
                                        "");
         }
 
+        HocClkContext context = {};
+        if (R_SUCCEEDED(hocclkIpcGetCurrentContext(&context)) && context.rebootRequired) {
+            return initially<FatalGui>("Horizon OC has been updated.\n\n"
+                                       "\n"
+                                       "Please reboot your console\n\n"
+                                       "to finish applying the update.",
+                                       "");
+        }
+
         return initially<MainGui>();
     }
 };

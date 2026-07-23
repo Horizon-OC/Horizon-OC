@@ -38,11 +38,11 @@ volatile CustomizeTable C = {
 .commonEmcMemVolt  = 1175000, /* LPDDR4(X) JEDEC Specification */
 .eristaEmcMaxClock = 1600000, /* Maximum HB-MGCH ram rating */
 
-/* Available: 66MHz step rate, 100MHz step rate, 133MHz step rate and jedec. */
+/* Available: 33MHz step rate, 66MHz step rate, 100MHz step rate, 133MHz step rate and jedec. */
 /* Jedec freqs are 1333MHz, 1600MHz, 1866MHz, 2133MHz, 2400MHz, 2666MHz, 2933MHz, 3200MHz. */
-.stepMode = StepMode_66MHz,
+.stepMode = StepMode_33MHz,
 
-.marikoEmcMaxClock = 2133000, /* 1866MHz @ 1866tWRL is guaranteed to work on all Mariko units */
+.marikoEmcMaxClock = 2666000, /* Requires the EMC DVFS 63-entry patches (EMC DVFS Count / EMC SoC LUT). */
 .marikoEmcVddqVolt = 600000,
 
 .emcDvbShift   = 0,

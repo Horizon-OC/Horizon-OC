@@ -173,6 +173,16 @@ namespace ams::ldr::hoc::pcv {
     constexpr size_t DvfsTableEntryCount = 32;
     constexpr size_t DvfsTableEntryLimit = DvfsTableEntryCount - 1;
 
+    // EMC-only limit.
+    constexpr size_t EmcDvfsTableEntryCount = 64;
+    constexpr size_t EmcDvfsTableEntryLimit = EmcDvfsTableEntryCount - 1;
+
+    // The pcv SoC-voltage DVB table is a fixed 32-entry region. (it doesn't need to be larger)
+    constexpr size_t DvbTableCapacity = 32;
+
+    // extra .bss location, 0 until Patch() runs.
+    inline uintptr_t g_pcv_scratch = 0;
+
     template<typename T>
     size_t GetDvfsTableEntryCount(T *table_head) {
         using NT = std::remove_const_t<std::remove_volatile_t<T>>;

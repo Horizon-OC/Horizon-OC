@@ -50,9 +50,15 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidMtcTablePattern,   1016);
     R_DEFINE_ERROR_RESULT(InvalidSocVoltPattern,    1017);
     R_DEFINE_ERROR_RESULT(InvalidSocVoltLimit,      1018);
+    R_DEFINE_ERROR_RESULT(InvalidEmcDvfsCount,      1019);
+    R_DEFINE_ERROR_RESULT(InvalidEmcSocLut,         1020);
+    R_DEFINE_ERROR_RESULT(InvalidEmcRateList,       1021);
 }
 
 namespace ams::ldr::hoc {
+    /* Extra pcv .bss for 64LUT */
+    constexpr size_t HocPcvScratchSize = 0x1000;
+
     template<typename Pointer>
     struct PatcherEntry {
         using patternFn = bool(*)(Pointer *ptr);

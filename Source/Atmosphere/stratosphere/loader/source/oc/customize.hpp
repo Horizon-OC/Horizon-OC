@@ -20,8 +20,8 @@
 
 #pragma once
 
-#define CUST_REV 6
-#define KIP_VERSION 250
+#define CUST_REV 7
+#define KIP_VERSION 300
 
 #include "oc_common.hpp"
 #include "pcv/pcv_common.hpp"
@@ -40,6 +40,7 @@ enum StepMode: u32 {
     StepMode_100MHz = 1,
     StepMode_Jedec  = 2,
     StepMode_133MHz = 3,
+    StepMode_33MHz  = 4,
 };
 
 enum ReadLatency: u32 {

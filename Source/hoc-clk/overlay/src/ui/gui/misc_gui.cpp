@@ -1143,6 +1143,7 @@ class RamSubmenuGui : public MiscGui {
 
         if (IsMariko()) {
             std::vector<NamedValue> stepMode = {
+                NamedValue("33MHz", 4),
                 NamedValue("66MHz", 0),
                 NamedValue("100MHz", 1),
                 NamedValue("133MHz", 3),  // Mantain compatability

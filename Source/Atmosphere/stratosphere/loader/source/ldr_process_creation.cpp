@@ -798,6 +798,11 @@ namespace ams::ldr {
         }
 
         Result CreateProcessAndLoadAutoLoadModules(ProcessInfo *out, const Meta *meta, const AutoLoadModuleContext &ctx, const ArgumentStore::Entry *argument, u32 flags, os::NativeHandle resource_limit) {
+            /* Append extra .bss for 64LUT */
+            if (g_is_pcv && ctx.main_nso_idx >= 0) {
+                g_nso_headers[ctx.main_nso_idx].bss_size += static_cast<u32>(hoc::HocPcvScratchSize);
+            }
+
             /* Get CreateProcessParameter. */
             svc::CreateProcessParameter param;
             R_TRY(GetCreateProcessParameter(std::addressof(param), meta, flags, resource_limit));

@@ -44,6 +44,15 @@ namespace ams::ldr::hoc::pcv {
         return ins & ((1 << 5) - 1);
     };
 
+    /* Rn (bits 9:5) and Rm (bits 20:16) to get registers. */
+    inline auto AsmGetRn = [](u32 ins) -> u32 { return (ins >> 5) & 0x1Fu; };
+    inline auto AsmGetRm = [](u32 ins) -> u32 { return (ins >> 16) & 0x1Fu; };
+
+    /* Add (shifted register), 64-bit: sf=1 op=0 S=0 01011 shift(2) 0 Rm imm6 Rn Rd. */
+    inline auto AsmIsAddShiftedReg64 = [](u32 ins) {
+        return (ins & 0xFF200000u) == 0x8B000000u;
+    };
+
     inline auto asm_set_rd = [](u32 ins, u8 rd) {
         return (ins & 0xFFFFFFE0) | (rd & 0x1F);
     };
@@ -94,11 +103,91 @@ namespace ams::ldr::hoc::pcv {
         return static_cast<uintptr_t>(static_cast<s64>(pc) + imm);
     };
 
+    /* adrp Rd, target */
+    inline auto AsmMakeAdrp = [](uintptr_t pc, uintptr_t target, u32 rd) -> u32 {
+        const s64 delta = static_cast<s64>(target & ~static_cast<uintptr_t>(0xFFF))
+                        - static_cast<s64>(pc & ~static_cast<uintptr_t>(0xFFF));
+        const u32 imm   = static_cast<u32>((delta >> 12) & 0x1FFFFF);   /* 21-bit page */
+        const u32 immlo = imm & 0x3;
+        const u32 immhi = (imm >> 2) & 0x7FFFF;
+        return 0x90000000u | (immlo << 29) | (immhi << 5) | (rd & 0x1Fu);
+    };
+
     inline auto AsmSetAdrTarget = [](u32 ins, uintptr_t pc, uintptr_t target) -> u32 {
         const s64 delta = static_cast<s64>(target) - static_cast<s64>(pc);
         const u32 immlo = static_cast<u32>(delta & 0x3);
         const u32 immhi = static_cast<u32>((delta >> 2) & 0x7FFFF);
         return (ins & ~((0x3u << 29) | (0x7FFFFu << 5))) | (immlo << 29) | (immhi << 5);
+    };
+
+    /* adrp: bit31=1, bits 28:24 = 10000. */
+    inline auto AsmIsAdrp = [](u32 ins) -> bool {
+        return (ins & 0x9F000000u) == 0x90000000u;
+    };
+
+    inline auto AsmAdrpPageOffset = [](u32 ins) -> s64 {
+        s64 imm = static_cast<s64>((((ins >> 5) & 0x7FFFFu) << 2) | ((ins >> 29) & 0x3u));
+        imm = (imm << 43) >> 43;   /* sign-extend the 21-bit immediate */
+        return imm << 12;
+    };
+
+    /* add (immediate), 64-bit: sf=1 op=0 S=0 100010 sh imm12 Rn Rd. */
+    inline auto AsmIsAddImm64 = [](u32 ins) -> bool {
+        return (ins & 0xFF800000u) == 0x91000000u;
+    };
+
+    inline auto AsmGetImm12 = [](u32 ins) -> u32 {
+        return (ins >> 10) & 0xFFFu;
+    };
+
+    inline auto AsmMakeAddImm64 = [](u32 rd, u32 rn, u32 imm12) -> u32 {
+        return 0x91000000u | ((imm12 & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rd & 0x1Fu);
+    };
+
+    /* movz Wd,#imm16 (no shift). */
+    inline auto AsmMakeMovzW = [](u32 rd, u16 imm16) -> u32 {
+        return 0x52800000u | (static_cast<u32>(imm16) << 5) | (rd & 0x1Fu);
+    };
+
+    /* mov Xd,Xm  ==  orr Xd,XZR,Xm. */
+    inline auto AsmMakeMovReg = [](u32 rd, u32 rm) -> u32 {
+        return 0xAA0003E0u | ((rm & 0x1Fu) << 16) | (rd & 0x1Fu);
+    };
+
+    /* ldr Xt,[Xn,#byteOff] */
+    inline auto AsmMakeLdrImm64 = [](u32 rt, u32 rn, u32 byteOff) -> u32 {
+        return 0xF9400000u | (((byteOff / 8u) & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
+    };
+
+    /* mov Xd,X<rm>  ==  orr Xd,XZR,X<rm>  (matches any Rd). */
+    inline auto AsmIsMovReg = [](u32 ins, u32 rm) -> bool {
+        return (ins & 0xFFFFFFE0u) == (0xAA0003E0u | ((rm & 0x1Fu) << 16));
+    };
+
+    /* add Xd,sp,#imm12 (shift 0). */
+    inline auto AsmIsAddSpImm = [](u32 ins) -> bool {
+        return (ins & 0xFFC003E0u) == 0x910003E0u;
+    };
+
+    /* sub Xd,x29,#imm12 (shift 0). */
+    inline auto AsmIsSubX29Imm = [](u32 ins) -> bool {
+        return (ins & 0xFFC003E0u) == 0xD10003A0u;
+    };
+
+    inline auto AsmIsB     = [](u32 ins) -> bool { return (ins & 0xFC000000u) == 0x14000000u; }; /* b   */
+    inline auto AsmIsBl    = [](u32 ins) -> bool { return (ins & 0xFC000000u) == 0x94000000u; }; /* bl  */
+    inline auto AsmIsBCond = [](u32 ins) -> bool { return (ins & 0xFF000010u) == 0x54000000u; }; /* b.c */
+
+    /* Byte target address of a b/bl at pc. */
+    inline auto AsmBranchTarget = [](u32 ins, uintptr_t pc) -> uintptr_t {
+        s64 off = static_cast<s64>((ins & 0x03FFFFFFu) << 2);
+        off = (off << 36) >> 36;   /* sign-extend the 28-bit branch offset */
+        return static_cast<uintptr_t>(static_cast<s64>(pc) + off);
+    };
+
+    /* Rewrite a scaled immediate-offset load/store (`op Wt,[Xn,#imm]`) into its register-offset form */
+    inline auto AsmSetLdStRegOffset = [](u32 ldstImm, u32 rm) -> u32 {
+        return (ldstImm & 0xC0C003FFu) | 0x38207800u | ((rm & 0x1Fu) << 16);
     };
 
     inline auto AsmIsLdpX = [](u32 ins) {

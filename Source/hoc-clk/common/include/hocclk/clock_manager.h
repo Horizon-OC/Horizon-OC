@@ -82,9 +82,10 @@ typedef struct {
     u8 custRev;
     u16 kipVersion;
     bool isKipLoaded;
+    bool rebootRequired;
 
     // Reserved for future use
-    u8 reserved[0x35A];
+    u8 reserved[0x359];
 } HocClkContext;
 
 typedef struct
@@ -95,7 +96,7 @@ typedef struct
     };
 } HocClkTitleProfileList;
 
-#define HOCCLK_FREQ_LIST_MAX 48
+#define HOCCLK_FREQ_LIST_MAX 64
 
 #define HOCCLK_GLOBAL_PROFILE_TID 0xA111111111111111
 

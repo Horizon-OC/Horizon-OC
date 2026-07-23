@@ -228,15 +228,15 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
         case KipConfigValue_stepMode:
             return {
                 "The step that RAM clocks take.",
-                "Options (with examples):",
+                "Options:",
+                " - 33MHz - 3 MHz step (ex. 1600, 1633, 1666, 1700, etc.)",
                 " - 66MHz - 66 MHz step (ex. 1600, 1666, 1733, etc.)",
                 " - 100MHz - 100 MHz step (ex. 1600, 1700, 1800, etc.)",
-                " - 133MHz - 66 MHz step (ex. 1600, 1733, 1866, etc.)",
+                " - 133MHz - 133 MHz step (ex. 1600, 1733, 1866, etc.)",
                 " - JEDEC:",
                 "   - 1600, 1866, 1996, 2133, 2400, 2666, 2933 and 3200 MHz are used",
                 "The RAM max clock will always be available regardless of the step mode, but the intermediate frequencies will be limited by the selected step mode.",
-                "This setting does not affect performance and the option you choose mostly is based on your personal taste",
-                "33 MHz step mode is not possible due to certain limitations of Horizon OS",
+                "This setting does not affect performance and the option you choose mostly is based on your personal taste",                
                 "Default: 66 MHz",
             };
 

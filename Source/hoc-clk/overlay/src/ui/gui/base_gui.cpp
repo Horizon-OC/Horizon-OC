@@ -132,7 +132,7 @@ void BaseGui::preDraw(tsl::gfx::Renderer *renderer) {
 
     drawDynamicUltraText(renderer, LOGO_TEXT_X, TEXT_Y, LOGO_LABEL_FONT_SIZE, STATIC_TEAL, false);
 
-    static const std::string versionStr = "Version " + getVersionString() + "  \"Gaea\"";
+    static const std::string versionStr = "Version " + getVersionString() + "  \"Athena\"";
     static constexpr tsl::Color versionColor(9, 9, 9, 15);
     static constexpr s32 vx = LOGO_TEXT_X + 15;
     static constexpr s32 vy = TEXT_Y + 18;

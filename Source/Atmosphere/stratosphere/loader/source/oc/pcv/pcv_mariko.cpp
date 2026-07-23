@@ -622,6 +622,82 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 *nsoStart;
     }
 
+    /* Widen InitDram for a >32-entry EMC DVFS list. Freq array can be dropped to free 264 bytes, relocate the Soc LUT to that space */
+    Result EmcSocLutReloc(u32 *ptr) {
+        R_UNLESS(EmcSocLutPatternFn(ptr), ldr::ResultInvalidEmcSocLut()); /* str lut,[rail+0x120] ; str n,[rail+0x154] */
+        constexpr u32 Window = 48;
+
+        u32 *freqStore = ScanAssembly(ptr - Window, Window, EmcSocFreqStoreAsm, asm_compare_no_rd); /* str x?,[x8,#0x18] */
+        u32 *voltStore = ScanAssembly(ptr - Window, Window, EmcSocVoltStoreAsm, asm_compare_no_rd); /* str w?,[x8,#0x48] */
+        u32 *readLoad  = ScanAssembly(ptr - Window, Window, EmcSocReadLoadAsm,  asm_compare_no_rd); /* ldr w?,[x9,#0x48] */
+        R_UNLESS(freqStore && voltStore && readLoad, ldr::ResultInvalidEmcSocLut());
+
+        u32 *voltBase = voltStore - 2;   /* `add Xb,Xsrc,Xi,LSL#2` (a cmn sits between it and store) */
+        R_UNLESS(AsmIsAddShiftedReg64(*voltBase) && asm_get_rd(*voltBase) == AsmGetRn(*voltStore),
+                 ldr::ResultInvalidEmcSocLut());
+
+        /* adrp Xl ; add Xl,Xl,#off ; ... ; str Xl,[rail,#0x120] */
+        const u32 lutReg  = asm_get_rd(ptr[0]);
+        const u32 railReg = AsmGetRn(ptr[0]);
+        R_UNLESS(AsmIsAdrp(ptr[-3]) && asm_get_rd(ptr[-3]) == lutReg, ldr::ResultInvalidEmcSocLut());
+        R_UNLESS(AsmIsAddImm64(ptr[-2]) && asm_get_rd(ptr[-2]) == lutReg && AsmGetRn(ptr[-2]) == lutReg,
+                 ldr::ResultInvalidEmcSocLut());
+
+        const u32 srcBase = AsmGetRn(*voltBase);   /* rail ptr at +0x20 */
+        const u32 wBase   = asm_get_rd(*voltBase); /* base reg */
+        const u32 wIdx    = AsmGetRm(*voltBase);   /* loop index */
+
+        PATCH_OFFSET(freqStore,     NopIns); /* Unneeded */
+        PATCH_OFFSET(voltBase,      AsmMakeLdrImm64(wBase, srcBase, 0x20)); /* ldr Xb,[Xsrc,#0x20] (rail) */
+        PATCH_OFFSET(voltStore - 1, AsmMakeAddImm64(wBase, wBase, 0x18));  /* add Xb,Xb,#0x18 (was cmn) */
+        PATCH_OFFSET(voltStore,     AsmSetLdStRegOffset(*voltStore, wIdx)); /* str Wv,[Xb,Xi,LSL#2] -> rail+0x18+i*4 */
+        PATCH_OFFSET(voltStore + 1, NopIns); /* Unneeded */
+
+        /* rail+0x18 as the socMinLut pointer. */
+        PATCH_OFFSET(ptr - 3, NopIns);
+        PATCH_OFFSET(ptr - 2, AsmMakeAddImm64(lutReg, railReg, 0x18));/* add Xl,rail,#0x18 */
+
+        /* Drop the abort branch in case of a bad read */
+        for (u32 i = 1; i <= 4; ++i) {
+            if (AsmIsBCond(readLoad[i])) {
+                PATCH_OFFSET(&readLoad[i], NopIns);
+                break;
+            }
+        }
+        R_SUCCEED();
+    }
+
+    Result EmcDvfsCountLimit(u32 *ptr) {
+        R_UNLESS(EmcDvfsCountPatternFn(ptr), ldr::ResultInvalidEmcDvfsCount());
+
+        /* cmp w?,#0x21 -> cmp w?,#EmcDvfsTableEntryCount */
+        PATCH_OFFSET(ptr, AsmSubsSetImm12(*ptr, static_cast<u16>(EmcDvfsTableEntryCount)));
+        R_SUCCEED();
+    }
+
+    Result EmcRateListLimit(u32 *ptr) {
+        /* ptr = cmp w?,#0x20 ; ptr[1] = csel w?,w?,w?,lt (w? = min(maxCount, 32)) ; ptr[2] = bl */
+        R_UNLESS(EmcRateListPatternFn(ptr), ldr::ResultInvalidEmcRateList());
+
+        /* The csel's Rm holds the 32 cap. */
+        const u32 capReg = AsmGetRm(ptr[1]);
+        const u32 capMov = AsmMakeMovzW(capReg, 0x20); /* movz w<Rm>,#0x20 */
+
+        u32 *movPtr = nullptr;
+        for (u32 i = 1; i <= 16; ++i) {
+            if (*(ptr - i) == capMov) {
+                movPtr = ptr - i;
+                break;
+            }
+        }
+        R_UNLESS(movPtr, ldr::ResultInvalidEmcRateList());
+
+        /* min(maxCount, 32) -> min(maxCount, EmcDvfsTableEntryCount). */
+        PATCH_OFFSET(ptr, AsmSubsSetImm12(*ptr, static_cast<u16>(EmcDvfsTableEntryCount)));     /* cmp  w?,#64 */
+        PATCH_OFFSET(movPtr, asm_set_imm16(*movPtr, static_cast<u16>(EmcDvfsTableEntryCount))); /* movz w?,#64 */
+        R_SUCCEED();
+    }
+
     void MtcGenerateJedecTable() {
         const u32 jedecFreqs[] = { 1866000, 1996000, 2133000, 2400000, 2666000, 2933000, 3200000 };
         constexpr u32 JedecFreqCount = std::size(jedecFreqs);
@@ -638,7 +714,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
         }
 
-        newEmcList.resize(std::min(newEmcList.size(), DvfsTableEntryLimit));
+        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
     }
 
     void MtcGenerate133StepTable() {
@@ -657,12 +733,39 @@ namespace ams::ldr::hoc::pcv::mariko {
             newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
         }
 
-        newEmcList.resize(std::min(newEmcList.size(), DvfsTableEntryLimit));
+        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
+    }
+
+    void MtcGenerate33StepTable() {
+        /* ~33.33MHz but rounded*/
+        const u32 stepFreqs33[] = {
+            1633000, 1666000, 1700000, 1733000, 1766000, 1800000, 1833000, 1866000, 1900000, 1933000,
+            1966000, 2000000, 2033000, 2066000, 2100000, 2133000, 2166000, 2200000, 2233000, 2266000,
+            2300000, 2333000, 2366000, 2400000, 2433000, 2466000, 2500000, 2533000, 2566000, 2600000,
+            2633000, 2666000, 2700000, 2733000, 2766000, 2800000, 2833000, 2866000, 2900000, 2933000,
+            2966000, 3000000, 3033000, 3066000, 3100000, 3133000, 3166000, 3200000, 3233000, 3266000,
+            3300000, 3333000, 3366000, 3400000, 3433000, 3466000, 3500000,
+        };
+        constexpr u32 StepFreqs33Size = std::size(stepFreqs33);
+
+        for (u32 i = 0; i < StepFreqs33Size; ++i) {
+            if (stepFreqs33[i] <= C.marikoEmcMaxClock) {
+                newEmcList.push_back(stepFreqs33[i]);
+            } else {
+                break;
+            }
+        }
+
+        if (newEmcList.back() != C.marikoEmcMaxClock) {
+            newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
+        }
+
+        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
     }
 
     void MtcGenerateFreqTables() {
         newEmcList.clear();
-        newEmcList.reserve(DvfsTableEntryCount);
+        newEmcList.reserve(EmcDvfsTableEntryCount);
         newEmcList.insert(newEmcList.end(), std::begin(EmcListDefault), std::end(EmcListDefault));
 
         if (C.marikoEmcMaxClock <= EmcClkOSLimit) {
@@ -671,6 +774,9 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         u32 stepRate = 0;
         switch (C.stepMode) {
+            case StepMode_33MHz:
+                MtcGenerate33StepTable();
+                return;
             case StepMode_66MHz:
                 stepRate = 66667;
                 break;
@@ -701,7 +807,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             newEmcList.push_back(newFreq);
         }
 
-        newEmcList.resize(std::min(newEmcList.size(), DvfsTableEntryLimit));
+        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
     }
 
     Result VerifyMtcTable(MarikoMtcTable *tableStart, u32 expectedFreq) {
@@ -905,24 +1011,23 @@ namespace ams::ldr::hoc::pcv::mariko {
         #undef DVB
         #undef DVB_OC
 
-        DvbEntry emcDvbTableOc[newEmcList.size()];
-
+        const size_t dvbCount = std::min(newEmcList.size(), DvbTableCapacity);
+        DvbEntry emcDvbTableOc[DvbTableCapacity] = {};
+        
         u32 bracketIndex = 0;
-        for (u32 i = 0; i < newEmcList.size(); ++i) {
-            while (newEmcList[i] >= emcDvbOcTableBrackets[bracketIndex + 1].freq) {
+        for (size_t i = 0; i < dvbCount; ++i) {
+            const u32 freq = (i == dvbCount - 1) ? static_cast<u32>(newEmcList.back()) : newEmcList[i];
+            while (freq >= emcDvbOcTableBrackets[bracketIndex + 1].freq) {
                 ++bracketIndex;
             }
 
-            emcDvbTableOc[i].freq = newEmcList[i];
+            emcDvbTableOc[i].freq = freq;
             std::memcpy(emcDvbTableOc[i].volt, emcDvbOcTableBrackets[bracketIndex].volt, sizeof(emcDvbTableOc[i].volt));
         }
 
-        std::memset(mem_dvb_table_head, 0, sizeof(EmcDvbTableDefault));
-        std::memcpy(mem_dvb_table_head, &emcDvbTableOc, sizeof(emcDvbTableOc));
-
-        /* Max dvfs entry is 32, but HOS doesn't seem to boot if exact freq doesn't exist in dvb table,
-           reason why it's like this
-        */
+        /* Clear the entire 32-entry region */
+        std::memset(mem_dvb_table_head, 0, DvbTableCapacity * sizeof(DvbEntry));
+        std::memcpy(mem_dvb_table_head, emcDvbTableOc, dvbCount * sizeof(DvbEntry));
 
         R_SUCCEED();
     }
@@ -1136,9 +1241,61 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_SUCCEED();
     }
 
+    Result EmcRateSessLimit(u32 *ptr) {
+        u32 movzI = 0;
+        R_UNLESS(EmcRateSessFindClamp(ptr, nullptr, nullptr, &movzI), ldr::ResultInvalidEmcRateList());
+
+        /* Reject cmd11 GetDvfsTable. */
+        for (u32 i = 1; i <= 24; ++i) {
+            const u32 w = ptr[i];
+            if (AsmIsSubX29Imm(w) && AsmGetImm12(w) >= 0x20u) {  /* sub x?,x29,#>=0x20 */
+                R_THROW(ldr::ResultInvalidEmcRateList());
+            }
+        }
+
+        /*  mov x<desc>,x2 */
+        u32 descReg = 0xFFu;
+        for (u32 i = 1; i <= 24; ++i) {
+            if (AsmIsMovReg(ptr[i], 2)) { descReg = asm_get_rd(ptr[i]); break; }
+        }
+        R_UNLESS(descReg != 0xFFu, ldr::ResultInvalidEmcRateList());
+
+        /* Repoint the duplicated-imm pair */
+        u32 *adds[8]; u32 addImm[8]; u32 nAdds = 0;
+        for (u32 i = 1; i <= 24 && nAdds < 8; ++i) {
+            const u32 w = ptr[i];
+            if (AsmIsAddSpImm(w)) {   /* add x?,sp,#imm12 (shift 0) */
+                adds[nAdds]   = ptr + i;
+                addImm[nAdds] = AsmGetImm12(w);
+                ++nAdds;
+            }
+        }
+        u32 patched = 0;
+        for (u32 a = 0; a < nAdds; ++a) {
+            bool dup = false;
+            for (u32 b = 0; b < nAdds; ++b) {
+                if (a != b && addImm[a] == addImm[b]) { dup = true; break; }
+            }
+            if (dup) {
+                PATCH_OFFSET(adds[a], AsmMakeLdrImm64(asm_get_rd(*adds[a]), descReg, 0)); /* ldr x?,[x<desc>] */
+                ++patched;
+            }
+        }
+        R_UNLESS(patched == 2, ldr::ResultInvalidEmcRateList());
+
+        /* min(maxCount, 32) -> min(maxCount, EmcDvfsTableEntryCount) */
+        PATCH_OFFSET(ptr,         AsmSubsSetImm12(*ptr, static_cast<u16>(EmcDvfsTableEntryCount)));           /* cmp  w?,#64 */
+        PATCH_OFFSET(ptr + movzI, asm_set_imm16(*(ptr + movzI), static_cast<u16>(EmcDvfsTableEntryCount)));  /* movz w?,#64 */
+        R_SUCCEED();
+    }
+
     void Patch(uintptr_t mapped_nso, size_t nso_size) {
         nsoStart = reinterpret_cast<u32 *>(mapped_nso);
+
+        g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
+
         MtcGenerateFreqTables();
+
         u32 CpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(CpuCvbTableDefault)->freq);
         u32 GpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(GpuCvbTableDefault)->freq);
 
@@ -1161,6 +1318,10 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "MEM Vddq",          &EmcVddqVolt,           2, nullptr,  EmcVddqDefault             },
             { "MEM Vdd2",          &MemVoltHandler,        2, nullptr,  MemVdd2Default             },
             { "MEM Table Asm",     &MemMtcTableAsm,        1,          &MemMtcGetGetTablePatternFn },
+            { "EMC DVFS Count",    &EmcDvfsCountLimit,     1,          &EmcDvfsCountPatternFn      },
+            { "EMC SoC LUT",       &EmcSocLutReloc,        1,          &EmcSocLutPatternFn         },
+            { "EMC Rate List",     &EmcRateListLimit,      0,          &EmcRateListPatternFn       },
+            { "EMC Rate Sess",     &EmcRateSessLimit,      1,          &EmcRateSessPatternFn       },
             { "SOC Volt Asm",      &SocVoltAsm,            1,          &SocVoltPatternFn           },
             { "SOC Volt Limit",    &SocVoltLimit,          1, nullptr,  SocVoltLimitOfficial       },
         };

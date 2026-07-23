@@ -295,6 +295,47 @@ namespace clockManager {
             hz++;
         }
 
+        /* Since it is a pain to patch the vtables in ipc we can just hack the freqs in. You can still set them. */
+        constexpr u64 EmcClkOSLimitHz = 1600000ULL * 1000;  // 1600 MHz
+        const u64 maxHz = static_cast<u64>(config::GetConfigValue(KipConfigValue_marikoEmcMaxClock)) * 1000;
+        if (module == HocClkModule_MEM && board::GetSocType() == HocClkSocType_Mariko &&
+            kip::kipAvailable && maxHz >= EmcClkOSLimitHz &&
+            config::GetConfigValue(KipConfigValue_stepMode) == 4 /* 33 MHz */) {
+
+            /* Drop the clkrst entries above the OS limit */
+            u32 kept = 0;
+            for (u32 i = 0; i < gFreqTable[module].count; ++i) {
+                if (static_cast<u64>(gFreqTable[module].list[i]) <= EmcClkOSLimitHz) {
+                    gFreqTable[module].list[kept++] = gFreqTable[module].list[i];
+                }
+            }
+            gFreqTable[module].count = kept;
+
+            auto push = [&](u64 freqHz) {
+                if (freqHz > maxHz || gFreqTable[module].count >= HOCCLK_FREQ_LIST_MAX) {
+                    return;
+                }
+                gFreqTable[module].list[gFreqTable[module].count++] = static_cast<u32>(freqHz);
+            };
+
+            static const u32 stepFreqs33[] = {
+                1633000, 1666000, 1700000, 1733000, 1766000, 1800000, 1833000, 1866000, 1900000, 1933000,
+                1966000, 2000000, 2033000, 2066000, 2100000, 2133000, 2166000, 2200000, 2233000, 2266000,
+                2300000, 2333000, 2366000, 2400000, 2433000, 2466000, 2500000, 2533000, 2566000, 2600000,
+                2633000, 2666000, 2700000, 2733000, 2766000, 2800000, 2833000, 2866000, 2900000, 2933000,
+                2966000, 3000000, 3033000, 3066000, 3100000, 3133000, 3166000, 3200000, 3233000, 3266000,
+                3300000, 3333000, 3366000, 3400000, 3433000, 3466000, 3500000,
+            };
+            for (u32 f : stepFreqs33) {
+                push(static_cast<u64>(f) * 1000);
+            }
+
+            if (gFreqTable[module].count == 0 ||
+                static_cast<u64>(gFreqTable[module].list[gFreqTable[module].count - 1]) != maxHz) {
+                push(maxHz);
+            }
+        }
+
         fileUtils::LogLine("[mgr] count = %u", gFreqTable[module].count);
     }
 
@@ -560,7 +601,6 @@ namespace clockManager {
                     if (module == HocClkModule_MEM && targetHz > oldHz && config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
                         ApplyGpuDvfs(targetHz);
                     }
-
                     board::SetHz((HocClkModule)module, nearestHz);
                     gContext.freqs[module] = nearestHz;
 
@@ -739,6 +779,11 @@ namespace clockManager {
         gContext = {};
         gContext.applicationId = 0;
         gContext.profile = HocClkProfile_Handheld;
+
+        /* Load the KIP customize table before building the freq tables: the MEM freq-list
+           synthesis in RefreshFreqTableRow reads marikoEmcMaxClock / stepMode from it. */
+        kip::GetKipData();
+
         for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
             gContext.freqs[module] = 0;
             gContext.realFreqs[module] = 0;
@@ -756,8 +801,6 @@ namespace clockManager {
         gRunning = false;
         gLastTempLogNs = 0;
         gLastCsvWriteNs = 0;
-
-        kip::GetKipData();
 
         board::FuseData *fuse = board::GetFuseData();
 

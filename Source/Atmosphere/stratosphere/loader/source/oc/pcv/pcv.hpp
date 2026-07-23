@@ -36,8 +36,7 @@ namespace ams::ldr::hoc::pcv {
         return true;
     };
 
-    template <bool isMariko>
-    Result CpuFreqCvbTable(u32 *ptr) {
+    template <bool isMariko> Result CpuFreqCvbTable(u32 *ptr) {
         cvb_entry_t *default_table = isMariko ? (cvb_entry_t *)(&mariko::CpuCvbTableDefault) : (cvb_entry_t *)(&erista::CpuCvbTableDefault);
         cvb_entry_t *customize_table = nullptr;
 
@@ -112,8 +111,7 @@ namespace ams::ldr::hoc::pcv {
         PATCH_OFFSET(&(entry->cvb_pll_param.c5), 0);
     }
 
-    template <bool isMariko>
-    Result GpuFreqCvbTable(u32 *ptr) {
+    template <bool isMariko> Result GpuFreqCvbTable(u32 *ptr) {
         cvb_entry_t *default_table = isMariko ? (cvb_entry_t *)(&mariko::GpuCvbTableDefault) : (cvb_entry_t *)(&erista::GpuCvbTableDefault);
         cvb_entry_t *customize_table;
         if (isMariko) {
@@ -136,7 +134,7 @@ namespace ams::ldr::hoc::pcv {
                 default:
                     customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTableHiOPT);
                     break;
-                }
+            }
         } else {
             switch (C.eristaGpuUV) {
                 case 0:
@@ -151,7 +149,7 @@ namespace ams::ldr::hoc::pcv {
                 default:
                     customize_table = const_cast<cvb_entry_t *>(C.eristaGpuDvfsTable);
                     break;
-                }
+            }
         }
 
         size_t default_entry_count = GetDvfsTableEntryCount(default_table);
@@ -204,4 +202,4 @@ namespace ams::ldr::hoc::pcv {
     void SafetyCheck();
     void Patch(uintptr_t mapped_nso, size_t nso_size);
 
-}
+}  // namespace ams::ldr::hoc::pcv
