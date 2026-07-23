@@ -39,7 +39,7 @@ include ${TOPDIR}/lib/libultrahand/ultrahand.mk
 # version control constants
 #---------------------------------------------------------------------------------
 #TARGET_VERSION	:= $(shell git describe --dirty --always --tags)
-APP_VERSION		:= 2.5.0 # ensure to set KIP_VERSION and CUST_REV in sysmodule Makefile when updating this
+APP_VERSION		:= 2.5.1 # ensure to set KIP_VERSION and CUST_REV in sysmodule Makefile when updating this
 TARGET_VERSION := $(APP_VERSION)
 
 #---------------------------------------------------------------------------------
