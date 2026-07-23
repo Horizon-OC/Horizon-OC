@@ -43,7 +43,7 @@ namespace ams::ldr::hoc::pcv {
         constexpr u32 uv_step = 12'500;
         constexpr u32 uv_min  = 600'000;
 
-        auto validator = [](regulator *entry)
+        auto validator = [](regulator *entry) {
             R_UNLESS(entry->id              == 1,       ldr::ResultInvalidRegulatorEntry());
             R_UNLESS(entry->type            == 1,       ldr::ResultInvalidRegulatorEntry());
             R_UNLESS(entry->type_1.volt_reg == 0x17,    ldr::ResultInvalidRegulatorEntry());
