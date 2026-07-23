@@ -449,12 +449,11 @@ namespace clockManager {
         if (config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
             board::PcvHijackGpuVolts(0);  // Reset to vMin
 
-            u32 targetHz = gContext.overrideFreqs[HocClkModule_GPU];
-            u32 nearestHz = GetNearestOverrideHz(HocClkModule_GPU);
+            u32 targetHz = GetNearestOverrideHz(HocClkModule_GPU);
 
             board::ResetToStockGpu();
             if (targetHz)
-                board::SetHz(HocClkModule_GPU, nearestHz);
+                board::SetHz(HocClkModule_GPU, targetHz);
         }
     }
 
