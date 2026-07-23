@@ -202,4 +202,4 @@ namespace ams::ldr::hoc::pcv {
     void SafetyCheck();
     void Patch(uintptr_t mapped_nso, size_t nso_size);
 
-}  // namespace ams::ldr::hoc::pcv
+}
