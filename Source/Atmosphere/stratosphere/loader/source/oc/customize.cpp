@@ -42,7 +42,7 @@ volatile CustomizeTable C = {
 /* Jedec freqs are 1333MHz, 1600MHz, 1866MHz, 2133MHz, 2400MHz, 2666MHz, 2933MHz, 3200MHz. */
 .stepMode = StepMode_33MHz,
 
-.marikoEmcMaxClock = 2666000, /* Requires the EMC DVFS 63-entry patches (EMC DVFS Count / EMC SoC LUT). */
+.marikoEmcMaxClock = 2133000, /* Requires the EMC DVFS 63-entry patches (EMC DVFS Count / EMC SoC LUT). */
 .marikoEmcVddqVolt = 600000,
 
 .emcDvbShift   = 0,
