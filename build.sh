@@ -3,7 +3,6 @@
 EXT=0
 LDR_MAKE="nx_release"
 NO_EXO=0
-JOBS=""
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DIST_DIR="$ROOT_DIR/dist"
@@ -18,13 +17,6 @@ while [ $# -gt 0 ]; do
             ;;
         --no-exo)
             NO_EXO=1
-            ;;
-        -j)
-            shift
-            JOBS="$1"
-            ;;
-        -j*)
-            JOBS="${1#-j}"
             ;;
         *)
             echo "Unknown option: $1"
@@ -47,8 +39,6 @@ fi
 
 CORES="$(nproc --all)"
 echo "CORES: $CORES"
-JOBS="${JOBS:-$CORES}"
-echo "JOBS: $JOBS"
 
 SRC="Source/Atmosphere/stratosphere/loader/"
 
@@ -98,7 +88,7 @@ fi
 echo
 echo "*** Compiling loader ***"
 cd build/atmosphere/stratosphere/loader || exit 1
-make -j$JOBS "$LDR_MAKE"
+make -j$CORES "$LDR_MAKE"
 hactool -t kip1 "out/nintendo_nx_arm64_armv8a/$LDR_BUILD_PATH/loader.kip" --uncompress=hoc.kip
 cd "$ROOT_DIR" # exit
 cp -v build/atmosphere/stratosphere/loader/hoc.kip dist/atmosphere/kips/hoc.kip
@@ -107,7 +97,7 @@ if [ "$NO_EXO" -eq 0 ]; then
     echo
     echo "*** Compiling exosphere ***"
     cd build/atmosphere/exosphere
-    make -j$JOBS
+    make -j$CORES
     cd "$ROOT_DIR"
     cp -v build/atmosphere/exosphere/out/nintendo_nx_arm64_armv8a/release/exosphere.bin dist/atmosphere/exosphere.bin
 fi
@@ -141,7 +131,7 @@ if [ "$EXT" -eq 1 ]; then
     cd hekate/
     echo
     echo "*** Compiling custom Hekate ***"
-    make -j$JOBS
+    make -j$CORES
     echo
 
     mkdir -p "$DIST_DIR/bootloader/sys/"
@@ -152,7 +142,7 @@ if [ "$EXT" -eq 1 ]; then
     cd "$ROOT_DIR"/Source/Benchmark-Toolbox
     echo
     echo "*** Compiling Benchmark-Toolbox ***"
-    make -j$JOBS
+    make -j$CORES
     cp -v Benchmark-Toolbox.nro "$DIST_DIR"/switch/Benchmark-Toolbox.nro
 fi
 

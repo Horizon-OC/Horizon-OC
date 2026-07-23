@@ -222,8 +222,7 @@ namespace kip {
             !config::GetConfigValue(HocClkConfigValue_IsFirstLoad)) {
             MigrateKipData(cust_get_cust_rev(&table), cust_get_kip_version(&table));
             SetKipData();
-            clockManager::gContext.rebootRequired = true;
-            notification::writeNotification("Horizon OC\nKIP has been updated\nPlease reboot your console to use Horizon OC");
+            notification::writeNotification("Horizon OC\nKIP has been updated\nPlease reboot your console");
             return;
         }
         if (config::GetConfigValue(HocClkConfigValue_IsFirstLoad) == true) {

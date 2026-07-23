@@ -27,8 +27,8 @@ namespace ams::ldr::hoc::pcv {
         R_UNLESS(entry->freq == entry->vco_max, ldr::ResultInvalidMemPllmEntry());
 
         // Double the max clk simply
-        u32 max_clk = entry->freq * 2;
-        entry->freq = max_clk;
+        u32 max_clk    = entry->freq * 2;
+        entry->freq    = max_clk;
         entry->vco_max = max_clk;
         R_SUCCEED();
     }
@@ -41,9 +41,9 @@ namespace ams::ldr::hoc::pcv {
         };
 
         constexpr u32 uv_step = 12'500;
-        constexpr u32 uv_min = 600'000;
+        constexpr u32 uv_min  = 600'000;
 
-        auto validator = [](regulator *entry) {
+        auto validator = [](regulator *entry)
             R_UNLESS(entry->id              == 1,       ldr::ResultInvalidRegulatorEntry());
             R_UNLESS(entry->type            == 1,       ldr::ResultInvalidRegulatorEntry());
             R_UNLESS(entry->type_1.volt_reg == 0x17,    ldr::ResultInvalidRegulatorEntry());
@@ -67,7 +67,7 @@ namespace ams::ldr::hoc::pcv {
         }
 
         if (emc_uv % uv_step) {
-            emc_uv = emc_uv / uv_step * uv_step;  // rounding
+            emc_uv = emc_uv / uv_step * uv_step; // rounding
         }
 
         PATCH_OFFSET(ptr, emc_uv);
@@ -102,11 +102,11 @@ namespace ams::ldr::hoc::pcv {
 
         u32 eristaCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.eristaCpuDvfsTable)->freq);
         u32 marikoCpuDvfsMaxFreq;
-        if (C.marikoCpuUVHigh) {
-            marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTableSLT)->freq);
-        } else {
-            marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
-        }
+            if (C.marikoCpuUVHigh) {
+                marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTableSLT)->freq);
+            } else {
+                marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
+            }
         u32 eristaGpuDvfsMaxFreq;
         switch (C.eristaGpuUV) {
             case 0:
@@ -171,7 +171,7 @@ namespace ams::ldr::hoc::pcv {
     }
 
     void WriteKipLoadToIram() {
-        const u32 hocMagic = 0x686F634D;
+        const u32 hocMagic                   = 0x686F634D;
         constexpr uintptr_t LoadMagicAddress = 0x4003DC00; /* Should be a pretty safe address. */
         R_DISCARD(SmcCopyToIram(LoadMagicAddress, &hocMagic, sizeof(hocMagic)));
     }
