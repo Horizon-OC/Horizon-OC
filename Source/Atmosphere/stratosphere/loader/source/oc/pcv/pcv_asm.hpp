@@ -159,6 +159,82 @@ namespace ams::ldr::hoc::pcv {
         return 0xF9400000u | (((byteOff / 8u) & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
     };
 
+    /* b <target> (PC-relative, +-128MB). */
+    inline auto AsmMakeB = [](uintptr_t pc, uintptr_t target) -> u32 {
+        const s64 off = (static_cast<s64>(target) - static_cast<s64>(pc)) >> 2;
+        return 0x14000000u | (static_cast<u32>(off) & 0x03FFFFFFu);
+    };
+
+    /* b.<cond> <target> (cond: LO/CC=0x3, LE=0xD, NE=0x1, ...). */
+    inline auto AsmMakeBCond = [](uintptr_t pc, uintptr_t target, u32 cond) -> u32 {
+        const s64 off = (static_cast<s64>(target) - static_cast<s64>(pc)) >> 2;
+        return 0x54000000u | ((static_cast<u32>(off) & 0x7FFFFu) << 5) | (cond & 0xFu);
+    };
+
+    /* sub Xd,Xn,#imm12 (shift 0). */
+    inline auto AsmMakeSubImm64 = [](u32 rd, u32 rn, u32 imm12) -> u32 {
+        return 0xD1000000u | ((imm12 & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rd & 0x1Fu);
+    };
+
+    /* cmp Wn,#imm12  ==  subs WZR,Wn,#imm12. */
+    inline auto AsmMakeCmpImm32 = [](u32 rn, u32 imm12) -> u32 {
+        return 0x7100001Fu | ((imm12 & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5);
+    };
+
+    /* str Wt,[Xn,#byteOff] (32-bit, unsigned scaled by 4). */
+    inline auto AsmMakeStrImm32 = [](u32 rt, u32 rn, u32 byteOff) -> u32 {
+        return 0xB9000000u | (((byteOff / 4u) & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
+    };
+
+    /* stp Xt1,Xt2,[Xn,#imm]  (signed offset, scaled by 8). */
+    inline auto AsmMakeStpImm64 = [](u32 rt1, u32 rt2, u32 rn, s32 imm) -> u32 {
+        return 0xA9000000u | ((static_cast<u32>(imm / 8) & 0x7Fu) << 15) | ((rt2 & 0x1Fu) << 10) | ((rn & 0x1Fu) << 5) | (rt1 & 0x1Fu);
+    };
+
+    /* stp Qt1,Qt2,[Xn,#imm]  (128-bit SIMD, signed offset scaled by 16). */
+    inline auto AsmMakeStpqImm = [](u32 qt1, u32 qt2, u32 rn, s32 imm) -> u32 {
+        return 0xAD000000u | ((static_cast<u32>(imm / 16) & 0x7Fu) << 15) | ((qt2 & 0x1Fu) << 10) | ((rn & 0x1Fu) << 5) | (qt1 & 0x1Fu);
+    };
+
+    /* str Xt,[Xn,#byteOff]  (unsigned scaled by 8). */
+    inline auto AsmMakeStrImm64 = [](u32 rt, u32 rn, u32 byteOff) -> u32 {
+        return 0xF9000000u | (((byteOff / 8u) & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
+    };
+
+    /* movn Wd,#imm16 (no shift): loads ~imm16, e.g. movn Wd,#0x37 == -56. */
+    inline auto AsmMakeMovnW = [](u32 rd, u16 imm16) -> u32 {
+        return 0x12800000u | (static_cast<u32>(imm16) << 5) | (rd & 0x1Fu);
+    };
+
+    /* bl <target>  (PC-relative, +-128MB). */
+    inline auto AsmMakeBl = [](uintptr_t pc, uintptr_t target) -> u32 {
+        const s64 off = (static_cast<s64>(target) - static_cast<s64>(pc)) >> 2;
+        return 0x94000000u | (static_cast<u32>(off) & 0x03FFFFFFu);
+    };
+
+    /* svc #imm16. */
+    inline auto AsmMakeSvc = [](u16 imm16) -> u32 {
+        return 0xD4000001u | (static_cast<u32>(imm16) << 5);
+    };
+
+    constexpr u32 RetIns = 0xD65F03C0u; /* ret (x30) */
+
+    /* ldrb Wt,[Xn,#imm] (unsigned byte, scale 1). */
+    inline auto AsmMakeLdrbImm = [](u32 rt, u32 rn, u32 byteOff) -> u32 {
+        return 0x39400000u | ((byteOff & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
+    };
+
+    /* cbz Wt,<target>. */
+    inline auto AsmMakeCbz = [](uintptr_t pc, uintptr_t target, u32 rt) -> u32 {
+        const s64 off = (static_cast<s64>(target) - static_cast<s64>(pc)) >> 2;
+        return 0x34000000u | ((static_cast<u32>(off) & 0x7FFFFu) << 5) | (rt & 0x1Fu);
+    };
+
+    /* strb Wt,[Xn,#imm] (unsigned byte, scale 1). */
+    inline auto AsmMakeStrbImm = [](u32 rt, u32 rn, u32 byteOff) -> u32 {
+        return 0x39000000u | ((byteOff & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
+    };
+
     /* mov Xd,X<rm>  ==  orr Xd,XZR,X<rm>  (matches any Rd). */
     inline auto AsmIsMovReg = [](u32 ins, u32 rm) -> bool {
         return (ins & 0xFFFFFFE0u) == (0xAA0003E0u | ((rm & 0x1Fu) << 16));

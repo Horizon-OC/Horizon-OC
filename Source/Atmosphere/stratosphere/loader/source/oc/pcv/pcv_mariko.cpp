@@ -620,6 +620,186 @@ namespace ams::ldr::hoc::pcv::mariko {
     namespace {
         std::vector<u32> newEmcList;
         u32 *nsoStart;
+        uintptr_t g_cave_cursor = 0;
+    }
+
+    static uintptr_t CaveReserve(size_t count) {
+        if (g_pcv_cave == 0 || g_cave_cursor == 0) {
+            return 0;
+        }
+        if (g_cave_cursor + count * sizeof(u32) > g_pcv_cave + g_pcv_cave_size) {
+            return 0;
+        }
+        const uintptr_t entry = g_cave_cursor;
+        g_cave_cursor += count * sizeof(u32);
+        return entry;
+    }
+
+    static void NvLogUartRedirect(uintptr_t mapped_nso, size_t nso_size) {
+        const uintptr_t textEnd = g_pcv_cave;   /* .text ends where the cave begins */
+        if (textEnd == 0) {
+            return;
+        }
+
+        /* vsnprintf(buf,size,fmt,va_list) */
+        static const u32 VsnSig[] = { 0xD10483FFu, 0xA9107BFDu, 0xF9008BFCu, 0x910403FDu, 0xF100003Fu };
+        uintptr_t vsnprintf_addr = 0;
+        for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + std::size(VsnSig)) <= textEnd; ++p) {
+            bool ok = true;
+            for (size_t k = 0; k < std::size(VsnSig); ++k) {
+                if (p[k] != VsnSig[k]) { ok = false; break; }
+            }
+            if (ok) { vsnprintf_addr = reinterpret_cast<uintptr_t>(p); break; }
+        }
+        if (vsnprintf_addr == 0) {
+            LOGGING("NvLogRedirect: vsnprintf not found");
+            return;
+        }
+
+        /* NvLog via the VDD_SOC log */
+        static const char Fmt[] = "%s(%s): DVFS request VDD_SOC %d mV\n";
+        constexpr size_t FmtLen = sizeof(Fmt) - 1;
+        uintptr_t strAddr = 0;
+        {
+            const char *hay = reinterpret_cast<const char *>(mapped_nso);
+            for (size_t i = 0; i + FmtLen <= nso_size; ++i) {
+                if (std::memcmp(hay + i, Fmt, FmtLen) == 0) { strAddr = mapped_nso + i; break; }
+            }
+        }
+        if (strAddr == 0) {
+            LOGGING("NvLogRedirect: fmt string not found (vsnprintf@+%lx)", vsnprintf_addr - mapped_nso);
+            return;
+        }
+
+        uintptr_t nvlog_addr = 0;
+        for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 2) <= textEnd; ++p) {
+            const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
+            if (!AsmIsAdrp(p[0])) {
+                continue;
+            }
+            const uintptr_t adrpPage = (pc & ~static_cast<uintptr_t>(0xFFFu)) + static_cast<uintptr_t>(AsmAdrpPageOffset(p[0]));
+            if (adrpPage != (strAddr & ~static_cast<uintptr_t>(0xFFFu))) {
+                continue;
+            }
+            const u32 reg = asm_get_rd(p[0]);
+            if (!(AsmIsAddImm64(p[1]) && asm_get_rd(p[1]) == reg && AsmGetRn(p[1]) == reg && AsmGetImm12(p[1]) == (strAddr & 0xFFFu))) {
+                continue;
+            }
+            for (u32 k = 2; k <= 12 && (pc + (k + 1) * 4) <= textEnd; ++k) {
+                if (AsmIsBl(p[k])) { nvlog_addr = AsmBranchTarget(p[k], pc + k * 4); break; }
+            }
+            if (nvlog_addr != 0) {
+                break;
+            }
+        }
+        if (nvlog_addr == 0 || nvlog_addr < mapped_nso || nvlog_addr >= textEnd) {
+            LOGGING("NvLogRedirect: NvLog entry not found (fmt@+%lx)", strAddr - mapped_nso);
+            return;
+        }
+
+        const uintptr_t helper = CaveReserve(40);
+        if (helper == 0) {
+            LOGGING("NvLogRedirect: cave unavailable (cave=%lx size=%lx)",
+                    static_cast<unsigned long>(g_pcv_cave), static_cast<unsigned long>(g_pcv_cave_size));
+            return;
+        }
+        u32 *t = reinterpret_cast<u32 *>(helper);
+        size_t n = 0;
+        auto emit = [&](u32 ins) { t[n] = ins; ++n; };
+
+        emit(AsmMakeSubImm64(31, 31, 0x200));
+        emit(AsmMakeStpImm64(0, 1, 31, 0x100));
+        emit(AsmMakeStpImm64(2, 3, 31, 0x110));
+        emit(AsmMakeStpImm64(4, 5, 31, 0x120));
+        emit(AsmMakeStpImm64(6, 7, 31, 0x130));
+        emit(AsmMakeStpqImm(0, 1, 31, 0x140));
+        emit(AsmMakeStpqImm(2, 3, 31, 0x160));
+        emit(AsmMakeStpqImm(4, 5, 31, 0x180));
+        emit(AsmMakeStpqImm(6, 7, 31, 0x1A0));
+        emit(AsmMakeStrImm64(30, 31, 0x1E0));
+        emit(AsmMakeAddImm64(9, 31, 0x200)); emit(AsmMakeStrImm64(9, 31, 0x1C0)); /* __stack  */
+        emit(AsmMakeAddImm64(9, 31, 0x140)); emit(AsmMakeStrImm64(9, 31, 0x1C8)); /* __gr_top */
+        emit(AsmMakeAddImm64(9, 31, 0x1C0)); emit(AsmMakeStrImm64(9, 31, 0x1D0)); /* __vr_top */
+        emit(AsmMakeMovnW(9, 0x37)); emit(AsmMakeStrImm32(9, 31, 0x1D8)); /* __gr_offs = -56  */
+        emit(AsmMakeMovnW(9, 0x7F)); emit(AsmMakeStrImm32(9, 31, 0x1DC)); /* __vr_offs = -128 */
+        emit(AsmMakeAddImm64(0, 31, 0x00)); /* mov x0,sp (buf)  */
+        emit(AsmMakeMovzW(1, 0x100)); /* size = 0x100     */
+        emit(AsmMakeLdrImm64(2, 31, 0x100)); /* fmt (saved x0)   */
+        emit(AsmMakeAddImm64(3, 31, 0x1C0)); /* ap               */
+        emit(AsmMakeBl(helper + n * 4, vsnprintf_addr));
+        emit(AsmMakeMovReg(1, 0)); /* len = retval     */
+        emit(AsmMakeCmpImm32(1, 0x100));
+        { const size_t at = n; emit(AsmMakeBCond(helper + at * 4, helper + (at + 2) * 4, 0x3u)); } /* b.lo +2 */
+        emit(AsmMakeMovzW(1, 0xFF)); /* clamp len        */
+        emit(AsmMakeAddImm64(0, 31, 0x00)); /* mov x0,sp (str)  */
+        emit(AsmMakeSvc(0x27)); /* svcOutputDebugString */
+        emit(AsmMakeLdrImm64(30, 31, 0x1E0));
+        emit(AsmMakeAddImm64(31, 31, 0x200));
+        emit(RetIns);
+
+        /* Redirect the call sites as patching the actual function causes crash */
+        const uintptr_t roStart = g_pcv_cave + g_pcv_cave_size; /* module .rodata start */
+        size_t patchedSites = 0;
+        if (HOC_PCV_NVLOG_PATCH) {
+            for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 1) <= textEnd; ++p) {
+                if (!AsmIsBl(*p)) {
+                    continue;
+                }
+                const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
+                if (AsmBranchTarget(*p, pc) != nvlog_addr) {
+                    continue;
+                }
+                bool isFmtCall = false;
+                for (u32 j = 1; j <= 8 && reinterpret_cast<uintptr_t>(p - j) >= reinterpret_cast<uintptr_t>(nsoStart); ++j) {
+                    const u32 w = *(p - j);
+                    if (AsmIsAdrp(w) && asm_get_rd(w) == 0) { /* adrp x0,<page> */
+                        const uintptr_t wpc = pc - j * 4;
+                        const uintptr_t tgtPage = (wpc & ~static_cast<uintptr_t>(0xFFFu)) + static_cast<uintptr_t>(AsmAdrpPageOffset(w));
+                        if (tgtPage >= (roStart & ~static_cast<uintptr_t>(0xFFFu))) { isFmtCall = true; break; }
+                    }
+                }
+                if (isFmtCall) {
+                    PATCH_OFFSET(p, AsmMakeBl(pc, helper));
+                    ++patchedSites;
+                }
+            }
+        }
+
+        LOGGING("NvLogRedirect: stub@+%lx vsnprintf@+%lx helper@+%lx instr=%zu sites=%zu",
+                nvlog_addr - mapped_nso, vsnprintf_addr - mapped_nso, helper - mapped_nso, n, patchedSites);
+    }
+
+    /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs */
+    static void ForceVerbosity() {
+        const uintptr_t textEnd = g_pcv_cave;
+        if (textEnd == 0 || HOC_PCV_FORCE_VERBOSITY == 0) {
+            return;
+        }
+        size_t patched = 0;
+        for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 11) <= textEnd; ++p) {
+            if (p[0] != 0xA9BE7BFDu || p[1] != 0xF9000BF3u || p[2] != 0x910003FDu) { /* stp/str/mov x29,sp */
+                continue;
+            }
+            if (!(AsmIsAddImm64(p[3]) && asm_get_rd(p[3]) == 0  && AsmGetRn(p[3]) == 29)) continue; /* add x0,x29,#imm  */
+            if (!(AsmIsAddImm64(p[4]) && asm_get_rd(p[4]) == 19 && AsmGetRn(p[4]) == 29)) continue; /* add x19,x29,#imm */
+            if (AsmGetImm12(p[3]) != AsmGetImm12(p[4]) || !AsmIsBl(p[5])) {
+                continue;
+            }
+            bool hasCmp = false;
+            for (u32 j = 6; j <= 10; ++j) {
+                if (p[j] == 0x7100001Fu) { /* cmp w0,#0 */
+                    hasCmp = true; 
+                    break; 
+                } 
+            }
+            if (!hasCmp) {
+                continue;
+            }
+            PATCH_OFFSET(&p[0], AsmMakeMovzW(0, static_cast<u16>(HOC_PCV_FORCE_VERBOSITY)));
+            PATCH_OFFSET(&p[1], RetIns);
+            ++patched;
+        }
+        LOGGING("ForceVerbosity: patched %zu getter(s) to level %d", patched, HOC_PCV_FORCE_VERBOSITY);
     }
 
     /* Widen InitDram for a >32-entry EMC DVFS list. Freq array can be dropped to free 264 bytes, relocate the Soc LUT to that space */
@@ -1293,6 +1473,10 @@ namespace ams::ldr::hoc::pcv::mariko {
         nsoStart = reinterpret_cast<u32 *>(mapped_nso);
 
         g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
+        g_cave_cursor = g_pcv_cave;   /* start the .text-cave bump allocator (0 if unavailable) */
+
+        NvLogUartRedirect(mapped_nso, nso_size);
+        ForceVerbosity();
 
         MtcGenerateFreqTables();
 

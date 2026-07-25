@@ -25,4 +25,8 @@ namespace ams::ldr::hoc {
     void Log(const char *data, ...);
     void ViewLog();
 
+    /* Emit a formatted line over the kernel debug UART via svcOutputDebugString.
+       No-op unless the running kernel enables debug logging (audit/debug mesosphere). */
+    void UartLog(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+
 }

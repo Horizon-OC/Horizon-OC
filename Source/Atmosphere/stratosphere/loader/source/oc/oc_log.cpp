@@ -70,6 +70,29 @@ namespace ams::ldr::hoc {
         return rc;
     }
 
+    void UartLog(const char *fmt, ...) {
+        char line[256];
+        constexpr size_t PrefixLen = 13;   /* "[HOC] " */
+        std::memcpy(line, "[Horizon OC] ", PrefixLen);
+
+        va_list args;
+        va_start(args, fmt);
+        int n = vsnprintf(line + PrefixLen, sizeof(line) - PrefixLen - 1, fmt, args);
+        va_end(args);
+        if (n < 0) {
+            return;
+        }
+
+        size_t body = static_cast<size_t>(n);
+        if (body > sizeof(line) - PrefixLen - 2) { /* vsnprintf returns the untruncated length */
+            body = sizeof(line) - PrefixLen - 2;
+        }
+        size_t len = PrefixLen + body;
+        line[len++] = '\n';
+
+        svc::OutputDebugString(line, len);
+    }
+
     struct log_ctx_t {
         u32 magic;
         u32 sz;

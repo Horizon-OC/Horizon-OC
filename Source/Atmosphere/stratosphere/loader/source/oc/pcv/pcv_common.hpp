@@ -183,6 +183,9 @@ namespace ams::ldr::hoc::pcv {
     // extra .bss location, 0 until Patch() runs.
     inline uintptr_t g_pcv_scratch = 0;
 
+    inline uintptr_t g_pcv_cave      = 0;
+    inline size_t    g_pcv_cave_size = 0;
+
     template<typename T>
     size_t GetDvfsTableEntryCount(T *table_head) {
         using NT = std::remove_const_t<std::remove_volatile_t<T>>;

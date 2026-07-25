@@ -20,11 +20,20 @@
 
 #include <stratosphere.hpp>
 #include <vapours/results/results_common.hpp>
-#define LOGGING(fmt, ...) ((void)0)
-#define CRASH(msg, ...) { ams::diag::AbortImpl(msg, __PRETTY_FUNCTION__, "", 0); __builtin_unreachable(); }
+
+#define HOC_UART_LOG 1
+#define HOC_PCV_NVLOG_PATCH 1
+#define HOC_PCV_FORCE_VERBOSITY 1
 
 #include "customize.hpp"
 #include "oc_log.hpp"
+
+#if HOC_UART_LOG
+#define LOGGING(fmt, ...) ::ams::ldr::hoc::UartLog(fmt, ##__VA_ARGS__)
+#else
+#define LOGGING(fmt, ...) ((void)0)
+#endif
+#define CRASH(msg, ...) { ams::diag::AbortImpl(msg, __PRETTY_FUNCTION__, "", 0); __builtin_unreachable(); }
 
 #define PATCH_OFFSET(offset, value) \
     static_assert(sizeof(__typeof__(offset)) <= sizeof(u64)); \

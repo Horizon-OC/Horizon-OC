@@ -83,6 +83,24 @@ namespace fileUtils {
 
         va_list args;
         va_start(args, format);
+
+        char buff[0xfff];
+        int len = vsnprintf(buff, sizeof(buff), format, args);
+        va_end(args);
+
+        if (len < 0) {
+            return;
+        }
+        // Leave room for the newline + NUL.
+        if ((size_t)len >= sizeof(buff) - 1) {
+            len = sizeof(buff) - 2;
+        }
+        buff[len++] = '\n';
+        buff[len] = '\0';
+
+        // Debug UART log
+        svcOutputDebugString(buff, len);
+
         if (g_has_initialized) {
             RefreshFlags(false);
 
@@ -93,14 +111,11 @@ namespace fileUtils {
                     timespec now = {};
                     clock_gettime(CLOCK_REALTIME, &now);
 
-                    fprintf(file, "[%luls] ", now.tv_sec - bootTimeS);
-                    vfprintf(file, format, args);
-                    fprintf(file, "\n");
+                    fprintf(file, "[%luls] %s", now.tv_sec - bootTimeS, buff);
                     fclose(file);
                 }
             }
         }
-        va_end(args);
     }
 
     void WriteContextToCsv(const HocClkContext *context) {

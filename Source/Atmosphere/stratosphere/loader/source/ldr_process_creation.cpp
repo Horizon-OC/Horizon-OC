@@ -730,6 +730,16 @@ namespace ams::ldr {
 
                 /* Apply PCV and PTM patches */
                 if (g_is_pcv) {
+                    /* Hand the pcv patcher the zero-padding after .text (memset to 0 above, mapped
+                       ReadExecute below) as a code cave for out-of-line trampolines. text_dst_offset
+                       is validated == 0. Clamp to the page-aligned .text mapping so the cave can only
+                       live inside the RX region. */
+                    const size_t pcv_text_end = static_cast<size_t>(nso_header->text_size);
+                    const size_t pcv_rx_end   = util::AlignUp(pcv_text_end, os::MemoryPageSize);
+                    const size_t pcv_ro_start = static_cast<size_t>(nso_header->ro_dst_offset);
+                    const size_t pcv_cave_end = (pcv_rx_end < pcv_ro_start) ? pcv_rx_end : pcv_ro_start;
+                    hoc::pcv::g_pcv_cave      = map_address + pcv_text_end;
+                    hoc::pcv::g_pcv_cave_size = (pcv_cave_end > pcv_text_end) ? (pcv_cave_end - pcv_text_end) : 0;
                     hoc::pcv::Patch(map_address, nso_size);
                 }
 
