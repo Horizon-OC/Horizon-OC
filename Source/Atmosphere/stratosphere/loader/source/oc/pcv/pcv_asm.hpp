@@ -186,6 +186,16 @@ namespace ams::ldr::hoc::pcv {
         return 0xB9000000u | (((byteOff / 4u) & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
     };
 
+    /* ldr Wt,[Xn,#byteOff] (32-bit, unsigned scaled by 4). */
+    inline auto AsmMakeLdrImm32 = [](u32 rt, u32 rn, u32 byteOff) -> u32 {
+        return 0xB9400000u | (((byteOff / 4u) & 0xFFFu) << 10) | ((rn & 0x1Fu) << 5) | (rt & 0x1Fu);
+    };
+
+    /* add Xd,Xn,Xm,LSL #shift (64-bit shifted register, shift 0-63). */
+    inline auto AsmMakeAddShiftedReg64 = [](u32 rd, u32 rn, u32 rm, u32 shift) -> u32 {
+        return 0x8B000000u | ((rm & 0x1Fu) << 16) | ((shift & 0x3Fu) << 10) | ((rn & 0x1Fu) << 5) | (rd & 0x1Fu);
+    };
+
     /* stp Xt1,Xt2,[Xn,#imm]  (signed offset, scaled by 8). */
     inline auto AsmMakeStpImm64 = [](u32 rt1, u32 rt2, u32 rn, s32 imm) -> u32 {
         return 0xA9000000u | ((static_cast<u32>(imm / 8) & 0x7Fu) << 15) | ((rt2 & 0x1Fu) << 10) | ((rn & 0x1Fu) << 5) | (rt1 & 0x1Fu);
@@ -253,6 +263,11 @@ namespace ams::ldr::hoc::pcv {
     inline auto AsmIsB     = [](u32 ins) -> bool { return (ins & 0xFC000000u) == 0x14000000u; }; /* b   */
     inline auto AsmIsBl    = [](u32 ins) -> bool { return (ins & 0xFC000000u) == 0x94000000u; }; /* bl  */
     inline auto AsmIsBCond = [](u32 ins) -> bool { return (ins & 0xFF000010u) == 0x54000000u; }; /* b.c */
+
+    /* ldr/str Xt,[Xn,#imm] (64-bit, unsigned scaled offset). */
+    inline auto AsmIsLdrImm64      = [](u32 ins) -> bool { return (ins & 0xFFC00000u) == 0xF9400000u; };
+    inline auto AsmIsStrImm64      = [](u32 ins) -> bool { return (ins & 0xFFC00000u) == 0xF9000000u; };
+    inline auto AsmGetLdStImm64Off = [](u32 ins) -> u32  { return ((ins >> 10) & 0xFFFu) * 8u; };
 
     /* Byte target address of a b/bl at pc. */
     inline auto AsmBranchTarget = [](u32 ins, uintptr_t pc) -> uintptr_t {

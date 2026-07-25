@@ -620,6 +620,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     namespace {
         std::vector<u32> newEmcList;
         u32 *nsoStart;
+        size_t g_nso_size = 0;
         uintptr_t g_cave_cursor = 0;
     }
 
@@ -635,26 +636,12 @@ namespace ams::ldr::hoc::pcv::mariko {
         return entry;
     }
 
-    static void NvLogUartRedirect(uintptr_t mapped_nso, size_t nso_size) {
-        const uintptr_t textEnd = g_pcv_cave;   /* .text ends where the cave begins */
-        if (textEnd == 0) {
-            return;
-        }
-
-        /* vsnprintf(buf,size,fmt,va_list) */
-        static const u32 VsnSig[] = { 0xD10483FFu, 0xA9107BFDu, 0xF9008BFCu, 0x910403FDu, 0xF100003Fu };
-        uintptr_t vsnprintf_addr = 0;
-        for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + std::size(VsnSig)) <= textEnd; ++p) {
-            bool ok = true;
-            for (size_t k = 0; k < std::size(VsnSig); ++k) {
-                if (p[k] != VsnSig[k]) { ok = false; break; }
-            }
-            if (ok) { vsnprintf_addr = reinterpret_cast<uintptr_t>(p); break; }
-        }
-        if (vsnprintf_addr == 0) {
-            LOGGING("NvLogRedirect: vsnprintf not found");
-            return;
-        }
+    /* Redirect pcv's NvLog() calls to UART */
+    Result NvLogUartRedirect(u32 *ptr) {
+        const uintptr_t mapped_nso     = reinterpret_cast<uintptr_t>(nsoStart);
+        const size_t    nso_size       = g_nso_size;
+        const uintptr_t textEnd        = g_pcv_cave; /* .text ends where the cave begins */
+        const uintptr_t vsnprintf_addr = reinterpret_cast<uintptr_t>(ptr);
 
         /* NvLog via the VDD_SOC log */
         static const char Fmt[] = "%s(%s): DVFS request VDD_SOC %d mV\n";
@@ -668,7 +655,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
         if (strAddr == 0) {
             LOGGING("NvLogRedirect: fmt string not found (vsnprintf@+%lx)", vsnprintf_addr - mapped_nso);
-            return;
+            R_THROW(ldr::ResultInvalidNvLogRedirect());
         }
 
         uintptr_t nvlog_addr = 0;
@@ -694,14 +681,14 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
         if (nvlog_addr == 0 || nvlog_addr < mapped_nso || nvlog_addr >= textEnd) {
             LOGGING("NvLogRedirect: NvLog entry not found (fmt@+%lx)", strAddr - mapped_nso);
-            return;
+            R_THROW(ldr::ResultInvalidNvLogRedirect());
         }
 
         const uintptr_t helper = CaveReserve(40);
         if (helper == 0) {
             LOGGING("NvLogRedirect: cave unavailable (cave=%lx size=%lx)",
                     static_cast<unsigned long>(g_pcv_cave), static_cast<unsigned long>(g_pcv_cave_size));
-            return;
+            R_THROW(ldr::ResultInvalidNvLogRedirect());
         }
         u32 *t = reinterpret_cast<u32 *>(helper);
         size_t n = 0;
@@ -767,44 +754,61 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         LOGGING("NvLogRedirect: stub@+%lx vsnprintf@+%lx helper@+%lx instr=%zu sites=%zu",
                 nvlog_addr - mapped_nso, vsnprintf_addr - mapped_nso, helper - mapped_nso, n, patchedSites);
+        R_SUCCEED();
     }
 
-    /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs */
-    static void ForceVerbosity() {
-        const uintptr_t textEnd = g_pcv_cave;
-        if (textEnd == 0 || HOC_PCV_FORCE_VERBOSITY == 0) {
-            return;
+    /* Relocate C2/C3Bus to avoid issues*/
+    Result BusFreqReloc(u32 *ptr) {
+        const u32 busReg  = AsmGetRn(ptr[0]); /* ldr Xbuf,[Xbus,#0x10] : bus struct pointer */
+        const u32 bufReg  = asm_get_rd(ptr[0]);  /*                        : freq-buffer arg    */
+        const u32 bufOff  = AsmGetLdStImm64Off(ptr[0]); /*                        : bus->freqBuf offset */
+        const u32 cntReg  = asm_get_rd(ptr[1]); /* add Xcnt,Xbus,#0x18   : arg2 (&count)       */
+        const u32 railReg = asm_get_rd(ptr[2]); /* str Xrail,[Xbus,#0x50]: arg0 (rail)         */
+        u32 *call = ptr + 3; /* the bl to relocate                          */
+        const uintptr_t realFn = AsmBranchTarget(*call, reinterpret_cast<uintptr_t>(call));
+
+        /* Pick 3 scratch registers */
+        u32 s[3], sc = 0;
+        for (u32 r = 9; r <= 15 && sc < 3; ++r) {
+            if (r != busReg && r != bufReg && r != cntReg && r != railReg) {
+                s[sc++] = r;
+            }
         }
-        size_t patched = 0;
-        for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 11) <= textEnd; ++p) {
-            if (p[0] != 0xA9BE7BFDu || p[1] != 0xF9000BF3u || p[2] != 0x910003FDu) { /* stp/str/mov x29,sp */
-                continue;
-            }
-            if (!(AsmIsAddImm64(p[3]) && asm_get_rd(p[3]) == 0  && AsmGetRn(p[3]) == 29)) continue; /* add x0,x29,#imm  */
-            if (!(AsmIsAddImm64(p[4]) && asm_get_rd(p[4]) == 19 && AsmGetRn(p[4]) == 29)) continue; /* add x19,x29,#imm */
-            if (AsmGetImm12(p[3]) != AsmGetImm12(p[4]) || !AsmIsBl(p[5])) {
-                continue;
-            }
-            bool hasCmp = false;
-            for (u32 j = 6; j <= 10; ++j) {
-                if (p[j] == 0x7100001Fu) { /* cmp w0,#0 */
-                    hasCmp = true; 
-                    break; 
-                } 
-            }
-            if (!hasCmp) {
-                continue;
-            }
-            PATCH_OFFSET(&p[0], AsmMakeMovzW(0, static_cast<u16>(HOC_PCV_FORCE_VERBOSITY)));
-            PATCH_OFFSET(&p[1], RetIns);
-            ++patched;
-        }
-        LOGGING("ForceVerbosity: patched %zu getter(s) to level %d", patched, HOC_PCV_FORCE_VERBOSITY);
+        R_UNLESS(sc == 3, ldr::ResultInvalidBusFreqReloc());
+
+        const uintptr_t tramp = CaveReserve(9);
+        R_UNLESS(tramp != 0, ldr::ResultInvalidBusFreqReloc());
+
+        const uintptr_t region = g_pcv_scratch + HocBusFreqBufOffset; /* [0]=counter, +0x10 + i*0x400 = bufs */
+        u32 *t = reinterpret_cast<u32 *>(tramp);
+        size_t n = 0;
+        auto emit = [&](u32 ins) { t[n] = ins; ++n; };
+        emit(AsmMakeAdrp(tramp + n * 4, region, s[0])); /* adrp s0,<region>            */
+        emit(AsmMakeAddImm64(s[0], s[0], region & 0xFFFu)); /* add  s0,s0,#lo              */
+        emit(AsmMakeLdrImm32(s[1], s[0], 0x00)); /* s1 = counter               */
+        emit(AsmMakeAddImm64(s[2], s[1], 1)); /* s2 = counter+1             */
+        emit(AsmMakeStrImm32(s[2], s[0], 0x00)); /* counter++                  */
+        emit(AsmMakeAddImm64(s[0], s[0], 0x10)); /* s0 = region+0x10 (buffers) */
+        emit(AsmMakeAddShiftedReg64(bufReg, s[0], s[1], 10)); /* Xbuf = s0 + counter*0x400  */
+        emit(AsmMakeStrImm64(bufReg, busReg, bufOff)); /* bus[freqBuf] = Xbuf        */
+        emit(AsmMakeB(tramp + n * 4, realFn)); /* tail-call the real function */
+
+        PATCH_OFFSET(call, AsmMakeBl(reinterpret_cast<uintptr_t>(call), tramp));
+        const uintptr_t base = reinterpret_cast<uintptr_t>(nsoStart);
+        LOGGING("BusFreqReloc: call@+%lx -> tramp@+%lx realfn@+%lx (bus=x%u buf=x%u off=0x%x scratch=x%u,x%u,x%u)",
+                reinterpret_cast<uintptr_t>(call) - base, tramp - base, realFn - base, busReg, bufReg, bufOff, s[0], s[1], s[2]);
+        R_SUCCEED();
+    }
+
+    /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
+    Result ForceVerbosity(u32 *ptr) {
+        PATCH_OFFSET(&ptr[0], AsmMakeMovzW(0, static_cast<u16>(HOC_PCV_FORCE_VERBOSITY))); /* movz w0,#level */
+        PATCH_OFFSET(&ptr[1], RetIns);                                                     /* ret            */
+        R_SUCCEED();
     }
 
     /* Widen InitDram for a >32-entry EMC DVFS list. Freq array can be dropped to free 264 bytes, relocate the Soc LUT to that space */
     Result EmcSocLutReloc(u32 *ptr) {
-        R_UNLESS(EmcSocLutPatternFn(ptr), ldr::ResultInvalidEmcSocLut()); /* str lut,[rail+0x120] ; str n,[rail+0x154] */
         constexpr u32 Window = 48;
 
         u32 *freqStore = ScanAssembly(ptr - Window, Window, EmcSocFreqStoreAsm, asm_compare_no_rd); /* str x?,[x8,#0x18] */
@@ -1473,10 +1477,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         nsoStart = reinterpret_cast<u32 *>(mapped_nso);
 
         g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
+        g_nso_size    = nso_size;
         g_cave_cursor = g_pcv_cave;   /* start the .text-cave bump allocator (0 if unavailable) */
-
-        NvLogUartRedirect(mapped_nso, nso_size);
-        ForceVerbosity();
 
         MtcGenerateFreqTables();
 
@@ -1506,8 +1508,12 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "EMC SoC LUT",       &EmcSocLutReloc,        1,          &EmcSocLutPatternFn         },
             { "EMC Rate List",     &EmcRateListLimit,      0,          &EmcRateListPatternFn       },
             { "EMC Rate Sess",     &EmcRateSessLimit,      1,          &EmcRateSessPatternFn       },
+            { "Bus Freq Reloc",    &BusFreqReloc,          1,          &BusFreqRelocPatternFn                 },
             { "SOC Volt Asm",      &SocVoltAsm,            1,          &SocVoltPatternFn           },
             { "SOC Volt Limit",    &SocVoltLimit,          1, nullptr,  SocVoltLimitOfficial       },
+            /* Debugging patches */
+            { "NvLog Redirect",    &NvLogUartRedirect,     1,          &NvLogVsnprintfPatternFn,   0, 0, true },
+            { "Force Verbosity",   &ForceVerbosity,        3,          &ForceVerbosityPatternFn,   0, 0, true },
         };
 
         for (uintptr_t ptr = mapped_nso; ptr <= mapped_nso + nso_size - sizeof(MarikoMtcTable); ptr += sizeof(u32)) {

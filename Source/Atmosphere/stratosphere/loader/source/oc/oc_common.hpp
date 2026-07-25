@@ -62,11 +62,14 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidEmcDvfsCount,      1019);
     R_DEFINE_ERROR_RESULT(InvalidEmcSocLut,         1020);
     R_DEFINE_ERROR_RESULT(InvalidEmcRateList,       1021);
+    R_DEFINE_ERROR_RESULT(InvalidNvLogRedirect,     1022);
+    R_DEFINE_ERROR_RESULT(InvalidBusFreqReloc,      1023);
 }
 
 namespace ams::ldr::hoc {
-    /* Extra pcv .bss for 64LUT */
-    constexpr size_t HocPcvScratchSize = 0x1000;
+    /* Extra pcv .bss */
+    constexpr size_t HocPcvScratchSize    = 0x2000;
+    constexpr size_t HocBusFreqBufOffset  = 0x1000; /* start of the SOC bus region */
 
     template<typename Pointer>
     struct PatcherEntry {
@@ -79,6 +82,7 @@ namespace ams::ldr::hoc {
         patternFn   pattern_search_fn = nullptr;
         Pointer     value_search;
         size_t      patched_count = 0;
+        bool        optional = false;
 
         Result Apply(Pointer *ptr) {
             Result res = patcher_fn(ptr);
@@ -109,7 +113,7 @@ namespace ams::ldr::hoc {
         }
 
         Result CheckResult() {
-            R_UNLESS(patched_count > 0, ldr::ResultUnsuccessfulPatcher());
+            R_UNLESS(optional || patched_count > 0, ldr::ResultUnsuccessfulPatcher());
 
             if (maximum_patched_count) {
                 R_UNLESS(patched_count <= maximum_patched_count, ldr::ResultUnsuccessfulPatcher());

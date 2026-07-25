@@ -371,6 +371,59 @@ namespace ams::ldr::hoc::pcv::mariko {
         return EmcRateSessFindClamp(ptr, nullptr, nullptr, nullptr);
     }
 
+    inline bool BusFreqRelocPatternFn(u32 *ptr) {
+        if (g_pcv_scratch == 0 || g_pcv_cave == 0) {
+            return false;
+        }
+        if (reinterpret_cast<uintptr_t>(ptr + 4) > g_pcv_cave) {   /* the call site lives in .text */
+            return false;
+        }
+        if (!(AsmIsLdrImm64(ptr[0]) && AsmGetLdStImm64Off(ptr[0]) == 0x10)) return false; /* ldr Xbuf,[Xbus,#0x10] */
+        if (!(AsmIsAddImm64(ptr[1]) && AsmGetImm12(ptr[1])       == 0x18)) return false; /* add Xcnt,Xbus,#0x18   */
+        if (!(AsmIsStrImm64(ptr[2]) && AsmGetLdStImm64Off(ptr[2]) == 0x50)) return false; /* str Xrail,[Xbus,#0x50]*/
+        if (!AsmIsBl(ptr[3]))                                              return false; /* bl GetDvfsRailUnique  */
+        const u32 bus = AsmGetRn(ptr[0]);
+        return AsmGetRn(ptr[1]) == bus && AsmGetRn(ptr[2]) == bus;
+    }
+
+    inline bool ForceVerbosityPatternFn(u32 *ptr) {
+        if (HOC_PCV_FORCE_VERBOSITY == 0 || g_pcv_cave == 0) {
+            return false;
+        }
+        if (reinterpret_cast<uintptr_t>(ptr + 11) > g_pcv_cave) {   /* .text only */
+            return false;
+        }
+        if (ptr[0] != 0xA9BE7BFDu || ptr[1] != 0xF9000BF3u || ptr[2] != 0x910003FDu) return false; /* stp/str/mov x29,sp */
+        if (!(AsmIsAddImm64(ptr[3]) && asm_get_rd(ptr[3]) == 0  && AsmGetRn(ptr[3]) == 29)) return false; /* add x0,x29,#imm  */
+        if (!(AsmIsAddImm64(ptr[4]) && asm_get_rd(ptr[4]) == 19 && AsmGetRn(ptr[4]) == 29)) return false; /* add x19,x29,#imm */
+        if (AsmGetImm12(ptr[3]) != AsmGetImm12(ptr[4]) || !AsmIsBl(ptr[5])) return false;
+        for (u32 j = 6; j <= 10; ++j) {
+            if (ptr[j] == 0x7100001Fu) { /* cmp w0,#0 */
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /* vsnprintf(buf,size,fmt,va_list) prologue */
+    inline constexpr u32 NvLogVsnSig[] = { 0xD10483FFu, 0xA9107BFDu, 0xF9008BFCu, 0x910403FDu, 0xF100003Fu };
+
+    inline bool NvLogVsnprintfPatternFn(u32 *ptr) {
+        if (HOC_UART_LOG == 0 || g_pcv_cave == 0) {
+            return false;
+        }
+        if (reinterpret_cast<uintptr_t>(ptr + std::size(NvLogVsnSig)) > g_pcv_cave) {   /* must sit in .text */
+            return false;
+        }
+        for (size_t k = 0; k < std::size(NvLogVsnSig); ++k) {
+            if (ptr[k] != NvLogVsnSig[k]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     void Patch(uintptr_t mapped_nso, size_t nso_size);
 
 }
