@@ -567,6 +567,11 @@ namespace ams::ldr {
                 out->nso_size[i] = std::max(out->nso_size[i], rw_end);
                 out->nso_size[i] += static_cast<size_t>(ctx.headers[i].bss_size);
 
+                /* Reserve hook arena memory past pcv's bss. */
+                if (g_is_pcv && i == ctx.main_nso_idx) {
+                    out->nso_size[i] = util::AlignUp(out->nso_size[i], os::MemoryPageSize) + hoc::pcv::PcvDataArenaSize;
+                }
+
                 const size_t aligned_up_size = util::AlignUp(out->nso_size[i], os::MemoryPageSize) & (AutoLoadModuleSizeMax - 1);
                 R_UNLESS(out->nso_size[i] <= aligned_up_size, ldr::ResultInvalidNso());
                 R_UNLESS(aligned_up_size > 0,                 ldr::ResultInvalidNso());
@@ -691,6 +696,9 @@ namespace ams::ldr {
         Result LoadAutoLoadModule(os::NativeHandle process_handle, fs::FileHandle file, const NsoHeader *nso_header, uintptr_t nso_address, size_t nso_size, size_t map_size) {
             const bool is_zstd = (nso_header->flags & NsoHeader::Flag_UseZbicCompression) != 0;
 
+            const size_t module_size = static_cast<size_t>(nso_header->rw_dst_offset) + util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize);
+            const size_t arena_size  = (nso_size > module_size) ? (nso_size - module_size) : 0;
+
             /* Map and read data from file. */
             {
                 /* Map the process memory. */
@@ -730,7 +738,15 @@ namespace ams::ldr {
 
                 /* Apply PCV and PTM patches */
                 if (g_is_pcv) {
-                    hoc::pcv::Patch(map_address, nso_size);
+                    const size_t text_end  = static_cast<size_t>(nso_header->text_size);
+                    const size_t rx_end    = util::AlignUp(text_end, os::MemoryPageSize);
+                    const size_t ro_start  = static_cast<size_t>(nso_header->ro_dst_offset);
+                    const size_t cave_end  = (rx_end < ro_start) ? rx_end : ro_start;
+                    const uintptr_t cave   = map_address + text_end;
+                    const size_t cave_size = (cave_end > text_end) ? (cave_end - text_end) : 0;
+
+                    /* module_size is used rather than nso_size to exclude the extra data section. */
+                    hoc::pcv::Patch(map_address, module_size, cave, cave_size, nso_address, arena_size ? (map_address + module_size) : 0);
                 }
 
                 if (g_is_ptm) {
@@ -741,7 +757,7 @@ namespace ams::ldr {
             /* Set permissions. */
             const size_t text_size = util::AlignUp(nso_header->text_size, os::MemoryPageSize);
             const size_t ro_size   = util::AlignUp(nso_header->ro_size, os::MemoryPageSize);
-            const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize);
+            const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize) + arena_size;
             if (text_size) {
                 const bool prevent_code_reads = (nso_header->flags & NsoHeader::Flag_PreventCodeReads);
                 R_TRY(os::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, prevent_code_reads ? os::MemoryPermission_ExecuteOnly : os::MemoryPermission_ReadExecute));
@@ -770,8 +786,7 @@ namespace ams::ldr {
                 const bool is_zstd    = (ctx.headers[i].flags & NsoHeader::Flag_UseZbicCompression) != 0;
                 const size_t map_size = is_zstd ? (total_end - process_info->nso_address[i]) : process_info->nso_size[i];
 
-                R_TRY(LoadAutoLoadModule(process_info->process_handle, file, ctx.headers + i,
-                      process_info->nso_address[i], process_info->nso_size[i], map_size));
+                R_TRY(LoadAutoLoadModule(process_info->process_handle, file, ctx.headers + i, process_info->nso_address[i], process_info->nso_size[i], map_size));
             }
 
             /* Load arguments, if present. */

@@ -31,28 +31,36 @@
     *(offset) = value;
 
 namespace ams::ldr {
-    R_DEFINE_ERROR_RESULT(OutOfRange,               1000);
-    R_DEFINE_ERROR_RESULT(InvalidMemPllmEntry,      1001);
-    R_DEFINE_ERROR_RESULT(InvalidMtcMagic,          1002);
-    R_DEFINE_ERROR_RESULT(InvalidMtcTable,          1003);
-    R_DEFINE_ERROR_RESULT(InvalidDvbTable,          1004);
-    R_DEFINE_ERROR_RESULT(InvalidCpuFreqVddEntry,   1005);
-    R_DEFINE_ERROR_RESULT(InvalidCpuVoltDfllEntry,  1006);
-    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,           1007);
-    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,        1008);
-    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,           1009);
-    R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern, 1010);
-    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,       1011);
-    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,    1012);
-    R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1013);
-    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1014);
-    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,       1015);
-    R_DEFINE_ERROR_RESULT(InvalidMtcTablePattern,   1016);
-    R_DEFINE_ERROR_RESULT(InvalidSocVoltPattern,    1017);
-    R_DEFINE_ERROR_RESULT(InvalidSocVoltLimit,      1018);
+    R_DEFINE_ERROR_RESULT(OutOfRange,                1000);
+    R_DEFINE_ERROR_RESULT(InvalidMemPllmEntry,       1001);
+    R_DEFINE_ERROR_RESULT(InvalidMtcMagic,           1002);
+    R_DEFINE_ERROR_RESULT(InvalidMtcTable,           1003);
+    R_DEFINE_ERROR_RESULT(InvalidDvbTable,           1004);
+    R_DEFINE_ERROR_RESULT(InvalidCpuFreqVddEntry,    1005);
+    R_DEFINE_ERROR_RESULT(InvalidCpuVoltDfllEntry,   1006);
+    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,            1007);
+    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,         1008);
+    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,            1009);
+    R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern,  1010);
+    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,        1011);
+    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,     1012);
+    R_DEFINE_ERROR_RESULT(UninitializedPatcher,      1013);
+    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,       1014);
+    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,        1015);
+    R_DEFINE_ERROR_RESULT(InvalidMtcTablePattern,    1016);
+    R_DEFINE_ERROR_RESULT(InvalidSocVoltPattern,     1017);
+    R_DEFINE_ERROR_RESULT(InvalidSocVoltLimit,       1018);
+    R_DEFINE_ERROR_RESULT(HookArenaOutOfMemory,      1019);
+    R_DEFINE_ERROR_RESULT(HookPayloadTooLarge,       1020);
+    R_DEFINE_ERROR_RESULT(HookRelocationUnsupported, 1021);
+    R_DEFINE_ERROR_RESULT(HookSiteInvalid,           1022);
+    R_DEFINE_ERROR_RESULT(HookPayloadEscapes,        1023);
+    R_DEFINE_ERROR_RESULT(HookDataOutOfMemory,       1024);
+    R_DEFINE_ERROR_RESULT(HookUnavailable,           1025);
 }
 
 namespace ams::ldr::hoc {
+
     template<typename Pointer>
     struct PatcherEntry {
         using patternFn = bool(*)(Pointer *ptr);

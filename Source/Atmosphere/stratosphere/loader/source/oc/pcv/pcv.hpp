@@ -202,6 +202,6 @@ namespace ams::ldr::hoc::pcv {
     Result MemVoltHandler(u32 *ptr); // Used for Erista MEM Vdd2 + EMC Vddq or Mariko MEM Vdd2
 
     void SafetyCheck();
-    void Patch(uintptr_t mapped_nso, size_t nso_size);
+    void Patch(uintptr_t mapped_nso, size_t nso_size, uintptr_t cave, size_t cave_size, uintptr_t nso_address, uintptr_t data_arena);
 
 }
