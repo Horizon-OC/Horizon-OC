@@ -33,6 +33,7 @@
 #endif
 
 #if defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
+
     #if defined(HOC_IRAM_LOG)
         #define LOGGING(...) Log(__VA_ARGS__)
     #elif HOC_UART_LOG
