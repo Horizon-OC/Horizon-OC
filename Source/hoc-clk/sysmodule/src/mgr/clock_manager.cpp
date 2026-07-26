@@ -460,7 +460,10 @@ namespace clockManager {
         u32 nearestFreq = GetCurrentNearestFrequency(HocClkModule_MEM);
 
         if (targetRamHz != nearestFreq) {
-            ApplyGpuDvfs(targetRamHz);
+            if (config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
+                ApplyGpuDvfs(targetRamHz);
+            }
+
             board::SetHz(HocClkModule_MEM, targetRamHz);
         }
     }
