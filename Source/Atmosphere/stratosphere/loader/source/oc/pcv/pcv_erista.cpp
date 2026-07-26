@@ -27,9 +27,24 @@
 
 namespace ams::ldr::hoc::pcv::erista {
 
-    std::vector<u32> newEmcList;
-    u32 *nsoStart;
-    u32 *nsoEnd;
+    struct HookPayloadData {
+        struct {
+            EristaMtcTable *mtcTable;
+            u32             mtcCount;
+        } mtcTableAsm;
+    };
+    DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, e_HookPayloadData);
+
+    namespace {
+        std::vector<u32> newEmcList;
+        u32 *nsoStart;
+        u32 *nsoEnd;
+
+        struct {
+            u32            *getEristaMtcTableFnSite = nullptr;
+            EristaMtcTable *mtcTable                = nullptr;
+        } getMtcTableCache;
+    }
 
     Result CpuVoltDvfs(u32 *ptr) {
         if (std::memcmp(ptr + 5, cpuVoltDvfsPattern, sizeof(cpuVoltDvfsPattern))) {
@@ -548,23 +563,19 @@ namespace ams::ldr::hoc::pcv::erista {
         constexpr u32 StartAdjustment = offsetof(EristaMtcTable, rate_khz) + sizeof(EristaMtcTable) * (erista::MtcTableCountDefault - 1);
         u8 *startPtr = reinterpret_cast<u8 *>(ptr) - StartAdjustment;
 
-        const uintptr_t usedSlot = reinterpret_cast<uintptr_t>(startPtr) + mtcOffset;
-        EristaMtcTable *table = reinterpret_cast<EristaMtcTable *>(usedSlot);
+        EristaMtcTable *table = reinterpret_cast<EristaMtcTable *>(startPtr + mtcOffset);
+
         R_TRY(MtcValidateAllTables(table, EmcListDefault, EmcListSizeDefault));
 
         PrepareMtcMemoryRegion(startPtr, table);
         table = reinterpret_cast<EristaMtcTable *>(startPtr);
 
-        /* We must do this as the NLE tables don't have enough space past them for our extended ones */
-        if (usedSlot != reinterpret_cast<uintptr_t>(startPtr)) {
-            if (RepointEristaEmcTablePtr(usedSlot, reinterpret_cast<uintptr_t>(startPtr)) == 0) {
-                AbortInvalidMtc("Failed to repoint emc table");
-            }
-        }
-
         if (R_FAILED(MtcValidateAllTables(table, EmcListDefault, EmcListSizeDefault))) {
             AbortInvalidMtc("Failed mtc validation");
         }
+
+        /* Cache the table for hooks. */
+        getMtcTableCache.mtcTable = table;
 
         if (C.eristaEmcMaxClock <= EmcClkOSLimit) {
             R_SKIP();
@@ -620,50 +631,74 @@ namespace ams::ldr::hoc::pcv::erista {
     //     R_SUCCEED();
     // }
 
+    HOOK_PAYLOAD_FN EristaMtcTable *GetEristaMtcTableImpl(u32 *count) {
+        const HookPayloadData *data = HOOK_PAYLOAD_PTR(HookPayloadData, e_HookPayloadData);
 
+        *count = data->mtcTableAsm.mtcCount;
+        return data->mtcTableAsm.mtcTable;
+    }
+
+    bool foundMtcTablePattern = false;
     Result MemMtcTableAsm(u32 *ptr) {
+        R_UNLESS(!foundMtcTablePattern, ldr::ResultInvalidMtcTablePattern());
+
         /* This is a mess but the compiler made this painful to patch so we must do it this way */
-        constexpr s32 GoodAdrpOffset = -1;
-        constexpr s32 GoodMovOffset  = -7;
-        constexpr s32 GoodBlOffset       = 1;
+        constexpr u32 AddpOffset = 1;
+        constexpr u32 MovOffset  = 7;
+        constexpr u32 BlOffset   = 5;
         constexpr u32 MtcGoodBlOpcode = 0x97fe6cfc;
 
-        constexpr u32 MtcBadBlOpcode0 = 0x97ffae64; // bl nn::pcv::GetHardwareType
-        constexpr u32 MtcBadBlOpcode1 = 0x940036d5; // bl strcmp
-        constexpr u32 MtcBadAdrpAsm = 0xd00000a1; // adrp x1, s_ModuleResetStatus_
+        // constexpr u32 MtcBadBlOpcode0 = 0x97ffae64; // bl nn::pcv::GetHardwareType
+        // constexpr u32 MtcBadBlOpcode1 = 0x940036d5; // bl strcmp
+        // constexpr u32 MtcBadAdrpAsm = 0xd00000a1; // adrp x1, s_ModuleResetStatus_
 
-        constexpr s32 MtcBadBlOffset0 = 2;
-        constexpr s32 MtcBadBlOffset1 = -1;
-        constexpr s32 MtcBadAdrpOffset = 1;
+        // constexpr s32 MtcBadBlOffset0 = 2;
+        // constexpr s32 MtcBadBlOffset1 = -1;
+        // constexpr s32 MtcBadAdrpOffset = 1;
 
         /* Ensure we don't dereference memory before nso start. */
-        R_UNLESS(ptr + GoodMovOffset >= nsoStart, ldr::ResultInvalidMtcTablePattern());
+        R_UNLESS(ptr - MovOffset >= nsoStart, ldr::ResultInvalidMtcTablePattern());
 
-        /* Check for GetHardwareType asm and skip if it is found */
-        /* The pattern will match on the first time, but the location is bad, so it must be skipped */
-        if(AsmCompareAdrpNoImm(*(ptr + MtcBadAdrpOffset), MtcBadAdrpAsm) && AsmBlCompareOpcodeOnly(*(ptr + MtcBadBlOffset0), MtcBadBlOpcode0) && AsmBlCompareOpcodeOnly(*(ptr + MtcBadBlOffset1), MtcBadBlOpcode1)) {
-            R_SKIP();
-        }
-
-        /* We don't check for matching register because both registers must be x0 in order to pass the previous checks. */
-        /* The correct instructions will always be x0 since the mtcTable pointer is returned. */
-        u32 adrp = *(ptr + GoodAdrpOffset);
+        u32 adrp = *(ptr - AddpOffset);
         R_UNLESS(AsmCompareAdrpNoImm(adrp, MtcAdrpAsm), ldr::ResultInvalidMtcTablePattern());
 
-
         /* Check for the branch instruction above the cbz to ensure we are patching the right location*/
-        u32 bl = *(ptr + GoodBlOffset);
+        u32 bl = *(ptr - BlOffset);
         R_UNLESS(AsmBlCompareOpcodeOnly(bl, MtcGoodBlOpcode), ldr::ResultInvalidMtcTablePattern());
 
-
         /* Check for the mov that actually sets the mtc table count. */
-        u32 mov = *(ptr + GoodMovOffset);
+        u32 mov = *(ptr - MovOffset);
         R_UNLESS(asm_compare_no_rd(mov, MtcMovAsm), ldr::ResultInvalidMtcTablePattern());
+
+        foundMtcTablePattern = true;
+        constexpr u32 PrologueWindow = 140;
+        u32 *functionPrologue = FindFnPrologue(ptr, PrologueWindow, nsoStart);
+        R_UNLESS(functionPrologue != nullptr, ldr::ResultInvalidMtcTablePattern());
+        getMtcTableCache.getEristaMtcTableFnSite = functionPrologue;
+        R_SUCCEED();
 
         /* Patch out the count of the mov to our custom mtc table amount*/
         u32 movCountPatch = asm_set_rd(asm_set_imm16(MtcMovAsm, newEmcList.size()), asm_get_rd(mov));
 
-        PATCH_OFFSET(ptr + GoodMovOffset, movCountPatch);
+        PATCH_OFFSET(ptr + MovOffset, movCountPatch);
+
+        R_SUCCEED();
+    }
+
+    Result InstallHooks() {
+        R_TRY(Hooks().CheckEnabled());
+
+        R_TRY(Hooks().CopyPayload());
+
+        R_UNLESS(getMtcTableCache.getEristaMtcTableFnSite != nullptr && getMtcTableCache.mtcTable != nullptr, ldr::ResultInvalidMtcTablePattern());
+
+        /* Copy the data to the payload. */
+        auto *data = Hooks().BindData(e_HookPayloadData);
+        R_UNLESS(data != nullptr, ldr::ResultHookDataOutOfMemory());
+
+        data->mtcTableAsm.mtcTable = reinterpret_cast<EristaMtcTable *>(Hooks().ToVa(getMtcTableCache.mtcTable));
+        data->mtcTableAsm.mtcCount = newEmcList.size();
+        R_TRY(INSTALL_IMPL_HOOK(getMtcTableCache.getEristaMtcTableFnSite, GetEristaMtcTableImpl));
 
         R_SUCCEED();
     }
@@ -706,11 +741,14 @@ namespace ams::ldr::hoc::pcv::erista {
         for (auto &entry : patches) {
             LOGGING("%s Count: %zu\n", entry.description, entry.patched_count);
             if (R_FAILED(entry.CheckResult())) {
-                // ViewLog();
                 panic::SmcError(panic::Patch);
 
                 CRASH(entry.description);
             }
+        }
+
+        if (R_FAILED(InstallHooks())) {
+            panic::SmcError(panic::Patch);
         }
     }
 

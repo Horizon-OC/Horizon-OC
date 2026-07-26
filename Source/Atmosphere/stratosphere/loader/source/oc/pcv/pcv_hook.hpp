@@ -68,8 +68,8 @@ namespace ams::ldr::hoc::pcv {
     inline u32 EncodeBL(uintptr_t site_va, uintptr_t target_va) { return EncodeRelBranch(0x94000000u, site_va, target_va); }
 
     inline u32 EncodePairSp(bool load, u32 rt1, u32 rt2, s32 imm) {
-        const u32 base  = load ? 0xA9400000u : 0xA9000000u;
-        const u32 imm7  = static_cast<u32>((imm / 8) & 0x7F);
+        const u32 base = load ? 0xA9400000u : 0xA9000000u;
+        const u32 imm7 = static_cast<u32>((imm / 8) & 0x7F);
         return base | (imm7 << 15) | (rt2 << 10) | (31u << 5) | rt1;
     }
 

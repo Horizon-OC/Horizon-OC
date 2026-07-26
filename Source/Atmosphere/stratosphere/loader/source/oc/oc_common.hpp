@@ -60,7 +60,6 @@ namespace ams::ldr {
 }
 
 namespace ams::ldr::hoc {
-
     template<typename Pointer>
     struct PatcherEntry {
         using patternFn = bool(*)(Pointer *ptr);

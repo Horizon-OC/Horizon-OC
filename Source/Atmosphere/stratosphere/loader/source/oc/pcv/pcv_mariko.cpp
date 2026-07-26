@@ -1175,7 +1175,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
 
         for (auto &entry : patches) {
-            LOGGING("%s Count: %zu", entry.description, entry.patched_count);
+            LOGGING("%s Count: %zu\n", entry.description, entry.patched_count);
             if (R_FAILED(entry.CheckResult())) {
                 panic::SmcError(panic::Patch);
 
