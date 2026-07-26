@@ -636,7 +636,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         return entry;
     }
 
-    #ifdef HOC_UART_LOG
+    #if HOC_UART_LOG
     /* Redirect pcv's NvLog() calls to UART */
     Result NvLogUartRedirect(u32 *ptr) {
         const uintptr_t mapped_nso     = reinterpret_cast<uintptr_t>(nsoStart);
@@ -803,7 +803,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_SUCCEED();
     }
 
-    #ifdef HOC_UART_LOG
+    #if HOC_UART_LOG
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
     Result ForceVerbosity(u32 *ptr) {
         PATCH_OFFSET(&ptr[0], AsmMakeMovzW(0, static_cast<u16>(HOC_PCV_FORCE_VERBOSITY))); /* movz w0,#level */
@@ -1517,7 +1517,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "SOC Volt Asm",      &SocVoltAsm,            1,          &SocVoltPatternFn           },
             { "SOC Volt Limit",    &SocVoltLimit,          1, nullptr,  SocVoltLimitOfficial       },
             /* Debugging patches */
-            #ifdef HOC_UART_LOG
+            #if HOC_UART_LOG
             { "NvLog Redirect",    &NvLogUartRedirect,     1,          &NvLogVsnprintfPatternFn,   0, 0, true },
             { "Force Verbosity",   &ForceVerbosity,        3,          &ForceVerbosityPatternFn,   0, 0, true },
             #endif

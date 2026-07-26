@@ -70,7 +70,7 @@ namespace ams::ldr::hoc {
         return rc;
     }
 
-    #ifdef HOC_UART_LOG
+    #if HOC_UART_LOG
     /* Remove this? */
     void UartLog(const char *fmt, ...) {
         char line[256];

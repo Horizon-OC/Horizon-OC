@@ -28,18 +28,17 @@
 #include "customize.hpp"
 #include "oc_log.hpp"
 
-#if ((!defined(HOC_UART_LOG)) && (defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)))
+#if (!HOC_UART_LOG) && (defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING))
     #define HOC_IRAM_LOG 1
-#else
-    #define HOC_IRAM_LOG 0
 #endif
 
 #if defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
     #if defined(HOC_IRAM_LOG)
         #define LOGGING(...) Log(__VA_ARGS__)
-    #else if defined(HOC_UART_LOG)
+    #elif HOC_UART_LOG
         #define LOGGING(...) AMS_LOG(__VA_ARGS__)
     #endif
+
 #else
     #define LOGGING(...) ((void)0)
 #endif
