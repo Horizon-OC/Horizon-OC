@@ -706,7 +706,6 @@ namespace ams::ldr::hoc::pcv::erista {
         for (auto &entry : patches) {
             LOGGING("%s Count: %zu\n", entry.description, entry.patched_count);
             if (R_FAILED(entry.CheckResult())) {
-                // ViewLog();
                 panic::SmcError(panic::Patch);
 
                 CRASH(entry.description);

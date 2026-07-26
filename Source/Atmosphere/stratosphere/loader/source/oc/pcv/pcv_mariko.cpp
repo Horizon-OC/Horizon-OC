@@ -636,6 +636,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         return entry;
     }
 
+    #ifdef HOC_UART_LOG
     /* Redirect pcv's NvLog() calls to UART */
     Result NvLogUartRedirect(u32 *ptr) {
         const uintptr_t mapped_nso     = reinterpret_cast<uintptr_t>(nsoStart);
@@ -756,6 +757,7 @@ namespace ams::ldr::hoc::pcv::mariko {
                 nvlog_addr - mapped_nso, vsnprintf_addr - mapped_nso, helper - mapped_nso, n, patchedSites);
         R_SUCCEED();
     }
+    #endif
 
     /* Relocate C2/C3Bus to avoid issues*/
     Result BusFreqReloc(u32 *ptr) {
@@ -795,17 +797,20 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         PATCH_OFFSET(call, AsmMakeBl(reinterpret_cast<uintptr_t>(call), tramp));
         const uintptr_t base = reinterpret_cast<uintptr_t>(nsoStart);
+        (void) base;
         LOGGING("BusFreqReloc: call@+%lx -> tramp@+%lx realfn@+%lx (bus=x%u buf=x%u off=0x%x scratch=x%u,x%u,x%u)",
                 reinterpret_cast<uintptr_t>(call) - base, tramp - base, realFn - base, busReg, bufReg, bufOff, s[0], s[1], s[2]);
         R_SUCCEED();
     }
 
+    #ifdef HOC_UART_LOG
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
     Result ForceVerbosity(u32 *ptr) {
         PATCH_OFFSET(&ptr[0], AsmMakeMovzW(0, static_cast<u16>(HOC_PCV_FORCE_VERBOSITY))); /* movz w0,#level */
         PATCH_OFFSET(&ptr[1], RetIns);                                                     /* ret            */
         R_SUCCEED();
     }
+    #endif
 
     /* Widen InitDram for a >32-entry EMC DVFS list. Freq array can be dropped to free 264 bytes, relocate the Soc LUT to that space */
     Result EmcSocLutReloc(u32 *ptr) {
@@ -1197,7 +1202,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         const size_t dvbCount = std::min(newEmcList.size(), DvbTableCapacity);
         DvbEntry emcDvbTableOc[DvbTableCapacity] = {};
-        
+
         u32 bracketIndex = 0;
         for (size_t i = 0; i < dvbCount; ++i) {
             const u32 freq = (i == dvbCount - 1) ? static_cast<u32>(newEmcList.back()) : newEmcList[i];
@@ -1508,12 +1513,14 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "EMC SoC LUT",       &EmcSocLutReloc,        1,          &EmcSocLutPatternFn         },
             { "EMC Rate List",     &EmcRateListLimit,      0,          &EmcRateListPatternFn       },
             { "EMC Rate Sess",     &EmcRateSessLimit,      1,          &EmcRateSessPatternFn       },
-            { "Bus Freq Reloc",    &BusFreqReloc,          1,          &BusFreqRelocPatternFn                 },
+            { "Bus Freq Reloc",    &BusFreqReloc,          1,          &BusFreqRelocPatternFn      },
             { "SOC Volt Asm",      &SocVoltAsm,            1,          &SocVoltPatternFn           },
             { "SOC Volt Limit",    &SocVoltLimit,          1, nullptr,  SocVoltLimitOfficial       },
             /* Debugging patches */
+            #ifdef HOC_UART_LOG
             { "NvLog Redirect",    &NvLogUartRedirect,     1,          &NvLogVsnprintfPatternFn,   0, 0, true },
             { "Force Verbosity",   &ForceVerbosity,        3,          &ForceVerbosityPatternFn,   0, 0, true },
+            #endif
         };
 
         for (uintptr_t ptr = mapped_nso; ptr <= mapped_nso + nso_size - sizeof(MarikoMtcTable); ptr += sizeof(u32)) {
