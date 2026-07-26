@@ -40,37 +40,40 @@
     *(offset) = value;
 
 namespace ams::ldr {
-    R_DEFINE_ERROR_RESULT(OutOfRange,               1000);
-    R_DEFINE_ERROR_RESULT(InvalidMemPllmEntry,      1001);
-    R_DEFINE_ERROR_RESULT(InvalidMtcMagic,          1002);
-    R_DEFINE_ERROR_RESULT(InvalidMtcTable,          1003);
-    R_DEFINE_ERROR_RESULT(InvalidDvbTable,          1004);
-    R_DEFINE_ERROR_RESULT(InvalidCpuFreqVddEntry,   1005);
-    R_DEFINE_ERROR_RESULT(InvalidCpuVoltDfllEntry,  1006);
-    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,           1007);
-    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,        1008);
-    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,           1009);
-    R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern, 1010);
-    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,       1011);
-    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,    1012);
-    R_DEFINE_ERROR_RESULT(UninitializedPatcher,     1013);
-    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,      1014);
-    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,       1015);
-    R_DEFINE_ERROR_RESULT(InvalidMtcTablePattern,   1016);
-    R_DEFINE_ERROR_RESULT(InvalidSocVoltPattern,    1017);
-    R_DEFINE_ERROR_RESULT(InvalidSocVoltLimit,      1018);
-    R_DEFINE_ERROR_RESULT(InvalidEmcDvfsCount,      1019);
-    R_DEFINE_ERROR_RESULT(InvalidEmcSocLut,         1020);
-    R_DEFINE_ERROR_RESULT(InvalidEmcRateList,       1021);
-    R_DEFINE_ERROR_RESULT(InvalidNvLogRedirect,     1022);
-    R_DEFINE_ERROR_RESULT(InvalidBusFreqReloc,      1023);
+    R_DEFINE_ERROR_RESULT(OutOfRange,                1000);
+    R_DEFINE_ERROR_RESULT(InvalidMemPllmEntry,       1001);
+    R_DEFINE_ERROR_RESULT(InvalidMtcMagic,           1002);
+    R_DEFINE_ERROR_RESULT(InvalidMtcTable,           1003);
+    R_DEFINE_ERROR_RESULT(InvalidDvbTable,           1004);
+    R_DEFINE_ERROR_RESULT(InvalidCpuFreqVddEntry,    1005);
+    R_DEFINE_ERROR_RESULT(InvalidCpuVoltDfllEntry,   1006);
+    R_DEFINE_ERROR_RESULT(InvalidCpuDvfs,            1007);
+    R_DEFINE_ERROR_RESULT(InvalidCpuMinVolt,         1008);
+    R_DEFINE_ERROR_RESULT(InvalidGpuDvfs,            1009);
+    R_DEFINE_ERROR_RESULT(InvalidGpuFreqMaxPattern,  1010);
+    R_DEFINE_ERROR_RESULT(InvalidGpuPllEntry,        1011);
+    R_DEFINE_ERROR_RESULT(InvalidRegulatorEntry,     1012);
+    R_DEFINE_ERROR_RESULT(UninitializedPatcher,      1013);
+    R_DEFINE_ERROR_RESULT(UnsuccessfulPatcher,       1014);
+    R_DEFINE_ERROR_RESULT(SafetyCheckFailure,        1015);
+    R_DEFINE_ERROR_RESULT(InvalidMtcTablePattern,    1016);
+    R_DEFINE_ERROR_RESULT(InvalidSocVoltPattern,     1017);
+    R_DEFINE_ERROR_RESULT(InvalidSocVoltLimit,       1018);
+    R_DEFINE_ERROR_RESULT(InvalidEmcDvfsCount,       1019);
+    R_DEFINE_ERROR_RESULT(InvalidEmcSocLut,          1020);
+    R_DEFINE_ERROR_RESULT(InvalidEmcRateList,        1021);
+    R_DEFINE_ERROR_RESULT(InvalidNvLogRedirect,      1022);
+    R_DEFINE_ERROR_RESULT(InvalidBusFreqReloc,       1023);
+    R_DEFINE_ERROR_RESULT(HookArenaOutOfMemory,      1024);
+    R_DEFINE_ERROR_RESULT(HookPayloadTooLarge,       1025);
+    R_DEFINE_ERROR_RESULT(HookRelocationUnsupported, 1026);
+    R_DEFINE_ERROR_RESULT(HookSiteInvalid,           1027);
+    R_DEFINE_ERROR_RESULT(HookPayloadEscapes,        1028);
+    R_DEFINE_ERROR_RESULT(HookDataOutOfMemory,       1029);
+    R_DEFINE_ERROR_RESULT(HookUnavailable,           1030);
 }
 
 namespace ams::ldr::hoc {
-    /* Extra pcv .bss */
-    constexpr size_t HocPcvScratchSize    = 0x2000;
-    constexpr size_t HocBusFreqBufOffset  = 0x1000; /* start of the SOC bus region */
-
     template<typename Pointer>
     struct PatcherEntry {
         using patternFn = bool(*)(Pointer *ptr);

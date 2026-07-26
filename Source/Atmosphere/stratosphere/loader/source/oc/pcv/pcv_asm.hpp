@@ -294,7 +294,6 @@ namespace ams::ldr::hoc::pcv {
 
         bool secondMatch = (ins2 & StpRegsImmMask) == (cmp2 & StpRegsImmMask);
 
-
         constexpr u32 MovMask = ~((1u << 5) - 1u);
 
         bool thirdMatch = (ins3 & MovMask) == (cmp3 & MovMask);
@@ -367,5 +366,26 @@ namespace ams::ldr::hoc::pcv {
         constexpr u32 ClearImm19 = ~(((1 << 19) - 1) << 5);
         return (ins1 & ClearImm19) == (ins2 & ClearImm19);
     };
+
+    inline bool AsmIsFramePush(u32 ins) {
+        constexpr u32 FramePushMask  = 0xFFC07FFF;
+        constexpr u32 FramePushValue = 0xA9807BFD;
+        return (ins & FramePushMask) == FramePushValue;
+    }
+
+    inline u32 *FindFnPrologue(u32 *ptr, u32 margin, u32 *nsoStart) {
+        for (u32 i = 0; i <= margin; ++i) {
+            u32 *candidate = ptr - i;
+            if (candidate < nsoStart) {
+                break;
+            }
+
+            if (AsmIsFramePush(*candidate)) {
+                return candidate;
+            }
+        }
+
+        return nullptr;
+    }
 
 }

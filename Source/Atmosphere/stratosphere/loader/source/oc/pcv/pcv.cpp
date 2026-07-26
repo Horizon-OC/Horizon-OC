@@ -107,6 +107,7 @@ namespace ams::ldr::hoc::pcv {
         } else {
             marikoCpuDvfsMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(C.marikoCpuDvfsTable)->freq);
         }
+
         u32 eristaGpuDvfsMaxFreq;
         switch (C.eristaGpuUV) {
             case 0:
@@ -176,8 +177,10 @@ namespace ams::ldr::hoc::pcv {
         R_DISCARD(SmcCopyToIram(LoadMagicAddress, &hocMagic, sizeof(hocMagic)));
     }
 
-    void Patch(uintptr_t mapped_nso, size_t nso_size) {
+    void Patch(uintptr_t mapped_nso, size_t nso_size, uintptr_t cave, size_t cave_size, uintptr_t nso_address, uintptr_t data_arena) {
         SafetyCheck();
+
+        Hooks().Initialize(mapped_nso, nso_address, cave, cave_size, data_arena);
 
         bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
         if (isMariko) {
