@@ -43,6 +43,7 @@ namespace ams::ldr::hoc::pcv::erista {
         struct {
             u32            *getEristaMtcTableFnSite = nullptr;
             EristaMtcTable *mtcTable                = nullptr;
+            bool foundMtcTablePattern               = false;
         } getMtcTableCache;
     }
 
@@ -638,49 +639,46 @@ namespace ams::ldr::hoc::pcv::erista {
         return data->mtcTableAsm.mtcTable;
     }
 
-    bool foundMtcTablePattern = false;
     Result MemMtcTableAsm(u32 *ptr) {
-        R_UNLESS(!foundMtcTablePattern, ldr::ResultInvalidMtcTablePattern());
+        /* Return if the pattern was already found. */
+        /* This pattern happens multiple times in this function., we only need to find it once. */
+        R_UNLESS(!getMtcTableCache.foundMtcTablePattern, ldr::ResultInvalidMtcTablePattern());
 
         /* This is a mess but the compiler made this painful to patch so we must do it this way */
-        constexpr u32 AddpOffset = 1;
-        constexpr u32 MovOffset  = 7;
-        constexpr u32 BlOffset   = 5;
-        constexpr u32 MtcGoodBlOpcode = 0x97fe6cfc;
-
-        // constexpr u32 MtcBadBlOpcode0 = 0x97ffae64; // bl nn::pcv::GetHardwareType
-        // constexpr u32 MtcBadBlOpcode1 = 0x940036d5; // bl strcmp
-        // constexpr u32 MtcBadAdrpAsm = 0xd00000a1; // adrp x1, s_ModuleResetStatus_
-
-        // constexpr s32 MtcBadBlOffset0 = 2;
-        // constexpr s32 MtcBadBlOffset1 = -1;
-        // constexpr s32 MtcBadAdrpOffset = 1;
+        constexpr u32 AddrpOffset  = 1;
+        constexpr u32 MovOffset    = 7;
+        constexpr u32 BlOffset     = 5;
+        constexpr u32 MovOffsetOld = 8;
 
         /* Ensure we don't dereference memory before nso start. */
         R_UNLESS(ptr - MovOffset >= nsoStart, ldr::ResultInvalidMtcTablePattern());
 
-        u32 adrp = *(ptr - AddpOffset);
+        u32 adrp = *(ptr - AddrpOffset);
         R_UNLESS(AsmCompareAdrpNoImm(adrp, MtcAdrpAsm), ldr::ResultInvalidMtcTablePattern());
 
         /* Check for the branch instruction above the cbz to ensure we are patching the right location*/
         u32 bl = *(ptr - BlOffset);
-        R_UNLESS(AsmBlCompareOpcodeOnly(bl, MtcGoodBlOpcode), ldr::ResultInvalidMtcTablePattern());
+        R_UNLESS(AsmBlCompareOpcodeOnly(bl, MtcBlIns), ldr::ResultInvalidMtcTablePattern());
 
         /* Check for the mov that actually sets the mtc table count. */
         u32 mov = *(ptr - MovOffset);
-        R_UNLESS(asm_compare_no_rd(mov, MtcMovAsm), ldr::ResultInvalidMtcTablePattern());
+        bool foundMov = false;
+        foundMov = asm_compare_no_rd(mov, MtcMovAsm);
 
-        foundMtcTablePattern = true;
+        if (!foundMov) {
+            mov = *(ptr + MovOffsetOld);
+            /* Check old firmware offset. */
+            foundMov = asm_compare_no_rd(mov, MtcMovAsm);
+        }
+
+        R_UNLESS(foundMov, ldr::ResultInvalidMtcTablePattern());
+
         constexpr u32 PrologueWindow = 140;
         u32 *functionPrologue = FindFnPrologue(ptr, PrologueWindow, nsoStart);
         R_UNLESS(functionPrologue != nullptr, ldr::ResultInvalidMtcTablePattern());
+
         getMtcTableCache.getEristaMtcTableFnSite = functionPrologue;
-        R_SUCCEED();
-
-        /* Patch out the count of the mov to our custom mtc table amount*/
-        u32 movCountPatch = asm_set_rd(asm_set_imm16(MtcMovAsm, newEmcList.size()), asm_get_rd(mov));
-
-        PATCH_OFFSET(ptr + MovOffset, movCountPatch);
+        getMtcTableCache.foundMtcTablePattern = true;
 
         R_SUCCEED();
     }
@@ -720,7 +718,7 @@ namespace ams::ldr::hoc::pcv::erista {
             {"GPU Volt Thermals", &GpuVoltThermals,        1, nullptr,  GpuVminOfficial      },
             {"GPU Freq Table",     GpuFreqCvbTable<false>, 1, nullptr,  GpuCvbDefaultMaxFreq },
             {"GPU Freq Asm",      &GpuFreqMaxAsm,          2,          &GpuMaxClockPatternFn },
-            {"GPU PLL Max", &      GpuFreqPllMax,          1, nullptr,  GpuClkPllMax         },
+            {"GPU PLL Max",       &GpuFreqPllMax,          1, nullptr,  GpuClkPllMax         },
             // {"GPU PLL Limit",  &GpuFreqPllLimit,        4, nullptr,  GpuClkPllLimit       },
             {"MEM Table Asm",     &MemMtcTableAsm,         4,           &MemMtcGetGetTablePatternFn },
             {"MEM Freq Mtc",      &MemFreqMtcTable,        1, nullptr,  EmcClkOSLimit        },
