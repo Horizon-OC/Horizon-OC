@@ -617,23 +617,24 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
     }
 
+    /* hook payload data + buffers */
+    struct HookPayloadData {
+        struct {
+            u64  orig;
+            u32 *buf[2]; /* VAs of the bus freq buffers */
+            u32  counter;
+        } busFreqReloc;
+    };
+    DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
+
+    /* The new replacement buffer */
+    struct BusFreqBuf { u32 e[256]; };
+
     namespace {
         std::vector<u32> newEmcList;
         u32 *nsoStart;
         size_t g_nso_size = 0;
-        uintptr_t g_cave_cursor = 0;
-    }
-
-    static uintptr_t CaveReserve(size_t count) {
-        if (g_pcv_cave == 0 || g_cave_cursor == 0) {
-            return 0;
-        }
-        if (g_cave_cursor + count * sizeof(u32) > g_pcv_cave + g_pcv_cave_size) {
-            return 0;
-        }
-        const uintptr_t entry = g_cave_cursor;
-        g_cave_cursor += count * sizeof(u32);
-        return entry;
+        u32 *g_busInitSite = nullptr;   /* VccSharedBusInit entry, cached by BusFreqReloc */
     }
 
     #if HOC_UART_LOG
@@ -641,7 +642,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result NvLogUartRedirect(u32 *ptr) {
         const uintptr_t mapped_nso     = reinterpret_cast<uintptr_t>(nsoStart);
         const size_t    nso_size       = g_nso_size;
-        const uintptr_t textEnd        = g_pcv_cave; /* .text ends where the cave begins */
+        const uintptr_t textEnd        = Hooks().CaveBase(); /* .text ends where the cave begins */
         const uintptr_t vsnprintf_addr = reinterpret_cast<uintptr_t>(ptr);
 
         /* NvLog via the VDD_SOC log */
@@ -685,10 +686,10 @@ namespace ams::ldr::hoc::pcv::mariko {
             R_THROW(ldr::ResultInvalidNvLogRedirect());
         }
 
-        const uintptr_t helper = CaveReserve(40);
+        const uintptr_t helper = reinterpret_cast<uintptr_t>(Hooks().Reserve(40));
         if (helper == 0) {
-            LOGGING("NvLogRedirect: cave unavailable (cave=%lx size=%lx)",
-                    static_cast<unsigned long>(g_pcv_cave), static_cast<unsigned long>(g_pcv_cave_size));
+            LOGGING("NvLogRedirect: cave unavailable (cave=%lx free=%lx)",
+                    static_cast<unsigned long>(Hooks().CaveBase()), static_cast<unsigned long>(Hooks().CaveFree()));
             R_THROW(ldr::ResultInvalidNvLogRedirect());
         }
         u32 *t = reinterpret_cast<u32 *>(helper);
@@ -726,7 +727,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         emit(RetIns);
 
         /* Redirect the call sites as patching the actual function causes crash */
-        const uintptr_t roStart = g_pcv_cave + g_pcv_cave_size; /* module .rodata start */
+        const uintptr_t roStart = Hooks().CaveBase() + Hooks().CaveSize(); /* module .rodata start */
         size_t patchedSites = 0;
         if (HOC_PCV_NVLOG_PATCH) {
             for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 1) <= textEnd; ++p) {
@@ -759,47 +760,55 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
     #endif
 
-    /* Relocate C2/C3Bus to avoid issues*/
+    /* Relocate C3bus/C2bus freq buffers */
     Result BusFreqReloc(u32 *ptr) {
-        const u32 busReg  = AsmGetRn(ptr[0]); /* ldr Xbuf,[Xbus,#0x10] : bus struct pointer */
-        const u32 bufReg  = asm_get_rd(ptr[0]);  /*                        : freq-buffer arg    */
-        const u32 bufOff  = AsmGetLdStImm64Off(ptr[0]); /*                        : bus->freqBuf offset */
-        const u32 cntReg  = asm_get_rd(ptr[1]); /* add Xcnt,Xbus,#0x18   : arg2 (&count)       */
-        const u32 railReg = asm_get_rd(ptr[2]); /* str Xrail,[Xbus,#0x50]: arg0 (rail)         */
-        u32 *call = ptr + 3; /* the bl to relocate                          */
-        const uintptr_t realFn = AsmBranchTarget(*call, reinterpret_cast<uintptr_t>(call));
-
-        /* Pick 3 scratch registers */
-        u32 s[3], sc = 0;
-        for (u32 r = 9; r <= 15 && sc < 3; ++r) {
-            if (r != busReg && r != bufReg && r != cntReg && r != railReg) {
-                s[sc++] = r;
+        /* Entry shape: sub sp,sp,#imm ; stp x29,x30,[sp,#0x10]. */
+        for (u32 i = 1; i <= 48; ++i) {
+            u32 *p = ptr - i;
+            if (p - 1 < nsoStart) {
+                break;
+            }
+            if (p[0] == 0xA9017BFDu                          /* stp x29,x30,[sp,#0x10] */
+                && (p[-1] & 0xFFC003FFu) == 0xD10003FFu) {    /* sub sp,sp,#imm12        */
+                g_busInitSite = p - 1;
+                R_SUCCEED();
             }
         }
-        R_UNLESS(sc == 3, ldr::ResultInvalidBusFreqReloc());
+        R_THROW(ldr::ResultInvalidBusFreqReloc());
+    }
 
-        const uintptr_t tramp = CaveReserve(9);
-        R_UNLESS(tramp != 0, ldr::ResultInvalidBusFreqReloc());
+    /* Replace VCCBusInit entry with new buffer. */
+    HOOK_PAYLOAD_FN u64 VccSharedBusInitHook(u64 *bus) {
+        HookPayloadData *data = HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
+        const u32 idx = data->busFreqReloc.counter;
+        if (idx < 2) {
+            data->busFreqReloc.counter = idx + 1;
+            bus[2] = reinterpret_cast<u64>(data->busFreqReloc.buf[idx]);   /* bus[0x10] = big buffer */
+        }
+        using OrigFn = u64 (*)(u64 *);
+        u64 result = reinterpret_cast<OrigFn>(data->busFreqReloc.orig)(bus);
+        __asm__ __volatile__("" : "+r"(result));
+        return result;
+    }
 
-        const uintptr_t region = g_pcv_scratch + HocBusFreqBufOffset; /* [0]=counter, +0x10 + i*0x400 = bufs */
-        u32 *t = reinterpret_cast<u32 *>(tramp);
-        size_t n = 0;
-        auto emit = [&](u32 ins) { t[n] = ins; ++n; };
-        emit(AsmMakeAdrp(tramp + n * 4, region, s[0])); /* adrp s0,<region>            */
-        emit(AsmMakeAddImm64(s[0], s[0], region & 0xFFFu)); /* add  s0,s0,#lo              */
-        emit(AsmMakeLdrImm32(s[1], s[0], 0x00)); /* s1 = counter               */
-        emit(AsmMakeAddImm64(s[2], s[1], 1)); /* s2 = counter+1             */
-        emit(AsmMakeStrImm32(s[2], s[0], 0x00)); /* counter++                  */
-        emit(AsmMakeAddImm64(s[0], s[0], 0x10)); /* s0 = region+0x10 (buffers) */
-        emit(AsmMakeAddShiftedReg64(bufReg, s[0], s[1], 10)); /* Xbuf = s0 + counter*0x400  */
-        emit(AsmMakeStrImm64(bufReg, busReg, bufOff)); /* bus[freqBuf] = Xbuf        */
-        emit(AsmMakeB(tramp + n * 4, realFn)); /* tail-call the real function */
+    Result InstallHooks() {
+        R_TRY(Hooks().CheckEnabled());   /* CopyPayload already done at the top of Patch() */
 
-        PATCH_OFFSET(call, AsmMakeBl(reinterpret_cast<uintptr_t>(call), tramp));
-        const uintptr_t base = reinterpret_cast<uintptr_t>(nsoStart);
-        (void) base;
-        LOGGING("BusFreqReloc: call@+%lx -> tramp@+%lx realfn@+%lx (bus=x%u buf=x%u off=0x%x scratch=x%u,x%u,x%u)",
-                reinterpret_cast<uintptr_t>(call) - base, tramp - base, realFn - base, busReg, bufReg, bufOff, s[0], s[1], s[2]);
+        auto *data = Hooks().BindData(m_HookPayloadData);
+        R_UNLESS(data != nullptr, ldr::ResultHookDataOutOfMemory());
+
+        R_UNLESS(g_busInitSite != nullptr, ldr::ResultInvalidBusFreqReloc());
+        for (u32 i = 0; i < 2; ++i) {
+            auto *buf = Hooks().DataAlloc<BusFreqBuf>();
+            R_UNLESS(buf != nullptr, ldr::ResultHookDataOutOfMemory());
+            data->busFreqReloc.buf[i] = reinterpret_cast<u32 *>(Hooks().ToVa(buf));
+        }
+        data->busFreqReloc.counter = 0;
+
+        uintptr_t orig = 0;
+        R_TRY(INSTALL_IMPL_HOOK_ORIG(g_busInitSite, VccSharedBusInitHook, std::addressof(orig)));
+        data->busFreqReloc.orig = orig;
+
         R_SUCCEED();
     }
 
@@ -1479,11 +1488,14 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     void Patch(uintptr_t mapped_nso, size_t nso_size) {
-        nsoStart = reinterpret_cast<u32 *>(mapped_nso);
+        nsoStart   = reinterpret_cast<u32 *>(mapped_nso);
+        g_nso_size = nso_size;
 
-        g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
-        g_nso_size    = nso_size;
-        g_cave_cursor = g_pcv_cave;   /* start the .text-cave bump allocator (0 if unavailable) */
+        /* Copy the hook payload into the cave first, patchers can allocate code past it. */
+        if (R_FAILED(Hooks().CopyPayload())) {
+            panic::SmcError(panic::Patch);
+            CRASH("CopyPayload");
+        }
 
         MtcGenerateFreqTables();
 
@@ -1539,6 +1551,11 @@ namespace ams::ldr::hoc::pcv::mariko {
 
                 CRASH(entry.description);
             }
+        }
+
+        if (R_FAILED(InstallHooks())) {
+            panic::SmcError(panic::Patch);
+            CRASH("InstallHooks");
         }
     }
 

@@ -202,10 +202,6 @@ namespace ams::ldr::hoc::pcv {
     Result MemFreqPllmLimit(u32 *ptr);
     Result MemVoltHandler(u32 *ptr); // Used for Erista MEM Vdd2 + EMC Vddq or Mariko MEM Vdd2
 
-    /* Extra pcv .bss */
-    constexpr size_t HocPcvScratchSize   = 0x2000;
-    constexpr size_t HocBusFreqBufOffset = 0x1000; /* start of the SOC bus region */
-
     void SafetyCheck();
     void Patch(uintptr_t mapped_nso, size_t nso_size, uintptr_t cave, size_t cave_size, uintptr_t nso_address, uintptr_t data_arena);
 
