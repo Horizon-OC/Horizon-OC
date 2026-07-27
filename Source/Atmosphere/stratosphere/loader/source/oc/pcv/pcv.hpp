@@ -137,7 +137,7 @@ namespace ams::ldr::hoc::pcv {
                 default:
                     customize_table = const_cast<cvb_entry_t *>(C.marikoGpuDvfsTableHiOPT);
                     break;
-                }
+            }
         } else {
             switch (C.eristaGpuUV) {
                 case 0:
@@ -152,7 +152,7 @@ namespace ams::ldr::hoc::pcv {
                 default:
                     customize_table = const_cast<cvb_entry_t *>(C.eristaGpuDvfsTable);
                     break;
-                }
+            }
         }
 
         size_t default_entry_count = GetDvfsTableEntryCount(default_table);
