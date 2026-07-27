@@ -229,7 +229,7 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
             return {
                 "The step that RAM clocks take.",
                 "Options:",
-                " - 33MHz - 3 MHz step (ex. 1600, 1633, 1666, 1700, etc.)",
+                " - 33MHz - 33 MHz step (ex. 1600, 1633, 1666, 1700, etc.)",
                 " - 66MHz - 66 MHz step (ex. 1600, 1666, 1733, etc.)",
                 " - 100MHz - 100 MHz step (ex. 1600, 1700, 1800, etc.)",
                 " - 133MHz - 133 MHz step (ex. 1600, 1733, 1866, etc.)",
