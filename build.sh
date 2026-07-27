@@ -64,6 +64,16 @@ echo "CORES: $CORES"
 JOBS="${JOBS:-$CORES}"
 echo "JOBS: $JOBS"
 
+if command -v ccache >/dev/null 2>&1; then
+    export ATMOSPHERE_CCACHE="ccache"
+    export CCACHE_BASEDIR="$ROOT_DIR"
+    export CCACHE_SLOPPINESS="time_macros,include_file_mtime,include_file_ctime,pch_defines,locale"
+    export CCACHE_MAXSIZE="10G"
+    echo "CCACHE: enabled ($(ccache --version | head -n1))"
+else
+    echo "CCACHE: not found, building without it"
+fi
+
 SRC="Source/Atmosphere/stratosphere/loader/"
 
 mkdir -p "build"
@@ -109,6 +119,28 @@ if [ "$NO_EXO" -eq 0 ]; then
     cp -v "$EXO_SRC/secmon_memory_layout.hpp"               "$LIBEXO_DEST/"
 fi
 
+CCACHE_MKS="build/atmosphere/libraries/config/common.mk
+build/atmosphere/libraries/config/templates/stratosphere.mk
+build/atmosphere/libraries/libstratosphere/libstratosphere.mk"
+
+for CCACHE_MK in $CCACHE_MKS; do
+    if ! grep -q "ATMOSPHERE_CCACHE" "$CCACHE_MK"; then
+        echo
+        echo "*** Patching $CCACHE_MK for ccache ***"
+        cat >> "$CCACHE_MK" <<'EOF'
+
+ifneq ($(strip $(ATMOSPHERE_CCACHE)),)
+ifneq ($(firstword $(CC)),$(ATMOSPHERE_CCACHE))
+export CC  := $(ATMOSPHERE_CCACHE) $(CC)
+endif
+ifneq ($(firstword $(CXX)),$(ATMOSPHERE_CCACHE))
+export CXX := $(ATMOSPHERE_CCACHE) $(CXX)
+endif
+endif
+EOF
+    fi
+done
+
 echo
 echo "*** Compiling loader ***"
 cd build/atmosphere/stratosphere/loader || exit 1
@@ -124,6 +156,12 @@ if [ "$NO_EXO" -eq 0 ]; then
     make -j$JOBS
     cd "$ROOT_DIR"
     cp -v build/atmosphere/exosphere/out/nintendo_nx_arm64_armv8a/release/exosphere.bin dist/atmosphere/exosphere.bin
+fi
+
+if [ -n "$ATMOSPHERE_CCACHE" ]; then
+    echo
+    echo "*** ccache stats ***"
+    ccache --show-stats
 fi
 
 cd Source/hoc-clk/
