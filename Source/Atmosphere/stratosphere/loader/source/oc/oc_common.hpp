@@ -21,20 +21,32 @@
 #include <stratosphere.hpp>
 #include <vapours/results/results_common.hpp>
 
-#define HOC_UART_LOG 1
+
+#ifndef HOC_UART_LOG
+#define HOC_UART_LOG 0
+#endif
+
+#if HOC_UART_LOG && !(defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING))
+    #undef HOC_UART_LOG
+    #define HOC_UART_LOG 0
+#endif
+
 #define HOC_PCV_NVLOG_PATCH 1
 #define HOC_PCV_FORCE_VERBOSITY 1
 
 #include "customize.hpp"
 #include "oc_log.hpp"
 
+#define HOC_IRAM_LOG 0
+
 #if (!HOC_UART_LOG) && (defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING))
+    #undef HOC_IRAM_LOG
     #define HOC_IRAM_LOG 1
 #endif
 
 #if defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
 
-    #if defined(HOC_IRAM_LOG)
+    #if HOC_IRAM_LOG
         #define LOGGING(...) Log(__VA_ARGS__)
     #elif HOC_UART_LOG
         #define LOGGING(fmt, ...) AMS_LOG(fmt "\n", ##__VA_ARGS__)

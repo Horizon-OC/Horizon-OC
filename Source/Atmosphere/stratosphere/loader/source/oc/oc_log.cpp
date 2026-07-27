@@ -19,7 +19,7 @@
 
 #include "oc_common.hpp"
 
-#ifdef HOC_IRAM_LOG
+#if HOC_IRAM_LOG
 #include "fatal_handler_bin.h"
 #endif
 
@@ -107,7 +107,7 @@ namespace ams::ldr::hoc {
     #define IRAM_LOG_CTX_ADDR 0x4003C000
     #define IRAM_LOG_MAX_SZ 4096
 
-    #ifdef HOC_IRAM_LOG
+    #if HOC_IRAM_LOG
     void Log(const char *data, ...) {
         static const u32 max_log_sz = sizeof(working_buf) - sizeof(log_ctx_t);
         static bool initDone = false;
@@ -139,7 +139,7 @@ namespace ams::ldr::hoc {
     #endif
 
     void ViewLog() {
-        #ifdef HOC_IRAM_LOG
+        #if HOC_IRAM_LOG
         if (spl::GetSocType() == spl::SocType_Mariko) {
             return;
         }

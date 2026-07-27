@@ -2,9 +2,10 @@
 
 EXT=0
 LDR_MAKE="nx_release"
+LDR_SET=0
 NO_EXO=0
 JOBS=""
-DEBUG=0
+UART_LOGGING=0
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DIST_DIR="$ROOT_DIR/dist"
@@ -16,10 +17,10 @@ while [ $# -gt 0 ]; do
             ;;
         --ldr=*)
             LDR_MAKE="${1#*=}"
+            LDR_SET=1
             ;;
-        -d|--debug)
-            DEBUG=1
-            LDR_MAKE="nx_audit"
+        -u|--uart)
+            UART_LOGGING=1
             ;;
         --no-exo)
             NO_EXO=1
@@ -39,6 +40,10 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+if [ "$UART_LOGGING" -eq 1 ] && [ "$LDR_SET" -eq 0 ]; then
+    LDR_MAKE="nx_audit"
+fi
+
 LDR_BUILD_PATH="${LDR_MAKE#nx_}"
 
 echo
@@ -50,8 +55,8 @@ if [ "$NO_EXO" -eq 1 ]; then
     echo "NO_EXO = 1"
 fi
 
-if [ "$DEBUG" -eq 1 ]; then
-    echo "DEBUG = 1 (loader build: nx_audit, UART logging enabled)"
+if [ "$UART_LOGGING" -eq 1 ]; then
+    echo "UART_LOGGING = 1 (loader build: $LDR_MAKE, UART logging enabled)"
 fi
 
 CORES="$(nproc --all)"
@@ -87,9 +92,9 @@ mkdir -p "$DEST"
 echo
 echo "*** Patching loader ***"
 cp -vr "$SRC"/. "$DEST"/
-echo
 
 if [ "$NO_EXO" -eq 0 ]; then
+    echo
     echo "*** Patching exosphere ***"
     EXO_SRC="Source/Atmosphere-Patches"
     EXO_DEST="build/atmosphere/exosphere/program/source/smc"
@@ -107,7 +112,7 @@ fi
 echo
 echo "*** Compiling loader ***"
 cd build/atmosphere/stratosphere/loader || exit 1
-make -j$JOBS "$LDR_MAKE"
+make -j$JOBS HOC_UART_LOG=$UART_LOGGING "$LDR_MAKE"
 hactool -t kip1 "out/nintendo_nx_arm64_armv8a/$LDR_BUILD_PATH/loader.kip" --uncompress=hoc.kip
 cd "$ROOT_DIR" # exit
 cp -v build/atmosphere/stratosphere/loader/hoc.kip dist/atmosphere/kips/hoc.kip
