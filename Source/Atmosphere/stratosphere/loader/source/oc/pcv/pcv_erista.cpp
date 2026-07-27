@@ -463,39 +463,6 @@ namespace ams::ldr::hoc::pcv::erista {
         }
     }
 
-    /* Relocate the table */
-    /* Rescanning is simpler than trying to extract a bunch of data from the asm patch, performance impact is negligable */
-    /* Also, this is more stable :P */
-    u32 RepointEristaEmcTablePtr(uintptr_t fromSlot, uintptr_t toTable) {
-        constexpr u32 RetIns = 0xD65F03C0; /* ret */
-        u32 patched = 0;
-
-        for (u32 *p = nsoStart; p + 4 < nsoEnd; ++p) {
-            const u32 ins = *p;
-            if (!AsmIsAdrX0(ins)) {
-                continue;
-            }
-
-            const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
-            if (AsmAdrTarget(ins, pc) != fromSlot) {
-                continue;
-            }
-            if (!(AsmIsLdpX(p[1]) && AsmIsLdpX(p[2]) && p[3] == RetIns)) {
-                continue;
-            }
-
-            /* adr only reaches +-1MB */
-            const s64 delta = static_cast<s64>(toTable) - static_cast<s64>(pc);
-            if (delta > 0xFFFFF || delta < -0x100000) {
-                continue;
-            }
-
-            PATCH_OFFSET(p, AsmSetAdrTarget(ins, pc, toTable));
-            ++patched;
-        }
-        return patched;
-    }
-
     /* The silicon instructs; the children obey... */
     void MtcGenerateFreqTables() {
         newEmcList.clear();
