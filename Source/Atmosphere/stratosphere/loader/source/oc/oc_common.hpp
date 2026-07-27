@@ -37,7 +37,7 @@
     #if defined(HOC_IRAM_LOG)
         #define LOGGING(...) Log(__VA_ARGS__)
     #elif HOC_UART_LOG
-        #define LOGGING(...) AMS_LOG(__VA_ARGS__)
+        #define LOGGING(fmt, ...) AMS_LOG(fmt "\n", ##__VA_ARGS__)
     #endif
 
 #else
