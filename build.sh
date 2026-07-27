@@ -4,6 +4,7 @@ EXT=0
 LDR_MAKE="nx_release"
 NO_EXO=0
 JOBS=""
+DEBUG=0
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DIST_DIR="$ROOT_DIR/dist"
@@ -15,6 +16,10 @@ while [ $# -gt 0 ]; do
             ;;
         --ldr=*)
             LDR_MAKE="${1#*=}"
+            ;;
+        -d|--debug)
+            DEBUG=1
+            LDR_MAKE="nx_audit"
             ;;
         --no-exo)
             NO_EXO=1
@@ -43,6 +48,10 @@ fi
 
 if [ "$NO_EXO" -eq 1 ]; then
     echo "NO_EXO = 1"
+fi
+
+if [ "$DEBUG" -eq 1 ]; then
+    echo "DEBUG = 1 (loader build: nx_audit, UART logging enabled)"
 fi
 
 CORES="$(nproc --all)"
