@@ -145,10 +145,6 @@ namespace ams::ldr::hoc::pcv {
 
             uintptr_t CaveVa() const { return ToVa(reinterpret_cast<const void *>(m_cave)); }
 
-            uintptr_t CaveBase() const { return m_cave; }
-
-            u32 *Reserve(size_t words) { return this->AllocCode(words); }
-
             Result CopyPayload() {
                 R_TRY(this->CheckEnabled());
 
