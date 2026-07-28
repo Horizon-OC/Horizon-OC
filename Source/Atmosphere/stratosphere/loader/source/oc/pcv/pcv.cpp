@@ -182,6 +182,9 @@ namespace ams::ldr::hoc::pcv {
 
         Hooks().Initialize(mapped_nso, nso_address, cave, cave_size, data_arena);
 
+        g_pcv_cave      = cave;
+        g_pcv_cave_size = cave_size;
+
         bool isMariko = (spl::GetSocType() == spl::SocType_Mariko);
         if (isMariko) {
             mariko::Patch(mapped_nso, nso_size);
