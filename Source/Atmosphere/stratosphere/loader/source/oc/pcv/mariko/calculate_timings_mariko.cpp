@@ -151,7 +151,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 tREFI = lowFreq ? C.low_t8_tREFI : C.t8_tREFI;
         refresh_raw = 0xFFFF;
         if (tREFI != 6) {
-            refresh_raw = CEIL(tREFpb_values[tREFI] / tCK_avg) - 0x40;
+            refresh_raw = ROUND(tREFpb_values[tREFI] / tCK_avg) - 0x40;
             refresh_raw = MIN(refresh_raw, static_cast<u32>(0xFFFF));
         }
 
@@ -172,7 +172,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
         einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
         einput            = quse - CEIL(9.928 / tCK_avg);
-        u32 qrst_duration = FLOOR(8.399 - tCK_avg);
+        u32 qrst_duration = FLOOR(1.375 / tCK_avg + 4.555);
         u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
         qrst              = PACK_U32(qrst_duration, qrstLow);
         ibdly             = PACK_U32_NIBBLE_HIGH_BYTE_LOW(1, quse - qrst_duration - 2.0);
