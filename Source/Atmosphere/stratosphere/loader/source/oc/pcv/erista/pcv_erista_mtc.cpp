@@ -21,179 +21,20 @@
  */
 
 #include <vector>
-#include "pcv.hpp"
-#include "../mtc_timing_value.hpp"
-#include "../erista/calculate_timings_erista.hpp"
+#include "../pcv.hpp"
+#include "../../mtc_timing_value.hpp"
+#include "calculate_timings_erista.hpp"
 
 namespace ams::ldr::hoc::pcv::erista {
 
-    struct HookPayloadData {
-        struct {
-            EristaMtcTable *mtcTable;
-            u32             mtcCount;
-        } mtcTableAsm;
-    };
-    DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, e_HookPayloadData);
-
     namespace {
         std::vector<u32> newEmcList;
-        u32 *nsoStart;
-        u32 *nsoEnd;
 
         struct {
             u32            *getEristaMtcTableFnSite = nullptr;
             EristaMtcTable *mtcTable                = nullptr;
-            bool foundMtcTablePattern               = false;
+            bool            foundMtcTablePattern    = false;
         } getMtcTableCache;
-    }
-
-    Result CpuVoltDvfs(u32 *ptr) {
-        if (std::memcmp(ptr + 5, cpuVoltDvfsPattern, sizeof(cpuVoltDvfsPattern))) {
-            R_THROW(ldr::ResultInvalidCpuMinVolt());
-        }
-
-        if (C.eristaCpuVmin) {
-            PATCH_OFFSET(ptr, C.eristaCpuVmin);
-        }
-
-        if (C.eristaCpuUV) {
-            PATCH_OFFSET(ptr - 2, C.eristaCpuVmin);
-        }
-
-        if (C.eristaCpuMaxVolt) {
-            PATCH_OFFSET(ptr + 5, C.eristaCpuMaxVolt);
-        }
-
-        R_SUCCEED();
-    }
-
-    Result CpuVoltThermals(u32 *ptr) {
-        if (std::memcmp(ptr - 6, cpuVoltageThermalPattern, sizeof(cpuVoltageThermalPattern))) {
-            R_THROW(ldr::ResultInvalidCpuMinVolt());
-        }
-
-        if (C.eristaCpuVmin) {
-            PATCH_OFFSET(    ptr, C.eristaCpuVmin);
-            PATCH_OFFSET(ptr + 3, C.eristaCpuVmin);
-            PATCH_OFFSET(ptr + 6, C.eristaCpuVmin);
-        }
-
-        if (C.eristaCpuMaxVolt) {
-            PATCH_OFFSET(ptr - 2, C.eristaCpuMaxVolt);
-            PATCH_OFFSET(ptr + 1, C.eristaCpuMaxVolt);
-            PATCH_OFFSET(ptr + 4, C.eristaCpuMaxVolt);
-            PATCH_OFFSET(ptr + 7, C.eristaCpuMaxVolt);
-        }
-
-        R_SUCCEED();
-    }
-
-    Result CpuVoltDfll(u32* ptr) {
-        CvbCpuDfllData *entry = reinterpret_cast<CvbCpuDfllData *>(ptr);
-
-        R_UNLESS(entry->tune0_low  == 0xFFEAD0FF, ldr::ResultInvalidCpuVoltDfllEntry());
-        R_UNLESS(entry->tune0_high == 0x0,        ldr::ResultInvalidCpuVoltDfllEntry());
-        R_UNLESS(entry->tune1_low  == 0x0,        ldr::ResultInvalidCpuVoltDfllEntry());
-        R_UNLESS(entry->tune1_high == 0x0,        ldr::ResultInvalidCpuVoltDfllEntry());
-
-        if (!C.eristaCpuUV) {
-            R_SKIP();
-        }
-
-        switch(C.eristaCpuUV) {
-            case 1:
-                PATCH_OFFSET(&(entry->tune0_high), 0xffff);
-                PATCH_OFFSET(&(entry->tune1_high), 0x27007ff);
-                break;
-            case 2:
-                PATCH_OFFSET(&(entry->tune0_high), 0xefff);
-                PATCH_OFFSET(&(entry->tune1_high), 0x27407ff);
-                break;
-            case 3:
-                PATCH_OFFSET(&(entry->tune0_high), 0xdfff);
-                PATCH_OFFSET(&(entry->tune1_high), 0x27807ff);
-                break;
-            case 4:
-                PATCH_OFFSET(&(entry->tune0_high), 0xdfdf);
-                PATCH_OFFSET(&(entry->tune1_high), 0x27a07ff);
-                break;
-            case 5:
-                PATCH_OFFSET(&(entry->tune0_high), 0xcfdf);
-                PATCH_OFFSET(&(entry->tune1_high), 0x37007ff);
-                break;
-            default:
-                break;
-        }
-
-        R_SUCCEED();
-    }
-
-    Result GpuVoltDVFS(u32 *ptr) {
-        if (std::memcmp(ptr, gpuVoltDvfsPattern, sizeof(gpuVoltDvfsPattern))) {
-            R_THROW(ldr::ResultInvalidGpuDvfs());
-        }
-
-        if (C.eristaGpuVmin) {
-            PATCH_OFFSET(ptr, C.eristaGpuVmin);
-        }
-
-        R_SUCCEED();
-    }
-
-    Result GpuVoltThermals(u32 *ptr) {
-        if (std::memcmp(ptr - 3, gpuVoltThermalPattern, sizeof(gpuVoltThermalPattern))) {
-            R_THROW(ldr::ResultInvalidGpuDvfs());
-        }
-
-        if (C.eristaGpuVmin) {
-            PATCH_OFFSET(ptr,      C.eristaGpuVmin);
-            PATCH_OFFSET(ptr + 3,  C.eristaGpuVmin);
-            PATCH_OFFSET(ptr + 6,  C.eristaGpuVmin);
-            PATCH_OFFSET(ptr + 9,  C.eristaGpuVmin);
-            PATCH_OFFSET(ptr + 12, C.eristaGpuVmin);
-        }
-
-        R_SUCCEED();
-    }
-
-    Result GpuFreqMaxAsm(u32 *ptr32) {
-        // Check if both two instructions match the pattern
-        u32 ins1 = *ptr32, ins2 = *(ptr32 + 1);
-        if (!(asm_compare_no_rd(ins1, GpuAsmPattern[0]) && asm_compare_no_rd(ins2, GpuAsmPattern[1]))) {
-            R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
-        }
-
-        // Both instructions should operate on the same register
-        u8 rd = asm_get_rd(ins1);
-        if (rd != asm_get_rd(ins2)) {
-            R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
-        }
-
-        u32 max_clock;
-        switch (C.eristaGpuUV) {
-        case 0:
-            max_clock = GetDvfsTableLastEntry(C.eristaGpuDvfsTable)->freq;
-            break;
-        case 1:
-            max_clock = GetDvfsTableLastEntry(C.eristaGpuDvfsTableSLT)->freq;
-            break;
-        case 2:
-            max_clock = GetDvfsTableLastEntry(C.eristaGpuDvfsTableHiOPT)->freq;
-            break;
-        default:
-            max_clock = GetDvfsTableLastEntry(C.eristaGpuDvfsTable)->freq;
-            break;
-        }
-
-        u32 asm_patch[2] = {
-            asm_set_rd(asm_set_imm16(GpuAsmPattern[0], max_clock), rd),
-            asm_set_rd(asm_set_imm16(GpuAsmPattern[1], max_clock >> 16), rd)
-        };
-
-        PATCH_OFFSET(ptr32,     asm_patch[0]);
-        PATCH_OFFSET(ptr32 + 1, asm_patch[1]);
-
-        R_SUCCEED();
     }
 
     /* Note: This does not have proper timings, so base latency adjustment will not work.             */
@@ -572,38 +413,23 @@ namespace ams::ldr::hoc::pcv::erista {
         R_SUCCEED();
     }
 
-    Result GpuFreqPllMax(u32 *ptr) {
-        clk_pll_param *entry = reinterpret_cast<clk_pll_param *>(ptr);
-
-        // All zero except for freq
-        for (size_t i = 1; i < sizeof(clk_pll_param) / sizeof(u32); i++) {
-            R_UNLESS(*(ptr + i) == 0, ldr::ResultInvalidGpuPllEntry());
-        }
-
-        // Double the max clk simply
-        u32 max_clk = entry->freq * 2;
-        entry->freq = max_clk;
-        R_SUCCEED();
-    }
-
-    // patch out 1305MHz limit on erista, don't use this!
-    // Result GpuFreqPllLimit(u32 *ptr) {
-    //     u32 prev_freq = *(ptr - 1);
-
-    //     if (prev_freq != 128000 && prev_freq != 1300000 && prev_freq != 76800) {
-    //         R_THROW(ldr::ResultInvalidGpuPllEntry());
-    //     }
-
-    //     PATCH_OFFSET(ptr, 3600000);
-
-    //     R_SUCCEED();
-    // }
-
     HOOK_PAYLOAD_FN EristaMtcTable *GetEristaMtcTableImpl(u32 *count) {
         const HookPayloadData *data = HOOK_PAYLOAD_PTR(HookPayloadData, e_HookPayloadData);
 
         *count = data->mtcTableAsm.mtcCount;
         return data->mtcTableAsm.mtcTable;
+    }
+
+    Result MtcInstallHooks(HookPayloadData *data) {
+        R_UNLESS(getMtcTableCache.getEristaMtcTableFnSite != nullptr && getMtcTableCache.mtcTable != nullptr, ldr::ResultInvalidMtcTablePattern());
+
+        /* Copy the data to the payload. */
+        data->mtcTableAsm.mtcTable = reinterpret_cast<EristaMtcTable *>(Hooks().ToVa(getMtcTableCache.mtcTable));
+        data->mtcTableAsm.mtcCount = newEmcList.size();
+
+        R_TRY(INSTALL_IMPL_HOOK(getMtcTableCache.getEristaMtcTableFnSite, GetEristaMtcTableImpl));
+
+        R_SUCCEED();
     }
 
     Result MemMtcTableAsm(u32 *ptr) {
@@ -648,73 +474,6 @@ namespace ams::ldr::hoc::pcv::erista {
         getMtcTableCache.foundMtcTablePattern = true;
 
         R_SUCCEED();
-    }
-
-    Result InstallHooks() {
-        R_TRY(Hooks().CheckEnabled());
-
-        R_TRY(Hooks().CopyPayload());
-
-        R_UNLESS(getMtcTableCache.getEristaMtcTableFnSite != nullptr && getMtcTableCache.mtcTable != nullptr, ldr::ResultInvalidMtcTablePattern());
-
-        /* Copy the data to the payload. */
-        auto *data = Hooks().BindData(e_HookPayloadData);
-        R_UNLESS(data != nullptr, ldr::ResultHookDataOutOfMemory());
-
-        data->mtcTableAsm.mtcTable = reinterpret_cast<EristaMtcTable *>(Hooks().ToVa(getMtcTableCache.mtcTable));
-        data->mtcTableAsm.mtcCount = newEmcList.size();
-        R_TRY(INSTALL_IMPL_HOOK(getMtcTableCache.getEristaMtcTableFnSite, GetEristaMtcTableImpl));
-
-        R_SUCCEED();
-    }
-
-    void Patch(uintptr_t mapped_nso, size_t nso_size) {
-        nsoStart = reinterpret_cast<u32 *>(mapped_nso);
-        nsoEnd   = reinterpret_cast<u32 *>(mapped_nso + nso_size);
-        MtcGenerateFreqTables();
-
-        u32 CpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(CpuCvbTableDefault)->freq);
-        u32 GpuCvbDefaultMaxFreq = static_cast<u32>(GetDvfsTableLastEntry(GpuCvbTableDefault)->freq);
-
-        PatcherEntry<u32> patches[] = {
-            {"CPU Freq Table",     CpuFreqCvbTable<false>, 1, nullptr,  CpuCvbDefaultMaxFreq },
-            {"CPU Volt DVFS",     &CpuVoltDvfs,            1, nullptr,  CpuVminOfficial      },
-            {"CPU Volt Thermals", &CpuVoltThermals,        1, nullptr,  CpuVminOfficial      },
-            {"CPU Volt Dfll",     &CpuVoltDfll,            1, nullptr,  CpuTune0Low          },
-            {"GPU Volt DVFS",     &GpuVoltDVFS,            1, nullptr,  GpuVminOfficial      },
-            {"GPU Volt Thermals", &GpuVoltThermals,        1, nullptr,  GpuVminOfficial      },
-            {"GPU Freq Table",     GpuFreqCvbTable<false>, 1, nullptr,  GpuCvbDefaultMaxFreq },
-            {"GPU Freq Asm",      &GpuFreqMaxAsm,          2,          &GpuMaxClockPatternFn },
-            {"GPU PLL Max",       &GpuFreqPllMax,          1, nullptr,  GpuClkPllMax         },
-            // {"GPU PLL Limit",  &GpuFreqPllLimit,        4, nullptr,  GpuClkPllLimit       },
-            {"MEM Table Asm",     &MemMtcTableAsm,         4,           &MemMtcGetGetTablePatternFn },
-            {"MEM Freq Mtc",      &MemFreqMtcTable,        1, nullptr,  EmcClkOSLimit        },
-            {"MEM Freq Max",      &MemFreqMax,             0, nullptr,  EmcClkOSLimit        },
-            {"MEM Freq PLLM",     &MemFreqPllmLimit,       2, nullptr,  EmcClkPllmLimit      },
-            {"MEM Volt",          &MemVoltHandler,         2, nullptr,  MemVoltHOS           },
-        };
-
-        for (uintptr_t ptr = mapped_nso; ptr <= mapped_nso + nso_size - sizeof(EristaMtcTable); ptr += sizeof(u32)) {
-            u32 *ptr32 = reinterpret_cast<u32 *>(ptr);
-            for (auto &entry : patches) {
-                if (R_SUCCEEDED(entry.SearchAndApply(ptr32))) {
-                    break;
-                }
-            }
-        }
-
-        for (auto &entry : patches) {
-            LOGGING("%s Count: %zu\n", entry.description, entry.patched_count);
-            if (R_FAILED(entry.CheckResult())) {
-                panic::SmcError(panic::Patch);
-
-                CRASH(entry.description);
-            }
-        }
-
-        if (R_FAILED(InstallHooks())) {
-            panic::SmcError(panic::Patch);
-        }
     }
 
 }

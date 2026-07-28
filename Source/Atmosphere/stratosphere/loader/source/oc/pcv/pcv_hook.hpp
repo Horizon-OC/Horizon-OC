@@ -37,6 +37,9 @@
         ".text\n");                                             \
     extern "C" __attribute__((visibility("hidden"))) type *name
 
+#define DECLARE_HOOK_PAYLOAD_PTR(type, name)                    \
+    extern "C" __attribute__((visibility("hidden"))) type *name
+
 #define HOOK_PAYLOAD_PTR(type, name)                            \
     ([]() -> type * {                                           \
         type **_hoc_pp;                                         \

@@ -14,9 +14,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../mtc_timing_value.hpp"
+#include <stratosphere.hpp>
+#include "../../mtc_timing_value.hpp"
+#include "timing_tables.hpp"
 
-namespace ams::ldr::hoc::pcv::erista {
+namespace ams::ldr::hoc::pcv::mariko {
+
+    void GetRext() {
+        if (auto r = FindRext()) {
+            rext = r->rext;
+            return;
+        }
+
+        /* > 3200 */
+        rext = 0x1E;
+    }
 
     void SwitchLatency(volatile u32 &latency, u32 index, u32 latencyStep) {
         latency += index * latencyStep;
@@ -34,7 +46,7 @@ namespace ams::ldr::hoc::pcv::erista {
     }
 
     void AutoLatency(volatile u32 &latency, u32 freq, u32 latencyStep) {
-        if (freq > 1600'000 && freq <= 1866'000) { /* 1866tRWL */
+        if (freq > 1600'000 && freq <= 1862'400) { /* 1866tRWL */
             latency += latencyStep * 2;
         } else { /* 2133tRWL */
             latency += latencyStep * 3;
@@ -95,7 +107,7 @@ namespace ams::ldr::hoc::pcv::erista {
         u32 wlIndex = 0;
 
         for (u32 i = 0; i < std::size(rlMapDBI); ++i) {
-            if (rlMapDBI[i] == 32) {
+            if (rlMapDBI[i] == RL) {
                 rlIndex = i;
                 break;
             }
@@ -117,14 +129,59 @@ namespace ams::ldr::hoc::pcv::erista {
         WL = WL_1331;
 
         HandleLatency(freq);
-        CalculateMrw2();
 
-        tR2P = CEIL((RL * 0.426) - 2.0);
-        tR2W = FLOOR(FLOOR((5.0 / tCK_avg) + ((FLOOR(48.0 / WL) - 0.478) * 3.0)) / 1.501) + RL - (C.t6_tRTW * 3) + finetRTW;
+        GetRext();
 
-        tW2P    = (CEIL(WL * 1.7303) * 2) - 5;
-        tWTPDEN = CEIL(((1.803 / tCK_avg) + MAX(RL + (2.694 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
-        tW2R    = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
+        /* At 1333WL, for some reason (incorrect ram timing config in mtc table?), tRP causes crashes at high reductions - 2 seems to be the most common limit. */
+        /* This is a lazy workaround until I find the issue... */
+        const bool lowFreq = freq < C.timingEmcTbreak;
+
+        tRCD   = tRCD_values[lowFreq ? C.low_t1_tRCD : C.t1_tRCD];
+        tRPpb  = tRP_values[lowFreq  ? C.low_t2_tRP  : C.t2_tRP];
+        tRAS   = tRAS_values[lowFreq ? C.low_t3_tRAS : C.t3_tRAS];
+        tRRD   = tRRD_values[lowFreq ? C.low_t4_tRRD : C.t4_tRRD];
+        tRFCpb = tRFC_values[lowFreq ? C.low_t5_tRFC : C.t5_tRFC];
+
+        u32 tRTW = lowFreq ? C.low_t6_tRTW : C.t6_tRTW;
+        u32 tWTR = 10 - tWTR_values[lowFreq ? C.low_t7_tWTR : C.t7_tWTR];
+
+        s32 finetRTW = C.fineTune_t6_tRTW;
+        s32 finetWTR = C.fineTune_t7_tWTR;
+
+        u32 tREFI = lowFreq ? C.low_t8_tREFI : C.t8_tREFI;
+        refresh_raw = 0xFFFF;
+        if (tREFI != 6) {
+            refresh_raw = CEIL(tREFpb_values[tREFI] / tCK_avg) - 0x40;
+            refresh_raw = MIN(refresh_raw, static_cast<u32>(0xFFFF));
+        }
+
+        tRC    = tRAS + tRPpb;
+        tRFCab = tRFCpb * 2;
+        tXSR   = static_cast<double>(tRFCab + 7.5);
+        tFAW   = static_cast<u32>(tRRD * 4.0);
+        tRPab  = tRPpb + 3;
+
+        tR2P  = CEIL((RL * 0.426) - 2.0);
+        tR2W  = FLOOR(FLOOR((5.0 / tCK_avg) + ((FLOOR(48.0 / WL) - 0.478) * 3.0)) / 1.501) + RL - (tRTW * 3) + finetRTW;
+        tRTM  = FLOOR((10.0 + RL) + (3.502 / tCK_avg)) + FLOOR(7.489 / tCK_avg);
+        tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
+
+        rdv               = RL + FLOOR((5.105 / tCK_avg) + 17.017);
+        qpop              = rdv - 14;
+        quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
+        quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
+        einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
+        einput            = quse - CEIL(9.928 / tCK_avg);
+        u32 qrst_duration = FLOOR(8.399 - tCK_avg);
+        u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
+        qrst              = PACK_U32(qrst_duration, qrstLow);
+        ibdly             = PACK_U32_NIBBLE_HIGH_BYTE_LOW(1, quse - qrst_duration - 2.0);
+        qsafe             = (einput_duration + 3) + MAX(MIN(qrstLow * rdv, qrst_duration + qrst_duration), einput);
+        tW2P              = (CEIL(WL * 1.7303) * 2) - 5;
+        tWTPDEN           = CEIL(((1.803 / tCK_avg) + MAX(RL + (2.694 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
+        tW2R              = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
+        tWTM              = CEIL(WL + ((7.570 / tCK_avg) + 8.753));
+        tWATM             = (tWTM + (FLOOR(WL / 0.816) * 2.0)) - 4.0;
 
         wdv = WL;
         wsv = WL - 2;
@@ -135,10 +192,13 @@ namespace ams::ldr::hoc::pcv::erista {
         obdly         = PACK_U32_NIBBLE_HIGH_BYTE_LOW(obdlyHigh, obdlyLow);
 
         pdex2rw  = CEIL((CEIL(12.335 - tCK_avg) + (7.430 / tCK_avg) - CEIL(tCK_avg * 11.361)));
+
         tCLKSTOP = FLOOR(MIN(8.488 / tCK_avg, 23.0)) + 8.0;
 
-        const double tMMRI = tRCD + (tCK_avg * 3);
-        pdex2mrr           = tMMRI + 10;
+        u32 tMMRI = tRCD + (tCK_avg * 3);
+        pdex2mrr  = tMMRI + 10;
+
+        CalculateMrw2();
     }
 
 }

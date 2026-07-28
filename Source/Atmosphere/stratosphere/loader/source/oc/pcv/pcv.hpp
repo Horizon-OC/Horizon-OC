@@ -22,8 +22,14 @@
 
 #include "../oc_common.hpp"
 #include "pcv_common.hpp"
-#include "pcv_erista.hpp"
-#include "pcv_mariko.hpp"
+
+#include "erista/pcv_erista_cpu.hpp"
+#include "erista/pcv_erista_gpu.hpp"
+#include "erista/pcv_erista_mtc.hpp"
+#include "erista/pcv_erista.hpp"
+
+#include "mariko/pcv_mariko.hpp"
+
 #include "pcv_hook.hpp"
 
 namespace ams::ldr::hoc::pcv {
@@ -188,6 +194,7 @@ namespace ams::ldr::hoc::pcv {
             }
             ++entry;
         }
+
         if (C.commonGpuVoltOffset && !(isMariko ? C.marikoGpuUV : C.eristaGpuUV)) {
             cvb_entry_t *entry = static_cast<cvb_entry_t *>(gpu_cvb_table_head);
             for (size_t i = 0; i < customize_entry_count; ++i) {

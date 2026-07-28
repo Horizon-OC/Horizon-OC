@@ -20,11 +20,13 @@
 
 #pragma once
 
-#include "../oc_common.hpp"
-#include "pcv_common.hpp"
-#include "pcv_asm.hpp"
+#include "../../oc_common.hpp"
+#include "../pcv_common.hpp"
+#include "../pcv_asm.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
+
+    extern u32 *nsoStart;
 
     constexpr cvb_entry_t CpuCvbTableDefault[] = {
         {  204000, {  721589, -12695, 27 }, {         } },
