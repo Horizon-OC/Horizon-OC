@@ -191,7 +191,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 obdlyLow  = MAX(WL - FLOOR((126.0 / CEIL(tCK_avg + 8.601))), 0.0);
         obdly         = PACK_U32_NIBBLE_HIGH_BYTE_LOW(obdlyHigh, obdlyLow);
 
-        pdex2rw  = CEIL((CEIL(12.335 - tCK_avg) + (7.430 / tCK_avg) - CEIL(tCK_avg * 11.361)));
+        pdex2rw  = CEIL(7.4870 / tCK_avg + 1.0257) + FLOOR(1.7410 / tCK_avg + 0.03) + FLOOR(1.0 / tCK_avg);
 
         tCLKSTOP = FLOOR(MIN(8.488 / tCK_avg, 23.0)) + 8.0;
 
