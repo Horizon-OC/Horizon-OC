@@ -368,7 +368,7 @@ namespace kip {
         }
         config::SetConfigValues(&configValues, true);
         if(previousVersion < 300 && version >= 300) {
-            configValues.values[KipConfigValue_t4_tRRD]++; // tRRD needs to be increased by one for equivalent timing
+            
         }
     }
 
