@@ -21,29 +21,6 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    double GetMaxTrrd(u32 freq) {
-        DramId id = GetDramId();
-
-        if (freq >= 1866'000) {
-            return 7.5;
-        }
-
-        switch (id) {
-            case HOAG_4GB_HYNIX_H9HCNNNBKMMLXR_NEE ... IOWA_4GB_HYNIX_H9HCNNNBKMMLXR_NEE:
-            case IOWA_4GB_MICRON_MT53E512M32D2NP_046_WTE:
-            case HOAG_4GB_MICRON_MT53E512M32D2NP_046_WTE:
-            case IOWA_8GB_SAMSUNG_K4UBE3D4AA_MGCL:
-            case HOAG_8GB_SAMSUNG_K4UBE3D4AA_MGCL:
-            case AULA_8GB_SAMSUNG_K4UBE3D4AA_MGCL:
-            case IOWA_4GB_MICRON_MT53E512M32D1NP_046_WTB ... AULA_4GB_MICRON_MT53E512M32D1NP_046_WTB:
-                return 7.5;
-            default:
-                break;
-        }
-
-        return 10.0;
-    }
-
     void GetRext(u32 freq) {
         if (auto r = FindRext(freq)) {
             rext = r->rext;
@@ -164,7 +141,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRCD   = tRCD_values[lowFreq ? C.low_t1_tRCD : C.t1_tRCD];
         tRPpb  = tRP_values[lowFreq  ? C.low_t2_tRP  : C.t2_tRP];
         tRAS   = tRAS_values[lowFreq ? C.low_t3_tRAS : C.t3_tRAS];
-        tRRD   = MIN(tRRD_values[lowFreq ? C.low_t4_tRRD : C.t4_tRRD], GetMaxTrrd(freq));
+        tRRD   = tRRD_values[lowFreq ? C.low_t4_tRRD : C.t4_tRRD];
         tRFCpb = tRFC_values[lowFreq ? C.low_t5_tRFC : C.t5_tRFC];
 
         u32 tRTW = lowFreq ? C.low_t6_tRTW : C.t6_tRTW;
