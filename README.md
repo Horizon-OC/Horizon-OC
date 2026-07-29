@@ -35,8 +35,8 @@ It enables advanced CPU, GPU, and RAM tuning with user-friendly configuration to
 ## Default clocks
 
 * **CPU:** Up to 1963MHz (Mariko) / 1785MHz (Erista)
-* **GPU:** Up to 1075MHz (Mariko) / 921MHz (Erista)
-* **RAM:** Up to 1866/2133MHz (Mariko) / 1600MHz (Erista)
+* **GPU:** Up to 1152MHz (Mariko) / 921MHz (Erista)
+* **RAM:** Up to 2133MHz (Mariko) / 1600MHz (Erista)
 * Over/undervolting support
 * Built-in configurator
 * Compatible with most homebrew
@@ -86,8 +86,13 @@ Refer to COMPILATION.md
 ## Clock table
 
 ### MEM clocks (mhz)
-
-* 3200 → max on mariko, JEDEC.
+* 3400 → max on mariko.
+* 3366
+* 3333
+* 3300
+* 3266
+* 3233
+* 3200 → JEDEC.
 * 3166
 * 3133
 * 3100
