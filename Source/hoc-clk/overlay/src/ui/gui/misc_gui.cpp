@@ -1342,7 +1342,7 @@ class RamTimingsSubmenuGui : public MiscGui {
         addConfigTrackbar(KipConfigValue_t1_tRCD, "t1 tRCD", ValueRange(0, 7, 1));
         addConfigTrackbar(KipConfigValue_t2_tRP, "t2 tRP", ValueRange(0, 7, 1));
         addConfigTrackbar(KipConfigValue_t3_tRAS, "t3 tRAS", ValueRange(0, 9, 1));
-        addConfigTrackbar(KipConfigValue_t4_tRRD, "t4 tRRD", ValueRange(0, 6, 1));
+        addConfigTrackbar(KipConfigValue_t4_tRRD, "t4 tRRD", ValueRange(0, 7, 1));
         addConfigTrackbar(KipConfigValue_t5_tRFC, "t5 tRFC", ValueRange(0, IsErista() ? 5u : 10u, 1));
         addConfigTrackbar(KipConfigValue_t6_tRTW, "t6 tRTW", ValueRange(0, 9, 1));
         addConfigTrackbar(KipConfigValue_t7_tWTR, "t7 tWTR", ValueRange(0, 9, 1));
