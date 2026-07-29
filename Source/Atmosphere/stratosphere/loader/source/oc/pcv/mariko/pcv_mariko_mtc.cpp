@@ -56,19 +56,19 @@ namespace ams::ldr::hoc::pcv::mariko {
             WRITE_PARAM_ALL_REG(table, emc_cfg, 0xF3200000);
         }
 
-        u32 trefbw = refresh_raw + 0x40;
-        trefbw     = MIN(trefbw, static_cast<u32>(0x3FFF));
-
         const u32 dyn_self_ref_control = (static_cast<u32>(7605.0 / tCK_avg) + 260) | (table->burst_regs.emc_dyn_self_ref_control & 0xffff0000);
 
         CalculateTimings(tCK_avg, table->rate_khz);
+
+        u32 trefbw = refresh_raw + 0x40;
+        trefbw     = MIN(trefbw, static_cast<u32>(0x3FFF));
 
         const u32 ras_cyc = MIN(GET_CYCLE_CEIL(tRAS), static_cast<u32>(0x7F));
         const u32 rp_cyc  = GET_CYCLE_CEIL(tRPpb);
 
         WRITE_PARAM_ALL_REG(table, emc_rd_rcd, GET_CYCLE_CEIL(tRCD));
         WRITE_PARAM_ALL_REG(table, emc_wr_rcd, GET_CYCLE_CEIL(tRCD));
-        WRITE_PARAM_ALL_REG(table, emc_rc,  MIN(GET_CYCLE_CEIL(tRC), ras_cyc + rp_cyc));
+        WRITE_PARAM_ALL_REG(table, emc_rc, MIN(GET_CYCLE_CEIL(tRC), ras_cyc + rp_cyc));
         WRITE_PARAM_ALL_REG(table, emc_ras, ras_cyc);
         WRITE_PARAM_ALL_REG(table, emc_rrd, GET_CYCLE_CEIL(tRRD));
         WRITE_PARAM_ALL_REG(table, emc_rfcpb, GET_CYCLE_CEIL(tRFCpb));
