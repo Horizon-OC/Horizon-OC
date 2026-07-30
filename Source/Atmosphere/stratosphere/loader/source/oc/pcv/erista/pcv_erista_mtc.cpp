@@ -132,14 +132,14 @@ namespace ams::ldr::hoc::pcv::erista {
         // WRITE_PARAM_ALL_REG(table, emc_tr_qrst, qrst);
         // WRITE_PARAM_ALL_REG(table, emc_qsafe, qsafe);
         // WRITE_PARAM_ALL_REG(table, emc_tr_qsafe, qsafe);
-        WRITE_PARAM_ALL_REG(table, emc_tr_qpop, qpop);
-        WRITE_PARAM_ALL_REG(table, emc_qpop, qpop);
-        WRITE_PARAM_ALL_REG(table, emc_rdv, rdv);
-        WRITE_PARAM_ALL_REG(table, emc_tr_rdv_mask, rdv + 2);
-        WRITE_PARAM_ALL_REG(table, emc_rdv_early, rdv - 2);
-        WRITE_PARAM_ALL_REG(table, emc_rdv_early_mask, rdv);
-        WRITE_PARAM_ALL_REG(table, emc_rdv_mask, rdv + 2);
-        WRITE_PARAM_ALL_REG(table, emc_tr_rdv, rdv);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_qpop, qpop);
+        // WRITE_PARAM_ALL_REG(table, emc_qpop, qpop);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv, rdv);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_rdv_mask, rdv + 2);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv_early, rdv - 2);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv_early_mask, rdv);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv_mask, rdv + 2);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_rdv, rdv);
         table->emc_mrw2 = (table->emc_mrw2 & ~0xFFu) | static_cast<u32>(mrw2);
 
         constexpr double MC_ARB_DIV = 4.0;
