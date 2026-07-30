@@ -124,7 +124,7 @@ namespace ams::ldr::hoc::pcv::erista {
 
         tW2P    = (CEIL(WL * 1.7303) * 2) - 5;
         tWTPDEN = CEIL(((1.800 / tCK_avg) + MAX(RL + (2.550 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
-        tW2R    = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
+        tW2R    = FLOOR(MAX((5.087 / tCK_avg) + 1.030, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
 
         rdv               = RL + FLOOR((5.678 / tCK_avg) + 18.962);
         qpop              = rdv - 16;
