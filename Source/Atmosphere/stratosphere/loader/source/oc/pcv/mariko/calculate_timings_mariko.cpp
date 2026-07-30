@@ -171,7 +171,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         rdv               = RL + FLOOR((5.109 / tCK_avg) + 17.003);
         qpop              = rdv - 14;
         u32 quseSum       = RL + FLOOR(5.110 / tCK_avg) + 4;
-        quse_width        = CEIL(MAX((4.8210 / tCK_avg) + 4.001, (5.0860 / tCK_avg) + 3.235)) - FLOOR(2.55 / tCK_avg);
+        quse_width        = CEIL(MAX((4.7980 / tCK_avg) + 4.046, (5.0680 / tCK_avg) + 3.276)) - FLOOR(2.55 / tCK_avg);
         quse              = quseSum - quse_width;
         einput_duration   = FLOOR(9.994 / tCK_avg) + 5.0 + quse_width;
         einput            = quse - (FLOOR(9.994 / tCK_avg) + 1);
