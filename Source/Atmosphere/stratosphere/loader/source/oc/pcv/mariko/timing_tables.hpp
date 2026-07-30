@@ -26,6 +26,6 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     extern const ReplacePatch  g_rext_table[];
     extern const u32           g_rext_table_size;
-    const        ReplacePatch *FindRext(u32 rate_khz);
+    const        ReplacePatch *FindRext();
 
 }

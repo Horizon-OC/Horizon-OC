@@ -94,16 +94,6 @@ namespace ams::ldr::hoc {
         inline u32 tWTPDEN;
         inline u32 tW2R;
 
-        inline u32 rdv;
-        inline u32 qpop;
-        inline u32 quse_width;
-        inline u32 quse;
-        inline u32 einput_duration;
-        inline u32 einput;
-        inline u32 qrst;
-        inline u32 ibdly;
-        inline u32 qsafe;
-
         inline u32 wdv;
         inline u32 wsv;
         inline u32 wev;
@@ -123,7 +113,7 @@ namespace ams::ldr::hoc {
         const std::array<u32,       8> tRCD_values    = { 18, 17, 16, 15, 14, 13, 12, 11 };
         const std::array<u32,       8> tRP_values     = { 18, 17, 16, 15, 14, 13, 12, 11 };
         const std::array<u32,      10> tRAS_values    = { 42, 36, 34, 32, 30, 28, 26, 24, 22, 20 };
-        const std::array<double,    8>  tRRD_values   = { 7.5, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0 };
+        const std::array<double,    7>  tRRD_values   = { /*10.0,*/ 7.5, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0 }; /* 10.0 is used for <2133mhz; do we care? 8gb uses 7.5 tRRD on >=1331. */
         const std::array<u32,      11>  tRFC_values   = { 140, 130, 120, 110, 100, 90, 80, 70, 60, 50, 40 };
         const std::array<u32,      10>  tWTR_values   = { 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 };
         const std::array<u32,       6>  tREFpb_values = { 3900, 5850, 7800, 11700, 15600, 99999 };

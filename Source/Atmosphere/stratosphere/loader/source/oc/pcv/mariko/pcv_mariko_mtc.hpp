@@ -26,8 +26,6 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    DramId GetDramId();
-
     void MtcGenerateFreqTables();
     Result MemFreqMtcTable(u32 *ptr);
     Result MemFreqDvbTable(u32 *ptr);

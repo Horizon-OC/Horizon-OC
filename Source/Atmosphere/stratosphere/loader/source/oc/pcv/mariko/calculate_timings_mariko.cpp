@@ -15,19 +15,18 @@
  */
 
 #include <stratosphere.hpp>
-#include "../pcv.hpp"
 #include "../../mtc_timing_value.hpp"
 #include "timing_tables.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    void GetRext(u32 freq) {
-        if (auto r = FindRext(freq)) {
+    void GetRext() {
+        if (auto r = FindRext()) {
             rext = r->rext;
             return;
         }
 
-        /* Fallback */
+        /* > 3200 */
         rext = 0x1E;
     }
 
@@ -47,10 +46,9 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     void AutoLatency(volatile u32 &latency, u32 freq, u32 latencyStep) {
-        if (freq > 1600'000 && freq <= 1866'000) { /* 1866tRWL */
+        if (freq > 1600'000 && freq <= 1862'400) { /* 1866tRWL */
             latency += latencyStep * 2;
         } else { /* 2133tRWL */
-            // Note: JEDEC/Datasheet mandates 2133 for >1866, even if <2133
             latency += latencyStep * 3;
         }
     }
@@ -132,7 +130,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         HandleLatency(freq);
 
-        GetRext(freq);
+        GetRext();
 
         /* At 1333WL, for some reason (incorrect ram timing config in mtc table?), tRP causes crashes at high reductions - 2 seems to be the most common limit. */
         /* This is a lazy workaround until I find the issue... */
@@ -153,7 +151,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 tREFI = lowFreq ? C.low_t8_tREFI : C.t8_tREFI;
         refresh_raw = 0xFFFF;
         if (tREFI != 6) {
-            refresh_raw = ROUND(tREFpb_values[tREFI] / tCK_avg) - 0x40;
+            refresh_raw = CEIL(tREFpb_values[tREFI] / tCK_avg) - 0x40;
             refresh_raw = MIN(refresh_raw, static_cast<u32>(0xFFFF));
         }
 
@@ -164,26 +162,25 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRPab  = tRPpb + 3;
 
         tR2P  = CEIL((RL * 0.426) - 2.0);
-        tR2W  = RL + 2 * (FLOOR(48.0 / WL) - 2) + CEIL((5.036 / tCK_avg) + 0.418) - FLOOR((1.5 / tCK_avg) + 0.002) - (tRTW * 3) + finetRTW;
-        tRTM  = FLOOR((10.0 + RL) + (3.496 / tCK_avg)) + FLOOR(7.430 / tCK_avg);
+        tR2W  = FLOOR(FLOOR((5.0 / tCK_avg) + ((FLOOR(48.0 / WL) - 0.478) * 3.0)) / 1.501) + RL - (tRTW * 3) + finetRTW;
+        tRTM  = FLOOR((10.0 + RL) + (3.502 / tCK_avg)) + FLOOR(7.489 / tCK_avg);
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
-        rdv               = RL + FLOOR((5.109 / tCK_avg) + 17.003);
+        rdv               = RL + FLOOR((5.105 / tCK_avg) + 17.017);
         qpop              = rdv - 14;
-        u32 quseSum       = RL + FLOOR(5.110 / tCK_avg) + 4;
-        quse_width        = CEIL(MAX((4.7980 / tCK_avg) + 4.046, (5.0680 / tCK_avg) + 3.276)) - FLOOR(2.55 / tCK_avg);
-        quse              = quseSum - quse_width;
-        einput_duration   = FLOOR(9.998 / tCK_avg) + 5.0 + quse_width;
-        einput            = quse - (FLOOR(9.998 / tCK_avg) + 1);
-        u32 qrst_duration = FLOOR((1.398 / tCK_avg) + 4.5);
+        quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
+        quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
+        einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
+        einput            = quse - CEIL(9.928 / tCK_avg);
+        u32 qrst_duration = FLOOR(8.399 - tCK_avg);
         u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
         qrst              = PACK_U32(qrst_duration, qrstLow);
         ibdly             = PACK_U32_NIBBLE_HIGH_BYTE_LOW(1, quse - qrst_duration - 2.0);
         qsafe             = (einput_duration + 3) + MAX(MIN(qrstLow * rdv, qrst_duration + qrst_duration), einput);
         tW2P              = (CEIL(WL * 1.7303) * 2) - 5;
-        tWTPDEN           = CEIL(((1.800 / tCK_avg) + MAX(RL + (2.550 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
-        tW2R              = FLOOR(MAX((5.087 / tCK_avg) + 1.030, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
-        tWTM              = CEIL(WL + ((7.386 / tCK_avg) + 9.150));
+        tWTPDEN           = CEIL(((1.803 / tCK_avg) + MAX(RL + (2.694 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
+        tW2R              = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
+        tWTM              = CEIL(WL + ((7.570 / tCK_avg) + 8.753));
         tWATM             = (tWTM + (FLOOR(WL / 0.816) * 2.0)) - 4.0;
 
         wdv = WL;
@@ -194,9 +191,9 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 obdlyLow  = MAX(WL - FLOOR((126.0 / CEIL(tCK_avg + 8.601))), 0.0);
         obdly         = PACK_U32_NIBBLE_HIGH_BYTE_LOW(obdlyHigh, obdlyLow);
 
-        pdex2rw  = CEIL((7.5 / tCK_avg) + 0.998) + FLOOR(1.75 / tCK_avg) + FLOOR(1.0 / tCK_avg);
+        pdex2rw  = CEIL((CEIL(12.335 - tCK_avg) + (7.430 / tCK_avg) - CEIL(tCK_avg * 11.361)));
 
-        tCLKSTOP = FLOOR(MIN(8.4996 / tCK_avg, 23.0)) + 7.0 + MIN(CEIL(1.75 / tCK_avg) - 3.0, 1.0);
+        tCLKSTOP = FLOOR(MIN(8.488 / tCK_avg, 23.0)) + 8.0;
 
         u32 tMMRI = tRCD + (tCK_avg * 3);
         pdex2mrr  = tMMRI + 10;

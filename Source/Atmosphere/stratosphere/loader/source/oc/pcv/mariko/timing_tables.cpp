@@ -20,11 +20,6 @@
 namespace ams::ldr::hoc::pcv::mariko {
 
     const ReplacePatch g_rext_table[] = {
-        {1'633'000, 0x17}, {1'666'000, 0x18}, {1'700'000, 0x18},
-        {1'733'000, 0x18}, {1'766'000, 0x18}, {1'800'000, 0x1A},
-        {1'833'000, 0x1A}, {1'866'000, 0x1A}, {1'900'000, 0x19},
-        {1'933'000, 0x19}, {1'966'000, 0x19}, {2'000'000, 0x19},
-        {2'033'000, 0x19}, {2'066'000, 0x19}, {2'100'000, 0x1A},
         {2'133'000, 0x1A}, {2'166'000, 0x19}, {2'200'000, 0x19},
         {2'233'000, 0x19}, {2'266'000, 0x1A}, {2'300'000, 0x1B},
         {2'333'000, 0x1B}, {2'366'000, 0x1B}, {2'400'000, 0x1B},
@@ -36,17 +31,13 @@ namespace ams::ldr::hoc::pcv::mariko {
         {2'933'000, 0x1C}, {2'966'000, 0x1D}, {3'000'000, 0x1D},
         {3'033'000, 0x1D}, {3'066'000, 0x1D}, {3'100'000, 0x1D},
         {3'133'000, 0x1D}, {3'166'000, 0x1C}, {3'200'000, 0x1C},
-        {3'233'000, 0x1E}, {3'266'000, 0x1F}, {3'300'000, 0x1E},
-        {3'333'000, 0x1F}, {3'366'000, 0x1F}, {3'400'000, 0x1F},
-        {3'433'000, 0x1F}, {3'466'000, 0x1F}, {3'500'000, 0x1E},
     };
-
 
     const u32 g_rext_table_size = sizeof(g_rext_table) / sizeof(g_rext_table[0]);
 
-    const ReplacePatch *FindRext(u32 rate_khz) {
+    const ReplacePatch *FindRext() {
         for (u32 i = 0; i < g_rext_table_size; i++) {
-            if (g_rext_table[i].freq >= rate_khz) {
+            if (g_rext_table[i].freq >= C.marikoEmcMaxClock) {
                 return &g_rext_table[i];
             }
         }

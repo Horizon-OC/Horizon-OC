@@ -120,24 +120,11 @@ namespace ams::ldr::hoc::pcv::erista {
         CalculateMrw2();
 
         tR2P = CEIL((RL * 0.426) - 2.0);
-        tR2W = (2 * WL) + (2 * FLOOR(48.0 / WL)) + 4 + FLOOR((5.653 / tCK_avg) + 0.265) - FLOOR(2.0 / tCK_avg) - (C.t6_tRTW * 3) + finetRTW;
+        tR2W = FLOOR(FLOOR((5.0 / tCK_avg) + ((FLOOR(48.0 / WL) - 0.478) * 3.0)) / 1.501) + RL - (C.t6_tRTW * 3) + finetRTW;
 
         tW2P    = (CEIL(WL * 1.7303) * 2) - 5;
-        tWTPDEN = CEIL(((1.800 / tCK_avg) + MAX(RL + (2.550 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
-        tW2R    = FLOOR(MAX((5.087 / tCK_avg) + 1.030, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
-
-        rdv               = RL + FLOOR((5.678 / tCK_avg) + 18.962);
-        qpop              = rdv - 16;
-        u32 quseSum       = RL + FLOOR(5.659 / tCK_avg) + 4;
-        quse_width        = CEIL((5.363 / tCK_avg) + 4.020) - FLOOR(3.100 / tCK_avg);
-        quse              = quseSum - quse_width;
-        einput_duration   = FLOOR(9.998 / tCK_avg) + 5.0 + quse_width;
-        einput            = quse - (FLOOR(9.998 / tCK_avg) + 1);
-        u32 qrst_duration = FLOOR((1.398 / tCK_avg) + 4.5);
-        u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
-        qrst              = PACK_U32(qrst_duration, qrstLow);
-        ibdly             = PACK_U32_NIBBLE_HIGH_BYTE_LOW(1, quse - qrst_duration - 2.0);
-        qsafe             = (einput_duration + 3) + MAX(MIN(qrstLow * rdv, qrst_duration + qrst_duration), einput);
+        tWTPDEN = CEIL(((1.803 / tCK_avg) + MAX(RL + (2.694 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
+        tW2R    = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
 
         wdv = WL;
         wsv = WL - 2;
@@ -147,8 +134,8 @@ namespace ams::ldr::hoc::pcv::erista {
         u32 obdlyLow  = MAX(WL - FLOOR((126.0 / CEIL(tCK_avg + 8.601))), 0.0);
         obdly         = PACK_U32_NIBBLE_HIGH_BYTE_LOW(obdlyHigh, obdlyLow);
 
-        pdex2rw  = CEIL((7.5 / tCK_avg) + 0.998) + FLOOR(1.75 / tCK_avg) + FLOOR(1.0 / tCK_avg);
-        tCLKSTOP = FLOOR(MIN(8.4996 / tCK_avg, 23.0)) + 7.0 + MIN(CEIL(1.75 / tCK_avg) - 3.0, 1.0);
+        pdex2rw  = CEIL((CEIL(12.335 - tCK_avg) + (7.430 / tCK_avg) - CEIL(tCK_avg * 11.361)));
+        tCLKSTOP = FLOOR(MIN(8.488 / tCK_avg, 23.0)) + 8.0;
 
         const double tMMRI = tRCD + (tCK_avg * 3);
         pdex2mrr           = tMMRI + 10;
