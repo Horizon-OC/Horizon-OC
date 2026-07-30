@@ -45,7 +45,17 @@ namespace fileUtils {
         LockableMutex g_csv_mutex;
         std::atomic_bool g_has_initialized = false;
         bool g_log_enabled = false;
+        bool g_uart_enabled = false;
         std::uint64_t g_last_flag_check = 0;
+
+        bool FlagExists(const char *path) {
+            FILE *file = fopen(path, "r");
+            if (file) {
+                fclose(file);
+                return true;
+            }
+            return false;
+        }
 
         void RefreshFlags(bool force) {
             std::uint64_t now = armTicksToNs(armGetSystemTick());
@@ -53,13 +63,8 @@ namespace fileUtils {
                 return;
             }
 
-            FILE *file = fopen(FILE_LOG_FLAG_PATH, "r");
-            if (file) {
-                g_log_enabled = true;
-                fclose(file);
-            } else {
-                g_log_enabled = false;
-            }
+            g_log_enabled = FlagExists(FILE_LOG_FLAG_PATH);
+            g_uart_enabled = FlagExists(FILE_UART_FLAG_PATH);
 
             g_last_flag_check = now;
         }
@@ -78,8 +83,22 @@ namespace fileUtils {
         return g_log_enabled;
     }
 
+    bool IsUartEnabled() {
+        return g_uart_enabled;
+    }
+
     void LogLine(const char *format, ...) {
         std::scoped_lock lock{ g_log_mutex };
+
+        if (!g_has_initialized) {
+            return;
+        }
+
+        RefreshFlags(false);
+
+        if (!g_log_enabled && !g_uart_enabled) {
+            return;
+        }
 
         va_list args;
         va_start(args, format);
@@ -99,21 +118,19 @@ namespace fileUtils {
         buff[len] = '\0';
 
         // Debug UART log
-        svcOutputDebugString(buff, len);
+        if (g_uart_enabled) {
+            svcOutputDebugString(buff, len);
+        }
 
-        if (g_has_initialized) {
-            RefreshFlags(false);
+        if (g_log_enabled) {
+            FILE *file = fopen(FILE_LOG_FILE_PATH, "a");
 
-            if (g_log_enabled) {
-                FILE *file = fopen(FILE_LOG_FILE_PATH, "a");
+            if (file) {
+                timespec now = {};
+                clock_gettime(CLOCK_REALTIME, &now);
 
-                if (file) {
-                    timespec now = {};
-                    clock_gettime(CLOCK_REALTIME, &now);
-
-                    fprintf(file, "[%luls] %s", now.tv_sec - bootTimeS, buff);
-                    fclose(file);
-                }
+                fprintf(file, "[%luls] %s", now.tv_sec - bootTimeS, buff);
+                fclose(file);
             }
         }
     }
@@ -222,6 +239,7 @@ namespace fileUtils {
 
         g_has_initialized = false;
         g_log_enabled = false;
+        g_uart_enabled = false;
 
         fsdevUnmountAll();
         fsExit();
