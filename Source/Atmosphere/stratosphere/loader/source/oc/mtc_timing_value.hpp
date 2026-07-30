@@ -94,6 +94,16 @@ namespace ams::ldr::hoc {
         inline u32 tWTPDEN;
         inline u32 tW2R;
 
+        inline u32 rdv;
+        inline u32 qpop;
+        inline u32 quse_width;
+        inline u32 quse;
+        inline u32 einput_duration;
+        inline u32 einput;
+        inline u32 qrst;
+        inline u32 ibdly;
+        inline u32 qsafe;
+
         inline u32 wdv;
         inline u32 wsv;
         inline u32 wev;

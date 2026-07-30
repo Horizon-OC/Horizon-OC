@@ -173,8 +173,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 quseSum       = RL + FLOOR(5.110 / tCK_avg) + 4;
         quse_width        = CEIL(MAX((4.7980 / tCK_avg) + 4.046, (5.0680 / tCK_avg) + 3.276)) - FLOOR(2.55 / tCK_avg);
         quse              = quseSum - quse_width;
-        einput_duration   = FLOOR(9.994 / tCK_avg) + 5.0 + quse_width;
-        einput            = quse - (FLOOR(9.994 / tCK_avg) + 1);
+        einput_duration   = FLOOR(9.998 / tCK_avg) + 5.0 + quse_width;
+        einput            = quse - (FLOOR(9.998 / tCK_avg) + 1);
         u32 qrst_duration = FLOOR((1.398 / tCK_avg) + 4.5);
         u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
         qrst              = PACK_U32(qrst_duration, qrstLow);
