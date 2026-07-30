@@ -164,7 +164,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRPab  = tRPpb + 3;
 
         tR2P  = CEIL((RL * 0.426) - 2.0);
-        tR2W  = RL + 2 * (FLOOR(48.0 / WL) - 2) + CEIL((5.036 / tCK_avg) + 0.418) - FLOOR((1.476 / tCK_avg) + 0.05) - (tRTW * 3) + finetRTW;
+        tR2W  = RL + 2 * (FLOOR(48.0 / WL) - 2) + CEIL((5.036 / tCK_avg) + 0.418) - FLOOR((1.5 / tCK_avg) + 0.002) - (tRTW * 3) + finetRTW;
         tRTM  = FLOOR((10.0 + RL) + (3.496 / tCK_avg)) + FLOOR(7.430 / tCK_avg);
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
