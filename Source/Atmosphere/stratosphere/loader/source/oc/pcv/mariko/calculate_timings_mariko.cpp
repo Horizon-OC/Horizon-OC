@@ -164,8 +164,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRPab  = tRPpb + 3;
 
         tR2P  = CEIL((RL * 0.426) - 2.0);
-        tR2W  = RL + 2 * (FLOOR(48.0 / WL) - 2) + CEIL((5.106 / tCK_avg) + 0.260) - FLOOR((1.5 / tCK_avg) + 0.002) - (tRTW * 3) + finetRTW;
-        tRTM  = FLOOR((10.0 + RL) + (3.500 / tCK_avg)) + FLOOR(7.498 / tCK_avg);
+        tR2W  = RL + 2 * (FLOOR(48.0 / WL) - 2) + CEIL((5.036 / tCK_avg) + 0.418) - FLOOR((1.476 / tCK_avg) + 0.05) - (tRTW * 3) + finetRTW;
+        tRTM  = FLOOR((10.0 + RL) + (3.496 / tCK_avg)) + FLOOR(7.430 / tCK_avg);
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
         rdv               = RL + FLOOR((5.109 / tCK_avg) + 17.003);
@@ -182,8 +182,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         qsafe             = (einput_duration + 3) + MAX(MIN(qrstLow * rdv, qrst_duration + qrst_duration), einput);
         tW2P              = (CEIL(WL * 1.7303) * 2) - 5;
         tWTPDEN           = CEIL(((1.800 / tCK_avg) + MAX(RL + (2.550 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
-        tW2R              = FLOOR(MAX((5.087 / tCK_avg) + 1.030, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
-        tWTM              = CEIL(WL + ((7.498 / tCK_avg) + 9.005));
+        tW2R              = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
+        tWTM              = CEIL(WL + ((7.386 / tCK_avg) + 9.150));
         tWATM             = (tWTM + (FLOOR(WL / 0.816) * 2.0)) - 4.0;
 
         wdv = WL;
