@@ -94,7 +94,7 @@ namespace ams::ldr::hoc::pcv::erista {
         WRITE_PARAM_ALL_REG(table, emc_tfaw, GET_CYCLE_CEIL(tFAW));
         WRITE_PARAM_ALL_REG(table, emc_trpab, MIN(GET_CYCLE_CEIL(tRPab), static_cast<u32>(0x3F)));
         WRITE_PARAM_ALL_REG(table, emc_tckesr, GET_CYCLE_CEIL(tSR));
-        WRITE_PARAM_ALL_REG(table, emc_tcke, GET_CYCLE_CEIL(7.425) + 2);
+        WRITE_PARAM_ALL_REG(table, emc_tcke, GET_CYCLE_CEIL(tXP) + MIN(GET_CYCLE_CEIL(1.75) - 2, 2u));
         WRITE_PARAM_ALL_REG(table, emc_tpd, GET_CYCLE_CEIL(tXP));
         WRITE_PARAM_ALL_REG(table, emc_tclkstop, tCLKSTOP);
         WRITE_PARAM_ALL_REG(table, emc_r2p, tR2P);
@@ -109,11 +109,11 @@ namespace ams::ldr::hoc::pcv::erista {
         WRITE_PARAM_ALL_REG(table, emc_dyn_self_ref_control, dyn_self_ref_control);
         WRITE_PARAM_ALL_REG(table, emc_pdex2wr, pdex2rw);
         WRITE_PARAM_ALL_REG(table, emc_pdex2rd, pdex2rw);
-        WRITE_PARAM_ALL_REG(table, emc_pchg2pden, GET_CYCLE_CEIL(1.763));
+        WRITE_PARAM_ALL_REG(table, emc_pchg2pden, GET_CYCLE_CEIL(1.75));
         WRITE_PARAM_ALL_REG(table, emc_ar2pden, GET_CYCLE_CEIL(1.75));
-        WRITE_PARAM_ALL_REG(table, emc_pdex2cke, GET_CYCLE_CEIL(1.05));
-        WRITE_PARAM_ALL_REG(table, emc_act2pden, GET_CYCLE_CEIL(14.0));
-        WRITE_PARAM_ALL_REG(table, emc_cke2pden, GET_CYCLE_CEIL(8.499));
+        WRITE_PARAM_ALL_REG(table, emc_pdex2cke, MAX(GET_CYCLE_CEIL(1.75) - 2, 2u));
+        WRITE_PARAM_ALL_REG(table, emc_act2pden, GET_CYCLE_CEIL(1.75));
+        WRITE_PARAM_ALL_REG(table, emc_cke2pden, GET_CYCLE_CEIL(8.5));
         WRITE_PARAM_ALL_REG(table, emc_pdex2mrr, GET_CYCLE_CEIL(pdex2mrr));
         WRITE_PARAM_ALL_REG(table, emc_rw2pden, tWTPDEN);
 
