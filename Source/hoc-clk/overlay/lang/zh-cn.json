@@ -35,6 +35,8 @@
     "Unsafe Max": "危险最大值",
     "Absolute Max": "绝对最大值",
     "Handheld Safe Max": "掌机安全最大值",
+	"HOS Default": "原厂默认",
+	"HOC Default": "HOC默认",
 
     "General Settings": "通用设置",
     "Governor Settings": "调频器设置",
@@ -181,7 +183,7 @@
     "96.6% limit": "使用率最高96.6%",
     "99.7% limit": "使用率最高99.7%",
     " Setting GPU Clocks past": "警告:未进行合理降压的前提下，",
-    "1305MHz without a proper undervolt": "将GPU频率拉到1228MHz以上（1305MHz），",
+    "1305MHz without a proper undervolt": "将GPU频率拉到1305MHz以上",
     "can cause degradation or damage": "会加速硬件老化损耗，",
     "to your console!": "甚至对主机造成永久性硬件损坏！",
     "1075MHz without UV, 1152MHz on SLT": "无降压1075MHz，SLT下1152MHz",
