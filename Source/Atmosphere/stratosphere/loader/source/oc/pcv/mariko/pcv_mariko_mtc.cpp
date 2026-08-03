@@ -23,6 +23,7 @@
 #include "../pcv.hpp"
 #include "../../mtc_timing_value.hpp"
 #include "calculate_timings_mariko.hpp"
+#include "pcv_mariko_mtc.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
 

@@ -21,6 +21,7 @@
  */
 
 #include "../pcv.hpp"
+#include "pcv_mariko_cpu.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
 

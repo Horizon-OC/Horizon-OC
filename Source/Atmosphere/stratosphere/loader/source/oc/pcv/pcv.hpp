@@ -29,6 +29,9 @@
 #include "erista/pcv_erista.hpp"
 
 #include "mariko/pcv_mariko.hpp"
+#include "mariko/pcv_mariko_cpu.hpp"
+#include "mariko/pcv_mariko_gpu.hpp"
+#include "mariko/pcv_mariko_mtc.hpp"
 
 #include "pcv_hook.hpp"
 

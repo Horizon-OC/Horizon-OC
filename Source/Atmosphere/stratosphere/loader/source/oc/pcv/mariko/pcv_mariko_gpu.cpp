@@ -22,6 +22,7 @@
 
 #include "../pcv.hpp"
 #include "../pcv_asm.hpp"
+#include "pcv_mariko_gpu.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
 
