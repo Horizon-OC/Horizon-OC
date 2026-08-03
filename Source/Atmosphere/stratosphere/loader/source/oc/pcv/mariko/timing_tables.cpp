@@ -35,9 +35,9 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     const u32 g_rext_table_size = sizeof(g_rext_table) / sizeof(g_rext_table[0]);
 
-    const ReplacePatch *FindRext() {
+    const ReplacePatch *FindRext(u32 freq) {
         for (u32 i = 0; i < g_rext_table_size; i++) {
-            if (g_rext_table[i].freq >= C.marikoEmcMaxClock) {
+            if (g_rext_table[i].freq >= freq) {
                 return &g_rext_table[i];
             }
         }

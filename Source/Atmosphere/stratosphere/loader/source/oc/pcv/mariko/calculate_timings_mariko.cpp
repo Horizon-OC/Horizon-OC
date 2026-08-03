@@ -20,8 +20,8 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    void GetRext() {
-        if (auto r = FindRext()) {
+    void GetRext(u32 freq) {
+        if (auto r = FindRext(freq)) {
             rext = r->rext;
             return;
         }
@@ -46,7 +46,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     void AutoLatency(volatile u32 &latency, u32 freq, u32 latencyStep) {
-        if (freq > 1600'000 && freq <= 1862'400) { /* 1866tRWL */
+        if (freq > 1600'000 && freq <= 1866'000) { /* 1866tRWL */
             latency += latencyStep * 2;
         } else { /* 2133tRWL */
             latency += latencyStep * 3;
@@ -130,10 +130,8 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         HandleLatency(freq);
 
-        GetRext();
+        GetRext(freq);
 
-        /* At 1333WL, for some reason (incorrect ram timing config in mtc table?), tRP causes crashes at high reductions - 2 seems to be the most common limit. */
-        /* This is a lazy workaround until I find the issue... */
         const bool lowFreq = freq < C.timingEmcTbreak;
 
         tRCD   = tRCD_values[lowFreq ? C.low_t1_tRCD : C.t1_tRCD];

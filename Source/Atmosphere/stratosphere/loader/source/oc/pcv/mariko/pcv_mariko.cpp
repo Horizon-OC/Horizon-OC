@@ -315,6 +315,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         cmd.val    = val;
         Result res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
         i2csessionClose(&_session);
+
         return res;
     }
 
@@ -349,8 +350,6 @@ namespace ams::ldr::hoc::pcv::mariko {
         i2cInitialize();
         Result resultI2C = I2cSet_U8(I2cDevice_Max77812_2, 0x25, (emc_uv - uv_min) / uv_step);
         i2cExit();
-
-        R_SUCCEED();
 
         return resultI2C;
     }
