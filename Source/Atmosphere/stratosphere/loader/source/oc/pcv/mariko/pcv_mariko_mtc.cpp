@@ -300,7 +300,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     void MtcGenerateJedecTable() {
-        const u32 jedecFreqs[] = { 1866000, 1996000, 2133000, 2400000, 2666000, 2933000, 3200000 };
+        const u32 jedecFreqs[] = { 1866000, 1996800, 2133000, 2400000, 2666000, 2933000, 3200000 };
         constexpr u32 JedecFreqCount = std::size(jedecFreqs);
 
         for (u32 i = 0; i < JedecFreqCount; ++i) {
