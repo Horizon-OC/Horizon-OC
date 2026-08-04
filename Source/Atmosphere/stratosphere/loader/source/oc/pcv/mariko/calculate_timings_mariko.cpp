@@ -177,7 +177,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         qsafe             = (einput_duration + 3) + MAX(MIN(qrstLow * rdv, qrst_duration + qrst_duration), einput);
         tW2P              = (CEIL(WL * 1.7303) * 2) - 5;
         tWTPDEN           = CEIL(((1.803 / tCK_avg) + MAX(RL + (2.694 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));
-        tW2R              = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * (WL - RL)), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
+        const s32 wlToRl  = static_cast<s32>(WL) - static_cast<s32>(RL);
+        tW2R              = FLOOR(MAX((5.020 / tCK_avg) + 1.130, WL - MAX(-CEIL(0.258 * wlToRl), 1.964)) * 1.964) + WL - CEIL(tWTR / tCK_avg) + finetWTR;
         tWTM              = CEIL(WL + ((7.570 / tCK_avg) + 8.753));
         tWATM             = (tWTM + (FLOOR(WL / 0.816) * 2.0)) - 4.0;
 
