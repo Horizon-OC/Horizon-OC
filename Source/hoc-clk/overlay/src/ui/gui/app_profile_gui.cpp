@@ -450,14 +450,8 @@ void AppProfileGui::listUI()
     this->addProfileUI(HocClkProfile_HandheldChargingUSB);
 }
 
-std::string jumpItemString = "Edit App Profile";
-
 void AppProfileGui::changeTo(std::uint64_t applicationId)
 {
-    if (applicationId == HOCCLK_GLOBAL_PROFILE_TID) {
-        jumpItemString = "Edit Global Profile";
-    }
-
     HocClkTitleProfileList* profileList = new HocClkTitleProfileList;
     Result rc = hocclkIpcGetProfiles(applicationId, profileList);
     if(R_FAILED(rc))
@@ -487,5 +481,5 @@ void AppProfileGui::update()
 }
 
 std::string AppProfileGui::getJumpToItemName() {
-    return jumpItemString;
+    return this->applicationId == HOCCLK_GLOBAL_PROFILE_TID ? "Edit Global Profile" : "Edit App Profile";
 }
