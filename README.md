@@ -234,6 +234,8 @@ Refer to COMPILATION.md
 * **Dominatorul, Samybigio, Arcdelta, Miki, Happy, Winnerboi77, Blaise, Alvise, agjeococh, frost, letum00, and Xenshen** - Testing
 * **Samybigio2011, Miki** - Italian translations
 * **angelblaster** - Korean translations
-* **q1332348216-glitch** - Chinese translations
+* **q1332348216-glitch, nangongjing1, xinluochenjiang** - Chinese translations
 * **th3-ne0undr5c0r** - French translations
+* **redraz** - Russian translations
+* **Niklas080208** - JSON language support for sysmodule notifications.
 * **Nvidia** - [Tegra X1 Technical Reference Manual](https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual), soctherm driver, L4T
