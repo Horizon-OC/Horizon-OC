@@ -215,7 +215,7 @@ Refer to COMPILATION.md
 ---
 
 ## Credits
-* **Lightos's Cat** - Cat
+* **Lightos's Cats** - Cats
 * **Souldbminer** - hoc-clk and loader development
 * **Lightos** - Loader patches development, hoc-clk development, guides
 * **TDRR** - HOC Logo Design
