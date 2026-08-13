@@ -142,28 +142,26 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* Redirect the call sites as patching the actual function causes crash */
         const uintptr_t roStart = g_pcv_cave + g_pcv_cave_size; /* module .rodata start */
         size_t patchedSites = 0;
-        if (HOC_PCV_NVLOG_PATCH) {
-            for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 1) <= textEnd; ++p) {
-                if (!AsmIsBl(*p)) {
-                    continue;
+        for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 1) <= textEnd; ++p) {
+            if (!AsmIsBl(*p)) {
+                continue;
+            }
+            const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
+            if (AsmBranchTarget(*p, pc) != nvlog_addr) {
+                continue;
+            }
+            bool isFmtCall = false;
+            for (u32 j = 1; j <= 8 && reinterpret_cast<uintptr_t>(p - j) >= reinterpret_cast<uintptr_t>(nsoStart); ++j) {
+                const u32 w = *(p - j);
+                if (AsmIsAdrp(w) && asm_get_rd(w) == 0) { /* adrp x0,<page> */
+                    const uintptr_t wpc = pc - j * 4;
+                    const uintptr_t tgtPage = (wpc & ~static_cast<uintptr_t>(0xFFFu)) + static_cast<uintptr_t>(AsmAdrpPageOffset(w));
+                    if (tgtPage >= (roStart & ~static_cast<uintptr_t>(0xFFFu))) { isFmtCall = true; break; }
                 }
-                const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
-                if (AsmBranchTarget(*p, pc) != nvlog_addr) {
-                    continue;
-                }
-                bool isFmtCall = false;
-                for (u32 j = 1; j <= 8 && reinterpret_cast<uintptr_t>(p - j) >= reinterpret_cast<uintptr_t>(nsoStart); ++j) {
-                    const u32 w = *(p - j);
-                    if (AsmIsAdrp(w) && asm_get_rd(w) == 0) { /* adrp x0,<page> */
-                        const uintptr_t wpc = pc - j * 4;
-                        const uintptr_t tgtPage = (wpc & ~static_cast<uintptr_t>(0xFFFu)) + static_cast<uintptr_t>(AsmAdrpPageOffset(w));
-                        if (tgtPage >= (roStart & ~static_cast<uintptr_t>(0xFFFu))) { isFmtCall = true; break; }
-                    }
-                }
-                if (isFmtCall) {
-                    PATCH_OFFSET(p, AsmMakeBl(pc, helper));
-                    ++patchedSites;
-                }
+            }
+            if (isFmtCall) {
+                PATCH_OFFSET(p, AsmMakeBl(pc, helper));
+                ++patchedSites;
             }
         }
 
@@ -221,7 +219,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     #if HOC_UART_LOG
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
     Result ForceVerbosity(u32 *ptr) {
-        PATCH_OFFSET(&ptr[0], AsmMakeMovzW(0, static_cast<u16>(HOC_PCV_FORCE_VERBOSITY))); /* movz w0,#level */
+        PATCH_OFFSET(&ptr[0], AsmMakeMovzW(0, static_cast<u16>(C.pcvLogVerbosity))); /* movz w0,#level */
         PATCH_OFFSET(&ptr[1], RetIns);                                                     /* ret            */
         R_SUCCEED();
     }

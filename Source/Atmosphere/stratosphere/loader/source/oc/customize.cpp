@@ -132,7 +132,7 @@ volatile CustomizeTable C = {
                         AUTO /*  153                       */,
                         AUTO /*  192                       */,
                         AUTO /*  230                       */,
-                        AUTO /*  269                       */,
+                        AUTO /*  268                       */,
                         AUTO /*  307                       */,
                         AUTO /*  346                       */,
                         AUTO /*  384                       */,
@@ -218,6 +218,16 @@ volatile CustomizeTable C = {
 /* Advanced. */
 .fineTune_t6_tRTW = 0,
 .fineTune_t7_tWTR = 0,
+
+/* Debugging options             */
+
+/* PCV Log Verbosity              */
+/* -1: Nothing                    */
+/* 0:  Basic logging              */
+/* 1:  More advanced logging      */
+/* 2:  All logging excluding MMIO */
+/* 3:  All logging including MMIO */
+.pcvLogVerbosity = 2,
 
 /* You shouldn't have to anything past here. */
 .eristaCpuDvfsTable = {

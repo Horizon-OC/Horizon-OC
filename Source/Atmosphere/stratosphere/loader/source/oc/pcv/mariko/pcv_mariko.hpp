@@ -151,7 +151,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     inline bool ForceVerbosityPatternFn(u32 *ptr) {
-        if (HOC_PCV_FORCE_VERBOSITY == 0 || g_pcv_cave == 0) {
+        if (g_pcv_cave == 0) {
             return false;
         }
         if (reinterpret_cast<uintptr_t>(ptr + 11) > g_pcv_cave) {   /* .text only */

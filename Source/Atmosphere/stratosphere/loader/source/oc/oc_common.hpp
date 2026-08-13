@@ -32,7 +32,6 @@
 #endif
 
 #define HOC_PCV_NVLOG_PATCH 1
-#define HOC_PCV_FORCE_VERBOSITY 1
 
 #include "customize.hpp"
 #include "oc_log.hpp"

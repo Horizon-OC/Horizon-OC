@@ -132,7 +132,9 @@ struct CustomizeTable {
     u32 fineTune_t6_tRTW;
     u32 fineTune_t7_tWTR;
 
-    u32 reserved[60];
+    u32 pcvLogVerbosity;
+
+    u32 reserved[58];
 
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable eristaCpuDvfsTableSLT;
