@@ -62,7 +62,7 @@ namespace ams::ldr::hoc::nvsrv {
             }
             if (entry_addr == 0) {
                 LOGGING("nvsrv: %s str@+%lx has no referencing table entry", description,
-                        static_cast<unsigned long>(str_offset), static_cast<unsigned long>(candidates[0]), static_cast<unsigned long>(candidates[1]));
+                        static_cast<unsigned long>(str_offset));
                 R_THROW(ldr::ResultInvalidNvsrvDevTable());
             }
 
