@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Souldbminer, Lightos and Horizon OC Contributors
+ * Copyright (c) Souldbminer, Lightos_ and Horizon OC Contributors
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -12,13 +12,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
 
 #pragma once
-#include <switch.h>
 
-Result QueryMemoryMapping(u64 *virtaddr, u64 physaddr, u64 size);
-Result MapAddress(u64 &va, const u64 &physAddr, const char *name);
-Result SmcCopyFromIram(void *dest, uintptr_t src, u32 size);
-Result SmcCopyToIram(uintptr_t dest, const void *src, u32 size);
+#include "../oc_common.hpp"
+
+namespace ams::ldr::hoc::nvsrv {
+    void Patch(uintptr_t mapped_nso, size_t nso_size, uintptr_t nso_address);
+}

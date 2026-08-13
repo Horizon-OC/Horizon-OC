@@ -121,9 +121,10 @@ namespace ams::ldr {
         /* Global NSO header cache. */
         NsoHeader g_nso_headers[Nso_Count];
 
-        /* Pcv/Ptm check cache */
+        /* Pcv/Ptm/NvServices check cache */
         bool g_is_pcv;
         bool g_is_ptm;
+        bool g_is_nvsrv;
 
         /* Global Zstd decompression context. */
         constexpr size_t ZstdDctxWorkspaceSize = 0x176E8;
@@ -379,6 +380,7 @@ namespace ams::ldr {
             /* Check if NCA is PCV or PTM */
             g_is_pcv = meta->aci->program_id == ncm::SystemProgramId::Pcv;
             g_is_ptm = meta->aci->program_id == ncm::SystemProgramId::Ptm;
+            g_is_nvsrv = meta->aci->program_id == ncm::SystemProgramId::NvServices;
 
             /* If we have data to validate, validate it. */
             if (meta->check_verification_data) {
@@ -751,6 +753,10 @@ namespace ams::ldr {
 
                 if (g_is_ptm) {
                     hoc::ptm::Patch(map_address, nso_size);
+                }
+
+                if (g_is_nvsrv) {
+                    hoc::nvsrv::Patch(map_address, nso_size, nso_address);
                 }
             }
 

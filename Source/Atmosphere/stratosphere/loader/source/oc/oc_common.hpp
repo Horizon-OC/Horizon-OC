@@ -94,6 +94,7 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(HookPayloadEscapes,        1028);
     R_DEFINE_ERROR_RESULT(HookDataOutOfMemory,       1029);
     R_DEFINE_ERROR_RESULT(HookUnavailable,           1030);
+    R_DEFINE_ERROR_RESULT(InvalidNvsrvDevTable,      1031);
 }
 
 namespace ams::ldr::hoc {
