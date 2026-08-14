@@ -62,6 +62,15 @@ namespace ams::ldr::hoc::pcv::mariko {
             PATCH_OFFSET(ptr +  9, C.marikoGpuVmin);
             PATCH_OFFSET(ptr + 12, C.marikoGpuVmin);
         }
+        
+        if (C.marikoGpuVmax) {
+            PATCH_OFFSET(ptr -  2, C.marikoGpuVmax);
+            PATCH_OFFSET(ptr +  1, C.marikoGpuVmax);
+            PATCH_OFFSET(ptr +  4, C.marikoGpuVmax);
+            PATCH_OFFSET(ptr +  7, C.marikoGpuVmax);
+            PATCH_OFFSET(ptr + 10, C.marikoGpuVmax);
+            PATCH_OFFSET(ptr + 13, C.marikoGpuVmax);
+        }
 
         R_SUCCEED();
     }
