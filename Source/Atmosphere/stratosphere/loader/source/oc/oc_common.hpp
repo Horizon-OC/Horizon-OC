@@ -31,8 +31,6 @@
     #define HOC_UART_LOG 0
 #endif
 
-#define HOC_PCV_NVLOG_PATCH 1
-
 #include "customize.hpp"
 #include "oc_log.hpp"
 

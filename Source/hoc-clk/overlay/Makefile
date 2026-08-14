@@ -26,6 +26,8 @@ DATA		:=	data ../assets
 INCLUDES	:=	../common/include
 EXEFS_SRC	:=	exefs_src
 IS_MINIMAL	:=	0
+OVERLAY_DEBUG ?= 0
+
 
 APP_TITLE	:=	Horizon OC
 NO_ICON		:=	1
@@ -46,6 +48,9 @@ TARGET_VERSION := $(APP_VERSION)
 # options for code generation
 #---------------------------------------------------------------------------------
 DEFINES := -DDISABLE_IPC -DTARGET="\"$(TARGET)\"" -DTARGET_VERSION="\"$(TARGET_VERSION)\"" -DIS_MINIMAL=$(IS_MINIMAL)
+ifeq ($(OVERLAY_DEBUG),1)
+    DEFINES += -DOVERLAY_DEBUG
+endif
 
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 

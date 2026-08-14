@@ -228,6 +228,8 @@ typedef enum {
     KipConfigValue_t6_tRTW_fine_tune,
     KipConfigValue_t7_tWTR_fine_tune,
 
+    KipConfigValue_PcvDebugVerbosity,
+
     KipCrc32,
     HocClkConfigValue_EnumMax,
 } HocClkConfigValue;
@@ -512,7 +514,7 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
         case KipConfigValue_g_volt_e_1075200: return pretty ? "Erista GPU Volt 1075 MHz" : "g_volt_e_1075200";
         case KipConfigValue_t6_tRTW_fine_tune: return pretty ? "t6 - tRTW Fine Tune" : "t6_tRTW_fine_tune";
         case KipConfigValue_t7_tWTR_fine_tune: return pretty ? "t7 - tWTR Fine Tune" : "t7_tWTR_fine_tune";
-
+        case KipConfigValue_PcvDebugVerbosity: return pretty ? "Pcv Debug Verbosity" : "debug_verbosity";
         case KipConfigValue_g_soc_volt_1866000: return pretty ? "Mariko SOC Volt 1866 MHz" : "g_soc_volt_1866000";
         case KipConfigValue_g_soc_volt_2000000: return pretty ? "Mariko SOC Volt 2000 MHz" : "g_soc_volt_2000000";
         case KipConfigValue_g_soc_volt_2133000: return pretty ? "Mariko SOC Volt 2133 MHz" : "g_soc_volt_2133000";
@@ -780,6 +782,7 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case HocClkConfigValue_AulaDisplayColorPreset:
         case HocClkConfigValue_AutoRamCpuCpuOCFreq:
         case HocClkConfigValue_AutoRamCpuRamOCThreshold:
+        case KipConfigValue_PcvDebugVerbosity:
             return true;
         case HocClkConfigValue_BatteryChargeCurrent:
             return ((input >= 1024) && (input <= 3072)) || !input;

@@ -66,7 +66,9 @@ class CpuSubmenuGui;
 class GpuSubmenuGui;
 class GpuCustomTableSubmenuGui;
 class ExperimentalSettingsSubMenuGui;
-
+#ifdef OVERLAY_DEBUG
+class DebugSettingsSubMenuGui;
+#endif
 MiscGui::MiscGui() {
     this->configList = new HocClkConfigValueList{};
 }
@@ -735,7 +737,18 @@ void MiscGui::listUI() {
         experimentalSubMenu->setValue(R_ARROW);
         this->listElement->addItem(experimentalSubMenu);
     }
-
+    #ifdef OVERLAY_DEBUG
+    tsl::elm::ListItem *debugSubMenu = new tsl::elm::ListItem("Debug Settings");
+    debugSubMenu->setClickListener([](u64 keys) {
+        if (keys & HidNpadButton_A) {
+            tsl::swapTo<DebugSettingsSubMenuGui>();
+            return true;
+        }
+        return false;
+    });
+    debugSubMenu->setValue(R_ARROW);
+    this->listElement->addItem(debugSubMenu);
+    #endif
     if (!lastItemName.empty()) {
         this->listElement->jumpToItem(lastItemName);
     }
@@ -927,6 +940,44 @@ class ExperimentalSettingsSubMenuGui : public MiscGui {
         }
     }
 };
+
+#ifdef OVERLAY_DEBUG
+class DebugSettingsSubMenuGui : public MiscGui {
+    public:
+    DebugSettingsSubMenuGui() {
+    }
+
+    bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState leftJoyStick,
+                      HidAnalogStickState rightJoyStick) override {
+        if (keysDown & KEY_B) {
+            triggerExitFeedback();
+            lastItemName = "Debug Settings";
+            tsl::swapTo<MiscGui>();
+            return true;
+        }
+        return false;
+    }
+
+    protected:
+    void listUI() override {
+        Result rc = hocclkIpcGetConfigValues(this->configList);
+        if (R_FAILED(rc)) [[unlikely]] {
+            FatalGui::openWithResultCode("hocclkIpcGetConfigValues", rc);
+            return;
+        }
+        this->listElement->addItem(new CompactCategoryHeader("Debug Settings"));
+        ValueThresholds thresholdsDisabled(0, 0);
+        std::vector<NamedValue> VerbosityList = {
+            NamedValue("Disabled", 0xff), NamedValue("0", 0), NamedValue("1", 1),
+            NamedValue("2", 2), NamedValue("3", 3),
+        };
+
+        addConfigButton(KipConfigValue_PcvDebugVerbosity, "PCV Log Verbosity", ValueRange(0, 0, 1, "", 0),
+                        "Verbosity", &thresholdsDisabled, {}, VerbosityList, false, true);
+    }
+};
+
+#endif
 
 class GovernorSettingsSubMenuGui : public MiscGui {
     public:

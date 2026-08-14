@@ -99,8 +99,10 @@ namespace kip {
 
         u32 t6_tRTW_fine_tune;
         u32 t7_tWTR_fine_tune;
+        
+        u32 pcvLogVerbosity;
 
-        u32 reserved[60];
+        u32 reserved[58];
     } CustomizeTable;
 
 #define CUST_MAGIC "CUST"
@@ -503,6 +505,10 @@ namespace kip {
     }
     static inline u32 cust_get_tWTR_fine_tune(const CustomizeTable *t) {
         return CUST_GET_FIELD(t, t7_tWTR_fine_tune);
+    }
+
+    static inline u32 cust_get_log_verbosity(const CustomizeTable *t) {
+        return CUST_GET_FIELD(t, pcvLogVerbosity);
     }
 
     static inline u32 cust_get_read_latency_1333(const CustomizeTable *t) {

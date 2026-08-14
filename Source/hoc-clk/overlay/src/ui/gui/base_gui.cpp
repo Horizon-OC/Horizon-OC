@@ -71,6 +71,7 @@ std::string getVersionString() {
 static constexpr tsl::Color dynamicLogoRGB1 = tsl::Color(7, 15, 15, 15);
 static constexpr tsl::Color dynamicLogoRGB2 = tsl::Color(2, 8, 11, 15);
 static constexpr tsl::Color STATIC_TEAL = tsl::Color(7, 15, 15, 15);
+
 const std::string name = " Horizon OC";
 
 static s32 drawDynamicUltraText(tsl::gfx::Renderer *renderer, s32 startX, s32 y, u32 fontSize, const tsl::Color &staticColor,
@@ -131,8 +132,11 @@ void BaseGui::preDraw(tsl::gfx::Renderer *renderer) {
     renderer->drawBitmap(LOGO_X, LOGO_Y_REAL - LOGO_LABEL_FONT_SIZE, LOGO_IMG_W, LOGO_IMG_H, hoc_rgba);
 
     drawDynamicUltraText(renderer, LOGO_TEXT_X, TEXT_Y, LOGO_LABEL_FONT_SIZE, STATIC_TEAL, false);
-
+    #ifdef OVERLAY_DEBUG
+    static const std::string versionStr = "Version " + getVersionString() + "  \"Athena (debug)\"";
+    #else
     static const std::string versionStr = "Version " + getVersionString() + "  \"Athena\"";
+    #endif
     static constexpr tsl::Color versionColor(9, 9, 9, 15);
     static constexpr s32 vx = LOGO_TEXT_X + 15;
     static constexpr s32 vy = TEXT_Y + 18;

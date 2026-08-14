@@ -145,6 +145,7 @@ namespace kip {
 
         CUST_WRITE_FIELD_BATCH(&table, t6_tRTW_fine_tune, config::GetConfigValue(KipConfigValue_t6_tRTW_fine_tune));
         CUST_WRITE_FIELD_BATCH(&table, t7_tWTR_fine_tune, config::GetConfigValue(KipConfigValue_t7_tWTR_fine_tune));
+        CUST_WRITE_FIELD_BATCH(&table, pcvLogVerbosity,   config::GetConfigValue(KipConfigValue_PcvDebugVerbosity));
 
         if (!cust_write_table_f(fp, &table)) {
             fclose(fp);
@@ -328,6 +329,8 @@ namespace kip {
 
         configValues.values[KipConfigValue_t7_tWTR_fine_tune] = cust_get_tWTR_fine_tune(&table);
         configValues.values[KipConfigValue_t6_tRTW_fine_tune] = cust_get_tRTW_fine_tune(&table);
+
+        configValues.values[KipConfigValue_PcvDebugVerbosity] = cust_get_log_verbosity(&table);
 
         if (sizeof(HocClkConfigValueList) <= sizeof(configValues)) {
             if (config::SetConfigValues(&configValues, true)) {

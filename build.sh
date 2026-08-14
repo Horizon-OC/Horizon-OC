@@ -5,7 +5,7 @@ LDR_MAKE="nx_release"
 LDR_SET=0
 NO_EXO=0
 JOBS=""
-UART_LOGGING=0
+DEBUG_BUILD=0
 
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DIST_DIR="$ROOT_DIR/dist"
@@ -19,8 +19,8 @@ while [ $# -gt 0 ]; do
             LDR_MAKE="${1#*=}"
             LDR_SET=1
             ;;
-        -u|--uart)
-            UART_LOGGING=1
+        -d|--debug)
+            DEBUG_BUILD=1
             ;;
         --no-exo)
             NO_EXO=1
@@ -40,7 +40,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ "$UART_LOGGING" -eq 1 ] && [ "$LDR_SET" -eq 0 ]; then
+if [ "$DEBUG_BUILD" -eq 1 ] && [ "$LDR_SET" -eq 0 ]; then
     LDR_MAKE="nx_audit"
 fi
 
@@ -55,8 +55,8 @@ if [ "$NO_EXO" -eq 1 ]; then
     echo "NO_EXO = 1"
 fi
 
-if [ "$UART_LOGGING" -eq 1 ]; then
-    echo "UART_LOGGING = 1 (loader build: $LDR_MAKE, UART logging enabled)"
+if [ "$DEBUG_BUILD" -eq 1 ]; then
+    echo "DEBUG_BUILD = 1 (loader build: $LDR_MAKE, debug build =)"
 fi
 
 CORES="$(nproc --all)"
@@ -144,7 +144,7 @@ done
 echo
 echo "*** Compiling loader ***"
 cd build/atmosphere/stratosphere/loader || exit 1
-make -j$JOBS HOC_UART_LOG=$UART_LOGGING "$LDR_MAKE"
+make -j$JOBS HOC_UART_LOG=$DEBUG_BUILD "$LDR_MAKE"
 hactool -t kip1 "out/nintendo_nx_arm64_armv8a/$LDR_BUILD_PATH/loader.kip" --uncompress=hoc.kip
 cd "$ROOT_DIR" # exit
 cp -v build/atmosphere/stratosphere/loader/hoc.kip dist/atmosphere/kips/hoc.kip
@@ -165,7 +165,11 @@ if [ -n "$ATMOSPHERE_CCACHE" ]; then
 fi
 
 cd Source/hoc-clk/
-./build.sh
+if [ "$DEBUG_BUILD" -eq 1 ]; then
+    ./build.sh "" -d
+else
+    ./build.sh
+fi
 cp -r dist/ ../../
 
 cd "$ROOT_DIR"

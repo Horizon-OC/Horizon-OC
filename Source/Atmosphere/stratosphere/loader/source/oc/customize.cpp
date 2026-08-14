@@ -222,7 +222,7 @@ volatile CustomizeTable C = {
 /* Debugging options             */
 
 /* PCV Log Verbosity              */
-/* -1: Nothing                    */
+/* 0xFF: Nothing                    */
 /* 0:  Basic logging              */
 /* 1:  More advanced logging      */
 /* 2:  All logging excluding MMIO */
