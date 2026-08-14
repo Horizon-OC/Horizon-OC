@@ -38,7 +38,7 @@ namespace ams::ldr::hoc::nvsrv {
         }
 
         /* Unlock the devices */
-        Result UnlockDevicePermission(uintptr_t mapped_nso, size_t nso_size, uintptr_t nso_address, const char *path, const char *description) {
+        Result UnlockDevicePermission(uintptr_t mapped_nso, size_t nso_size, uintptr_t nso_address, const char *path, [[maybe_unused]] const char *description) {
             const size_t path_len = std::strlen(path) + 1;
 
             const uintptr_t str_addr = FindBytes(mapped_nso, mapped_nso + nso_size, path, path_len);
@@ -94,7 +94,7 @@ namespace ams::ldr::hoc::nvsrv {
         };
 
         for (auto &t : targets) {
-            const Result res = UnlockDevicePermission(mapped_nso, nso_size, nso_address, t.path, t.description);
+            [[maybe_unused]] const Result res = UnlockDevicePermission(mapped_nso, nso_size, nso_address, t.path, t.description);
             LOGGING("nvsrv: %s unlock%s", t.description, R_SUCCEEDED(res) ? "ed" : " skipped");
         }
     }
