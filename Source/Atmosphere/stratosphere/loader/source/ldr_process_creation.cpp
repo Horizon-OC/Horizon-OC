@@ -755,8 +755,9 @@ namespace ams::ldr {
                     hoc::ptm::Patch(map_address, nso_size);
                 }
 
+                // TODO: figure out the cause of crashes with nvsrv patches
                 if (g_is_nvsrv) {
-                    hoc::nvsrv::Patch(map_address, nso_size, nso_address);
+                    // hoc::nvsrv::Patch(map_address, nso_size, nso_address);
                 }
             }
 
