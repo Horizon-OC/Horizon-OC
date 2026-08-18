@@ -155,7 +155,8 @@ Refer to COMPILATION.md
 * 40   → Erista only
 
 ### CPU clocks (mhz)
-* 2703 → mariko absolute max, dangerous
+* 2805 → mariko absolute max, dangerous
+* 2703
 * 2601 → unsafe
 * 2499
 * 2397 → mariko safe max with UV (low speedo)

@@ -2170,12 +2170,13 @@ class CpuSubmenuGui : public MiscGui {
                             {}, false, true);
 
             ValueThresholds mCpuVoltThresholds(1160, 1180);
-            addConfigButton(KipConfigValue_marikoCpuMaxVolt, "CPU Max Voltage", ValueRange(1000, 1200, 5, "mV", 1), "CPU Max Voltage",
+            addConfigButton(KipConfigValue_marikoCpuMaxVolt, "CPU Max Voltage", ValueRange(1000, 1235, 5, "mV", 1), "CPU Max Voltage",
                             &mCpuVoltThresholds, {}, {}, false, true);
 
             std::vector<NamedValue> maxClkOptions = {
                 NamedValue("1963 MHz", 1963500, "Rating"), NamedValue("2091 MHz", 2091000), NamedValue("2193 MHz", 2193000), NamedValue("2295 MHz", 2295000),
-                NamedValue("2397 MHz", 2397000, "Safe Max"), NamedValue("2499 MHz", 2499000, "Unsafe Max"), NamedValue("2601 MHz", 2601000), NamedValue("2703 MHz", 2703000, "Absolute Max"),
+                NamedValue("2397 MHz", 2397000, "Safe Max"), NamedValue("2499 MHz", 2499000, "Unsafe Max"), NamedValue("2601 MHz", 2601000), NamedValue("2703 MHz", 2703000),
+                NamedValue("2805 MHz", 2805000, "Absolute Max"),
             };
 
             addConfigButton(KipConfigValue_marikoCpuMaxClock, "CPU Max Clock", ValueRange(0, 0, 1, "", 1), "CPU Max Clock",
@@ -2187,6 +2188,7 @@ class CpuSubmenuGui : public MiscGui {
                 NamedValue("1581 MHz", 1581000), NamedValue("1683 MHz", 1683000, "Default"), NamedValue("1785 MHz", 1785000), NamedValue("1887 MHz", 1887000),
                 NamedValue("1963 MHz", 1963500), NamedValue("2091 MHz", 2091000), NamedValue("2193 MHz", 2193000), NamedValue("2295 MHz", 2295000),
                 NamedValue("2397 MHz", 2397000), NamedValue("2499 MHz", 2499000), NamedValue("2601 MHz", 2601000), NamedValue("2703 MHz", 2703000),
+                NamedValue("2805 MHz", 2805000),
             };
 
             addConfigButton(KipConfigValue_marikoCpuBoostClock, "CPU Boost Clock", ValueRange(0, 0, 1, "", 1), "CPU Boost Clock",

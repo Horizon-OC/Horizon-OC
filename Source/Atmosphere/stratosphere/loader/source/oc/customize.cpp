@@ -26,7 +26,7 @@
 #define DISABLED 0
 #define DEACTIVATED_GPU_FREQ 2000
 #define GPU_MIN_MIN_VOLT 480000
-#define CPU_MAX_MAX_VOLT 1200000
+#define CPU_MAX_MAX_VOLT 1235000
 
 namespace ams::ldr::hoc {
 
@@ -100,13 +100,14 @@ volatile CustomizeTable C = {
 /* 1120mV is NVIDIA rating */
 .marikoCpuMaxVolt  = 1120,
 
-/* Supported values: 1963500, 2091000, 2193000, 2295000, 2397000, 2499000, 2601000, 2703000. */
-/* 1963500 is official rating of T214/Mariko, fully safe. */
-/* 2091000-2295000 is a slight OC which should work on all units, but no guarantees. */
-/* 2397000 is the max safe OC for most average units with tuned undervolt. */
-/* 2499000 should be used with caution. */
-/* 2601000 exceeds pmic limit on most consoles. */
-/* 2703000 is potentially dangerous and not advised. */
+/* Supported values: 1963500, 2091000, 2193000, 2295000, 2397000, 2499000, 2601000, 2703000, 2805000.  */
+/* 1963500 is official rating of T214/Mariko, fully safe.                                              */
+/* 2091000-2295000 is a slight OC which should work on all units, but no guarantees.                   */
+/* 2397000 is the max safe OC for most average units with tuned undervolt.                             */
+/* 2499000 should be used with caution.                                                                */
+/* 2601000 exceeds pmic limit on most consoles.                                                        */
+/* 2703000 is potentially dangerous and not advised.                                                   */
+/* 2805000 can only be ran on the best of consoles and may be dangerous due to the voltage requirement */
 .marikoCpuMaxClock = 1963500,
 
 .eristaCpuBoostClock = 1785000, /* Default boost clock */
@@ -328,6 +329,7 @@ volatile CustomizeTable C = {
     { 2499000, { 1580725, -35815, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2601000, { 1702903, -36675, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2703000, { 1770375, -37515, 113, }, { CPU_MAX_MAX_VOLT, } },
+	{ 2805000, { 1838820, -37707, 113, }, { CPU_MAX_MAX_VOLT, } },
 },
 
 .marikoCpuDvfsTable1581Tbreak {
@@ -356,6 +358,7 @@ volatile CustomizeTable C = {
     { 2499000, { 1736856, -35286, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2601000, { 1787838, -35967, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2703000, { 1838820, -36648, 113, }, { CPU_MAX_MAX_VOLT, } },
+	{ 2805000, { 1908891, -37707, 113, }, { CPU_MAX_MAX_VOLT, } },
 },
 
 .marikoCpuDvfsTable1683Tbreak {
@@ -384,6 +387,7 @@ volatile CustomizeTable C = {
     { 2499000, { 1736856, -35286, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2601000, { 1787838, -35967, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2703000, { 1838820, -36648, 113, }, { CPU_MAX_MAX_VOLT, } },
+	{ 2805000, { 1908891, -37707, 113, }, { CPU_MAX_MAX_VOLT, } },
 },
 
 .marikoCpuDvfsTableExtreme {
@@ -412,6 +416,7 @@ volatile CustomizeTable C = {
     { 2499000, { 1580725, -35815, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2601000, { 1702903, -36675, 113, }, { CPU_MAX_MAX_VOLT, } },
     { 2703000, { 1775375, -37515, 113, }, { CPU_MAX_MAX_VOLT, } },
+	{ 2805000, { 1838820, -37707, 113, }, { CPU_MAX_MAX_VOLT, } },
 },
 
 .eristaGpuDvfsTable = {

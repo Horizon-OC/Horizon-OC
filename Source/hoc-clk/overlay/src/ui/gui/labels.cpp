@@ -21,12 +21,12 @@
 
 std::map<uint32_t, std::string> cpu_freq_label_m = {
     { 612000000, "Sleep Mode" }, { 1020000000, "Stock" },      { 1224000000, "Dev OC" },       { 1785000000, "Boost Mode" },
-    { 1963000000, "Safe Max" },  { 2397000000, "Unsafe Max" }, { 2703000000, "Absolute Max" },
+    { 1963000000, "Safe Max" },  { 2397000000, "Unsafe Max" }, { 2805000000, "Absolute Max" },
 };
 
 std::map<uint32_t, std::string> cpu_freq_label_m_uv = {
     { 612000000, "Sleep Mode" }, { 1020000000, "Stock" },      { 1224000000, "Dev OC" },       { 1785000000, "Boost Mode" },
-    { 2397000000, "Safe Max" },  { 2499000000, "Unsafe Max" }, { 2703000000, "Absolute Max" },
+    { 2397000000, "Safe Max" },  { 2499000000, "Unsafe Max" }, { 2805000000, "Absolute Max" },
 };
 
 std::map<uint32_t, std::string> cpu_freq_label_e = {
