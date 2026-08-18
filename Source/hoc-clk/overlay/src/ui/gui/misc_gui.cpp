@@ -2372,8 +2372,10 @@ class GpuSubmenuGui : public MiscGui {
             addConfigButton(KipConfigValue_marikoGpuVmin, "GPU VMIN", ValueRange(0, 0, 0, "0", 1), "GPU VMIN", &thresholdsDisabled, {}, mGpuVoltsVmin,
                             false, true);
             ValueThresholds MgpuVmaxThresholds(805, 850);
-            addConfigButton(KipConfigValue_marikoGpuVmax, "GPU Maximum Voltage", ValueRange(800, 960, 5, "mV", 1), "GPU Maximum Voltage",
-                            &MgpuVmaxThresholds, {}, {}, false, true);
+            if(IsMariko()) {
+                addConfigButton(KipConfigValue_marikoGpuVmax, "GPU Maximum Voltage", ValueRange(800, 960, 5, "mV", 1), "GPU Maximum Voltage",
+                                &MgpuVmaxThresholds, {}, {}, false, true);
+            }
         }
 
         std::vector<NamedValue> gpuOffset = {
