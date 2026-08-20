@@ -38,6 +38,7 @@ namespace ams::ldr::hoc {
 
     /* DQS output access time from CK_t/CK_c. */
     const double tDQSCK_max = 3.5;
+
     /* Write preamble. (tCK) */
     const u32 tWPRE = 2;
 
@@ -58,6 +59,11 @@ namespace ams::ldr::hoc {
 
     /* Write recovery time. */
     const u32 tWR = 18;
+
+    /* TODO: Add comments (lazy) */
+    const double chip_delay       = 1.109; /* ns. */
+    const double round_trip_delay = 0.5;   /* ns. */
+    const double fly_by_time      = chip_delay + round_trip_delay;
 
     namespace pcv::erista {
         const std::array<u32,       8> tRCD_values    = { 18, 17, 16, 15, 14, 13, 12, 11 };
