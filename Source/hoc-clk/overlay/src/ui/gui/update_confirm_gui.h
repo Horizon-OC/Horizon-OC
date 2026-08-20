@@ -1,5 +1,4 @@
 /*
- *
  * Copyright (c) Souldbminer, Lightos_ and Horizon OC Contributors
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -13,29 +12,30 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
  */
+
 #pragma once
 #include <string>
 #include <vector>
 
 #include "base_menu_gui.h"
 
-// Word-wraps and appends `paragraphs` to `list` as CustomDrawer text items,
-// using the same layout/rendering rules InfoGui uses for its body text.
-void addWrappedTextItems(tsl::elm::List *list, const std::vector<std::string> &paragraphs);
+class UpdateGui;
 
-class InfoGui : public BaseMenuGui {
-    public:
-    InfoGui(std::string title, std::vector<std::string> strings);
-    ~InfoGui() = default;
+class UpdateConfirmGui : public BaseMenuGui {
+public:
+    UpdateConfirmGui(UpdateGui *parent, int packageIndex, std::string packageName,
+                      std::string tag, std::vector<std::string> changelog);
+    ~UpdateConfirmGui() = default;
+
     void listUI() override;
-    bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState leftJoyStick,
-                      HidAnalogStickState rightJoyStick) override {
-        return false;
-    }
+    bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos,
+                      HidAnalogStickState leftJoy, HidAnalogStickState rightJoy) override;
 
-    private:
-    std::string m_title;
-    std::vector<std::string> m_strings;
+private:
+    UpdateGui *m_parent;
+    int m_packageIndex;
+    std::string m_packageName;
+    std::string m_tag;
+    std::vector<std::string> m_changelog;
 };

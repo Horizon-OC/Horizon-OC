@@ -64,23 +64,26 @@ static std::vector<std::string> wrapText(const std::string &text, s32 maxWidth) 
     return lines;
 }
 
-void InfoGui::listUI() {
-    this->listElement->addItem(new tsl::elm::CategoryHeader(m_title));
-
+void addWrappedTextItems(tsl::elm::List *list, const std::vector<std::string> &paragraphs) {
     const s32 maxWidth = tsl::cfg::FramebufferWidth - MARGIN_L - MARGIN_R;
 
-    for (const auto &para : m_strings) {
+    for (const auto &para : paragraphs) {
         for (const auto &lineText : wrapText(para, maxWidth)) {
             auto *d = new FocusableDrawer([lineText](tsl::gfx::Renderer *r, s32 x, s32 y, s32 w, s32 h) {
                 r->drawString((lineText + "\n").c_str(), false, x + MARGIN_L, y + LINE_H - 5, TEXT_SIZE, tsl::style::color::ColorText);
             });
             d->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, LINE_H);
-            this->listElement->addItem(d, LINE_H);
+            list->addItem(d, LINE_H);
         }
 
         // paragraph gap
         auto *gap = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *, s32, s32, s32, s32) {});
         gap->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, PARA_GAP);
-        this->listElement->addItem(gap, PARA_GAP);
+        list->addItem(gap, PARA_GAP);
     }
+}
+
+void InfoGui::listUI() {
+    this->listElement->addItem(new tsl::elm::CategoryHeader(m_title));
+    addWrappedTextItems(this->listElement, m_strings);
 }
