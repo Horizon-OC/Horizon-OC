@@ -76,19 +76,20 @@ namespace ams::ldr::hoc::pcv::mariko {
         uintptr_t nvlog_addr = 0;
         for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 2) <= textEnd; ++p) {
             const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
-            if (!AsmIsAdrp(p[0])) {
+            if (!_asm::IsOp(p[0], _asm::op::Adrp, _asm::field::Rd, _asm::field::ImmAdrpHi, _asm::field::ImmAdrpLo)) {
                 continue;
             }
-            const uintptr_t adrpPage = (pc & ~static_cast<uintptr_t>(0xFFFu)) + static_cast<uintptr_t>(AsmAdrpPageOffset(p[0]));
-            if (adrpPage != (strAddr & ~static_cast<uintptr_t>(0xFFFu))) {
+            if (_asm::TargetAdrp(p[0], pc) != (strAddr & ~static_cast<uintptr_t>(0xFFFu))) {
                 continue;
             }
-            const u32 reg = asm_get_rd(p[0]);
-            if (!(AsmIsAddImm64(p[1]) && asm_get_rd(p[1]) == reg && AsmGetRn(p[1]) == reg && AsmGetImm12(p[1]) == (strAddr & 0xFFFu))) {
+            const u32 adrpReg = _asm::Get(p[0], _asm::field::Rd);
+            if (!(_asm::IsOp(p[1], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12)
+                  && _asm::Get(p[1], _asm::field::Rd) == adrpReg && _asm::Get(p[1], _asm::field::Rn) == adrpReg
+                  && _asm::Get(p[1], _asm::field::Imm12) == (strAddr & 0xFFFu))) {
                 continue;
             }
             for (u32 k = 2; k <= 12 && (pc + (k + 1) * 4) <= textEnd; ++k) {
-                if (AsmIsBl(p[k])) { nvlog_addr = AsmBranchTarget(p[k], pc + k * 4); break; }
+                if (_asm::IsOp(p[k], _asm::op::Bl, _asm::field::Imm26)) { nvlog_addr = _asm::Target26(p[k], pc + k * 4); break; }
             }
             if (nvlog_addr != 0) {
                 break;
@@ -109,77 +110,81 @@ namespace ams::ldr::hoc::pcv::mariko {
         size_t n = 0;
         auto emit = [&](u32 ins) { t[n] = ins; ++n; };
 
-        emit(AsmMakeSubImm64(31, 31, 0x200));
-        emit(AsmMakeStpImm64(0, 1, 31, 0x100));
-        emit(AsmMakeStpImm64(2, 3, 31, 0x110));
-        emit(AsmMakeStpImm64(4, 5, 31, 0x120));
-        emit(AsmMakeStpImm64(6, 7, 31, 0x130));
-        emit(AsmMakeStpqImm(0, 1, 31, 0x140));
-        emit(AsmMakeStpqImm(2, 3, 31, 0x160));
-        emit(AsmMakeStpqImm(4, 5, 31, 0x180));
-        emit(AsmMakeStpqImm(6, 7, 31, 0x1A0));
-        emit(AsmMakeStrImm64(30, 31, 0x1E0));
-        emit(AsmMakeAddImm64(9, 31, 0x200)); emit(AsmMakeStrImm64(9, 31, 0x1C0)); /* __stack  */
-        emit(AsmMakeAddImm64(9, 31, 0x140)); emit(AsmMakeStrImm64(9, 31, 0x1C8)); /* __gr_top */
-        emit(AsmMakeAddImm64(9, 31, 0x1C0)); emit(AsmMakeStrImm64(9, 31, 0x1D0)); /* __vr_top */
-        emit(AsmMakeMovnW(9, 0x37)); emit(AsmMakeStrImm32(9, 31, 0x1D8)); /* __gr_offs = -56  */
-        emit(AsmMakeMovnW(9, 0x7F)); emit(AsmMakeStrImm32(9, 31, 0x1DC)); /* __vr_offs = -128 */
-        emit(AsmMakeAddImm64(0, 31, 0x00)); /* mov x0,sp (buf)  */
-        emit(AsmMakeMovzW(1, 0x100)); /* size = 0x100     */
-        emit(AsmMakeLdrImm64(2, 31, 0x100)); /* fmt (saved x0)   */
-        emit(AsmMakeAddImm64(3, 31, 0x1C0)); /* ap               */
-        emit(AsmMakeBl(helper + n * 4, vsnprintf_addr));
-        emit(AsmMakeMovReg(1, 0)); /* len = retval     */
-        emit(AsmMakeCmpImm32(1, 0x100));
-        { const size_t at = n; emit(AsmMakeBCond(helper + at * 4, helper + (at + 2) * 4, 0x3u)); } /* b.lo +2 */
-        emit(AsmMakeMovzW(1, 0xFF)); /* clamp len        */
-        emit(AsmMakeAddImm64(0, 31, 0x00)); /* mov x0,sp (str)  */
-        emit(AsmMakeSvc(0x27)); /* svcOutputDebugString */
-        emit(AsmMakeLdrImm64(30, 31, 0x1E0));
-        emit(AsmMakeAddImm64(31, 31, 0x200));
-        emit(RetIns);
+        using namespace _asm::field;
+        constexpr u32 SP = _asm::reg::Sp;
+
+        emit(_asm::Encode(_asm::op::SubImm64, {Rd, SP}, {Rn, SP}, {Imm12, 0x200}));
+        emit(_asm::Encode(_asm::op::StpImm64, {Rt, 0}, {Rt2, 1}, {Rn, SP}, {PairOff8, 0x100}));
+        emit(_asm::Encode(_asm::op::StpImm64, {Rt, 2}, {Rt2, 3}, {Rn, SP}, {PairOff8, 0x110}));
+        emit(_asm::Encode(_asm::op::StpImm64, {Rt, 4}, {Rt2, 5}, {Rn, SP}, {PairOff8, 0x120}));
+        emit(_asm::Encode(_asm::op::StpImm64, {Rt, 6}, {Rt2, 7}, {Rn, SP}, {PairOff8, 0x130}));
+        emit(_asm::Encode(_asm::op::StpImmQ,  {Rt, 0}, {Rt2, 1}, {Rn, SP}, {PairOff16, 0x140}));
+        emit(_asm::Encode(_asm::op::StpImmQ,  {Rt, 2}, {Rt2, 3}, {Rn, SP}, {PairOff16, 0x160}));
+        emit(_asm::Encode(_asm::op::StpImmQ,  {Rt, 4}, {Rt2, 5}, {Rn, SP}, {PairOff16, 0x180}));
+        emit(_asm::Encode(_asm::op::StpImmQ,  {Rt, 6}, {Rt2, 7}, {Rn, SP}, {PairOff16, 0x1A0}));
+        emit(_asm::Encode(_asm::op::StrImm64, {Rt, _asm::reg::Lr}, {Rn, SP}, {Off8, 0x1E0}));
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, 9}, {Rn, SP}, {Imm12, 0x200})); emit(_asm::Encode(_asm::op::StrImm64, {Rt, 9}, {Rn, SP}, {Off8, 0x1C0})); /* __stack  */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, 9}, {Rn, SP}, {Imm12, 0x140})); emit(_asm::Encode(_asm::op::StrImm64, {Rt, 9}, {Rn, SP}, {Off8, 0x1C8})); /* __gr_top */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, 9}, {Rn, SP}, {Imm12, 0x1C0})); emit(_asm::Encode(_asm::op::StrImm64, {Rt, 9}, {Rn, SP}, {Off8, 0x1D0})); /* __vr_top */
+        emit(_asm::Encode(_asm::op::MovnW, {Rd, 9}, {Imm16, 0x37})); emit(_asm::Encode(_asm::op::StrImm32, {Rt, 9}, {Rn, SP}, {Off4, 0x1D8})); /* __gr_offs = -56  */
+        emit(_asm::Encode(_asm::op::MovnW, {Rd, 9}, {Imm16, 0x7F})); emit(_asm::Encode(_asm::op::StrImm32, {Rt, 9}, {Rn, SP}, {Off4, 0x1DC})); /* __vr_offs = -128 */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, 0}, {Rn, SP}, {Imm12, 0x00})); /* mov x0,sp (buf)  */
+        emit(_asm::Encode(_asm::op::MovzW, {Rd, 1}, {Imm16, 0x100}));             /* size = 0x100     */
+        emit(_asm::Encode(_asm::op::LdrImm64, {Rt, 2}, {Rn, SP}, {Off8, 0x100})); /* fmt (saved x0)   */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, 3}, {Rn, SP}, {Imm12, 0x1C0})); /* ap              */
+        emit(_asm::Retarget26(_asm::op::Bl, helper + n * 4, vsnprintf_addr));
+        emit(_asm::MovReg64(1, 0)); /* len = retval     */
+        emit(_asm::CmpImm32(1, 0x100));
+        { /* b.lo +2 */
+            const size_t at = n;
+            emit(_asm::Retarget19(_asm::Encode(_asm::op::BCond, {BCond, _asm::cond::Lo}), helper + at * 4, helper + (at + 2) * 4));
+        }
+        emit(_asm::Encode(_asm::op::MovzW, {Rd, 1}, {Imm16, 0xFF}));              /* clamp len        */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, 0}, {Rn, SP}, {Imm12, 0x00})); /* mov x0,sp (str)  */
+        emit(_asm::Encode(_asm::op::Svc, {Imm16, 0x27}));                         /* svcOutputDebugString */
+        emit(_asm::Encode(_asm::op::LdrImm64, {Rt, _asm::reg::Lr}, {Rn, SP}, {Off8, 0x1E0}));
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, SP}, {Rn, SP}, {Imm12, 0x200}));
+        emit(_asm::RetIns);
 
         /* Redirect the call sites as patching the actual function causes crash */
         const uintptr_t roStart = g_pcv_cave + g_pcv_cave_size; /* module .rodata start */
         size_t patchedSites = 0;
         for (u32 *p = nsoStart; reinterpret_cast<uintptr_t>(p + 1) <= textEnd; ++p) {
-            if (!AsmIsBl(*p)) {
+            if (!_asm::IsOp(*p, _asm::op::Bl, _asm::field::Imm26)) {
                 continue;
             }
             const uintptr_t pc = reinterpret_cast<uintptr_t>(p);
-            if (AsmBranchTarget(*p, pc) != nvlog_addr) {
+            if (_asm::Target26(*p, pc) != nvlog_addr) {
                 continue;
             }
             bool isFmtCall = false;
             for (u32 j = 1; j <= 8 && reinterpret_cast<uintptr_t>(p - j) >= reinterpret_cast<uintptr_t>(nsoStart); ++j) {
                 const u32 w = *(p - j);
-                if (AsmIsAdrp(w) && asm_get_rd(w) == 0) { /* adrp x0,<page> */
-                    const uintptr_t wpc = pc - j * 4;
-                    const uintptr_t tgtPage = (wpc & ~static_cast<uintptr_t>(0xFFFu)) + static_cast<uintptr_t>(AsmAdrpPageOffset(w));
+                if (_asm::IsOp(w, _asm::op::Adrp, _asm::field::Rd, _asm::field::ImmAdrpHi, _asm::field::ImmAdrpLo) && _asm::Get(w, _asm::field::Rd) == 0) { /* adrp x0,<page> */
+                    const uintptr_t tgtPage = _asm::TargetAdrp(w, pc - j * 4);
                     if (tgtPage >= (roStart & ~static_cast<uintptr_t>(0xFFFu))) { isFmtCall = true; break; }
                 }
             }
             if (isFmtCall) {
-                PATCH_OFFSET(p, AsmMakeBl(pc, helper));
+                PATCH_OFFSET(p, _asm::Retarget26(_asm::op::Bl, pc, helper));
                 ++patchedSites;
             }
         }
 
-        LOGGING("NvLogRedirect: stub@+%lx vsnprintf@+%lx helper@+%lx instr=%zu sites=%zu",
-                nvlog_addr - mapped_nso, vsnprintf_addr - mapped_nso, helper - mapped_nso, n, patchedSites);
+        LOGGING("NvLogRedirect: stub@+%lx vsnprintf@+%lx helper@+%lx instr=%zu sites=%zu", nvlog_addr - mapped_nso, vsnprintf_addr - mapped_nso, helper - mapped_nso, n, patchedSites);
         R_SUCCEED();
     }
     #endif
 
     /* Relocate C2/C3Bus to avoid issues*/
     Result BusFreqReloc(u32 *ptr) {
-        const u32 busReg  = AsmGetRn(ptr[0]); /* ldr Xbuf,[Xbus,#0x10] : bus struct pointer */
-        const u32 bufReg  = asm_get_rd(ptr[0]);  /*                        : freq-buffer arg    */
-        const u32 bufOff  = AsmGetLdStImm64Off(ptr[0]); /*                        : bus->freqBuf offset */
-        const u32 cntReg  = asm_get_rd(ptr[1]); /* add Xcnt,Xbus,#0x18   : arg2 (&count)       */
-        const u32 railReg = asm_get_rd(ptr[2]); /* str Xrail,[Xbus,#0x50]: arg0 (rail)         */
+        const u32 busReg  = _asm::Get(ptr[0], _asm::field::Rn);   /* ldr Xbuf,[Xbus,#0x10] : bus struct pointer  */
+        const u32 bufReg  = _asm::Get(ptr[0], _asm::field::Rt);   /*                       : freq-buffer arg     */
+        const u32 bufOff  = _asm::Get(ptr[0], _asm::field::Off8); /*                       : bus->freqBuf offset */
+        const u32 cntReg  = _asm::Get(ptr[1], _asm::field::Rd);   /* add Xcnt,Xbus,#0x18   : arg2 (&count)       */
+        const u32 railReg = _asm::Get(ptr[2], _asm::field::Rt);   /* str Xrail,[Xbus,#0x50]: arg0 (rail)         */
         u32 *call = ptr + 3; /* the bl to relocate                          */
-        const uintptr_t realFn = AsmBranchTarget(*call, reinterpret_cast<uintptr_t>(call));
+        const uintptr_t realFn = _asm::Target26(*call, reinterpret_cast<uintptr_t>(call));
 
         /* Pick 3 scratch registers */
         u32 s[3], sc = 0;
@@ -197,21 +202,21 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 *t = reinterpret_cast<u32 *>(tramp);
         size_t n = 0;
         auto emit = [&](u32 ins) { t[n] = ins; ++n; };
-        emit(AsmMakeAdrp(tramp + n * 4, region, s[0])); /* adrp s0,<region>            */
-        emit(AsmMakeAddImm64(s[0], s[0], region & 0xFFFu)); /* add  s0,s0,#lo              */
-        emit(AsmMakeLdrImm32(s[1], s[0], 0x00)); /* s1 = counter               */
-        emit(AsmMakeAddImm64(s[2], s[1], 1)); /* s2 = counter+1             */
-        emit(AsmMakeStrImm32(s[2], s[0], 0x00)); /* counter++                  */
-        emit(AsmMakeAddImm64(s[0], s[0], 0x10)); /* s0 = region+0x10 (buffers) */
-        emit(AsmMakeAddShiftedReg64(bufReg, s[0], s[1], 10)); /* Xbuf = s0 + counter*0x400  */
-        emit(AsmMakeStrImm64(bufReg, busReg, bufOff)); /* bus[freqBuf] = Xbuf        */
-        emit(AsmMakeB(tramp + n * 4, realFn)); /* tail-call the real function */
+        using namespace _asm::field;
+        emit(_asm::RetargetAdrp(_asm::Encode(_asm::op::Adrp, {Rd, s[0]}), tramp + n * 4, region));       /* adrp s0,<region>           */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, s[0]}, {Rn, s[0]}, {Imm12, region & 0xFFFu}));  /* add  s0,s0,#lo             */
+        emit(_asm::Encode(_asm::op::LdrImm32, {Rt, s[1]}, {Rn, s[0]}, {Off4, 0x00}));              /* s1 = counter               */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, s[2]}, {Rn, s[1]}, {Imm12, 1}));                /* s2 = counter+1             */
+        emit(_asm::Encode(_asm::op::StrImm32, {Rt, s[2]}, {Rn, s[0]}, {Off4, 0x00}));              /* counter++                  */
+        emit(_asm::Encode(_asm::op::AddImm64, {Rd, s[0]}, {Rn, s[0]}, {Imm12, 0x10}));             /* s0 = region+0x10 (buffers) */
+        emit(_asm::Encode(_asm::op::AddShifted64, {Rd, bufReg}, {Rn, s[0]}, {Rm, s[1]}, {Imm6, 10})); /* Xbuf = s0 + counter*0x400 */
+        emit(_asm::Encode(_asm::op::StrImm64, {Rt, bufReg}, {Rn, busReg}, {Off8, bufOff}));        /* bus[freqBuf] = Xbuf        */
+        emit(_asm::Retarget26(_asm::op::B, tramp + n * 4, realFn));                                /* tail-call the real function */
 
-        PATCH_OFFSET(call, AsmMakeBl(reinterpret_cast<uintptr_t>(call), tramp));
+        PATCH_OFFSET(call, _asm::Retarget26(_asm::op::Bl, reinterpret_cast<uintptr_t>(call), tramp));
         const uintptr_t base = reinterpret_cast<uintptr_t>(nsoStart);
         (void) base;
-        LOGGING("BusFreqReloc: call@+%lx -> tramp@+%lx realfn@+%lx (bus=x%u buf=x%u off=0x%x scratch=x%u,x%u,x%u)",
-                reinterpret_cast<uintptr_t>(call) - base, tramp - base, realFn - base, busReg, bufReg, bufOff, s[0], s[1], s[2]);
+        LOGGING("BusFreqReloc: call@+%lx -> tramp@+%lx realfn@+%lx (bus=x%u buf=x%u off=0x%x scratch=x%u,x%u,x%u)", reinterpret_cast<uintptr_t>(call) - base, tramp - base, realFn - base, busReg, bufReg, bufOff, s[0], s[1], s[2]);
         R_SUCCEED();
     }
 
@@ -219,9 +224,9 @@ namespace ams::ldr::hoc::pcv::mariko {
     #if HOC_UART_LOG
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
     Result ForceVerbosity(u32 *ptr) {
-        if(C.pcvLogVerbosity != 0xff) {
-            PATCH_OFFSET(&ptr[0], AsmMakeMovzW(0, static_cast<u16>(C.pcvLogVerbosity))); /* movz w0,#level */
-            PATCH_OFFSET(&ptr[1], RetIns);                                                     /* ret            */
+        i f(C.pcvLogVerbosity != 0xff) {
+            PATCH_OFFSET(&ptr[0], _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, 0}, {_asm::field::Imm16, C.pcvLogVerbosity})); /* movz w0,#level */
+            PATCH_OFFSET(&ptr[1], _asm::RetIns);                                                     /* ret            */
         }
         R_SUCCEED();
     }
@@ -231,40 +236,40 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result EmcSocLutReloc(u32 *ptr) {
         constexpr u32 Window = 48;
 
-        u32 *freqStore = ScanAssembly(ptr - Window, Window, EmcSocFreqStoreAsm, asm_compare_no_rd); /* str x?,[x8,#0x18] */
-        u32 *voltStore = ScanAssembly(ptr - Window, Window, EmcSocVoltStoreAsm, asm_compare_no_rd); /* str w?,[x8,#0x48] */
-        u32 *readLoad  = ScanAssembly(ptr - Window, Window, EmcSocReadLoadAsm,  asm_compare_no_rd); /* ldr w?,[x9,#0x48] */
+        using namespace _asm::field;
+
+        u32 *freqStore = _asm::ScanAssembly(ptr - Window, Window, EmcSocFreqStoreAsm, Rt); /* str x?,[x8,#0x18] */
+        u32 *voltStore = _asm::ScanAssembly(ptr - Window, Window, EmcSocVoltStoreAsm, Rt); /* str w?,[x8,#0x48] */
+        u32 *readLoad  = _asm::ScanAssembly(ptr - Window, Window, EmcSocReadLoadAsm,  Rt); /* ldr w?,[x9,#0x48] */
         R_UNLESS(freqStore && voltStore && readLoad, ldr::ResultInvalidEmcSocLut());
 
         u32 *voltBase = voltStore - 2;   /* `add Xb,Xsrc,Xi,LSL#2` (a cmn sits between it and store) */
-        R_UNLESS(AsmIsAddShiftedReg64(*voltBase) && asm_get_rd(*voltBase) == AsmGetRn(*voltStore),
-                 ldr::ResultInvalidEmcSocLut());
+        R_UNLESS(_asm::IsOp(*voltBase, _asm::op::AddShifted64, Rd, Rn, Rm, Imm6) && _asm::Get(*voltBase, Rd) == _asm::Get(*voltStore, Rn), ldr::ResultInvalidEmcSocLut());
 
         /* adrp Xl ; add Xl,Xl,#off ; ... ; str Xl,[rail,#0x120] */
-        const u32 lutReg  = asm_get_rd(ptr[0]);
-        const u32 railReg = AsmGetRn(ptr[0]);
-        R_UNLESS(AsmIsAdrp(ptr[-3]) && asm_get_rd(ptr[-3]) == lutReg, ldr::ResultInvalidEmcSocLut());
-        R_UNLESS(AsmIsAddImm64(ptr[-2]) && asm_get_rd(ptr[-2]) == lutReg && AsmGetRn(ptr[-2]) == lutReg,
-                 ldr::ResultInvalidEmcSocLut());
+        const u32 lutReg  = _asm::Get(ptr[0], Rt);
+        const u32 railReg = _asm::Get(ptr[0], Rn);
+        R_UNLESS(_asm::IsOp(ptr[-3], _asm::op::Adrp, Rd, ImmAdrpHi, ImmAdrpLo) && _asm::Get(ptr[-3], Rd) == lutReg, ldr::ResultInvalidEmcSocLut());
+        R_UNLESS(_asm::IsOp(ptr[-2], _asm::op::AddImm64, Rd, Rn, Imm12) && _asm::Get(ptr[-2], Rd) == lutReg && _asm::Get(ptr[-2], Rn) == lutReg, ldr::ResultInvalidEmcSocLut());
 
-        const u32 srcBase = AsmGetRn(*voltBase);   /* rail ptr at +0x20 */
-        const u32 wBase   = asm_get_rd(*voltBase); /* base reg */
-        const u32 wIdx    = AsmGetRm(*voltBase);   /* loop index */
+        const u32 srcBase = _asm::Get(*voltBase, Rn); /* rail ptr at +0x20 */
+        const u32 wBase   = _asm::Get(*voltBase, Rd); /* base reg */
+        const u32 wIdx    = _asm::Get(*voltBase, Rm); /* loop index */
 
-        PATCH_OFFSET(freqStore,     NopIns); /* Unneeded */
-        PATCH_OFFSET(voltBase,      AsmMakeLdrImm64(wBase, srcBase, 0x20)); /* ldr Xb,[Xsrc,#0x20] (rail) */
-        PATCH_OFFSET(voltStore - 1, AsmMakeAddImm64(wBase, wBase, 0x18));  /* add Xb,Xb,#0x18 (was cmn) */
-        PATCH_OFFSET(voltStore,     AsmSetLdStRegOffset(*voltStore, wIdx)); /* str Wv,[Xb,Xi,LSL#2] -> rail+0x18+i*4 */
-        PATCH_OFFSET(voltStore + 1, NopIns); /* Unneeded */
+        PATCH_OFFSET(freqStore,     _asm::NopIns); /* Unneeded */
+        PATCH_OFFSET(voltBase,      _asm::Encode(_asm::op::LdrImm64, {Rt, wBase}, {Rn, srcBase}, {Off8, 0x20})); /* ldr Xb,[Xsrc,#0x20] (rail) */
+        PATCH_OFFSET(voltStore - 1, _asm::Encode(_asm::op::AddImm64, {Rd, wBase}, {Rn, wBase}, {Imm12, 0x18}));  /* add Xb,Xb,#0x18 (was cmn) */
+        PATCH_OFFSET(voltStore,     _asm::ToRegOffset(*voltStore, wIdx));                                  /* str Wv,[Xb,Xi,LSL#2] -> rail+0x18+i*4 */
+        PATCH_OFFSET(voltStore + 1, _asm::NopIns); /* Unneeded */
 
         /* rail+0x18 as the socMinLut pointer. */
-        PATCH_OFFSET(ptr - 3, NopIns);
-        PATCH_OFFSET(ptr - 2, AsmMakeAddImm64(lutReg, railReg, 0x18));/* add Xl,rail,#0x18 */
+        PATCH_OFFSET(ptr - 3, _asm::NopIns);
+        PATCH_OFFSET(ptr - 2, _asm::Encode(_asm::op::AddImm64, {Rd, lutReg}, {Rn, railReg}, {Imm12, 0x18})); /* add Xl,rail,#0x18 */
 
         /* Drop the abort branch in case of a bad read */
         for (u32 i = 1; i <= 4; ++i) {
-            if (AsmIsBCond(readLoad[i])) {
-                PATCH_OFFSET(&readLoad[i], NopIns);
+            if (_asm::IsOp(readLoad[i], _asm::op::BCond, Imm19, BCond)) {
+                PATCH_OFFSET(&readLoad[i], _asm::NopIns);
                 break;
             }
         }
@@ -275,7 +280,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_UNLESS(EmcDvfsCountPatternFn(ptr), ldr::ResultInvalidEmcDvfsCount());
 
         /* cmp w?,#0x21 -> cmp w?,#EmcDvfsTableEntryCount */
-        PATCH_OFFSET(ptr, AsmSubsSetImm12(*ptr, static_cast<u16>(EmcDvfsTableEntryCount)));
+        PATCH_OFFSET(ptr, _asm::Set(*ptr, _asm::field::Imm12, EmcDvfsTableEntryCount));
         R_SUCCEED();
     }
 
@@ -284,8 +289,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_UNLESS(EmcRateListPatternFn(ptr), ldr::ResultInvalidEmcRateList());
 
         /* The csel's Rm holds the 32 cap. */
-        const u32 capReg = AsmGetRm(ptr[1]);
-        const u32 capMov = AsmMakeMovzW(capReg, 0x20); /* movz w<Rm>,#0x20 */
+        const u32 capReg = _asm::Get(ptr[1], _asm::field::Rm);
+        const u32 capMov = _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, capReg}, {_asm::field::Imm16, 0x20}); /* movz w<Rm>,#0x20 */
 
         u32 *movPtr = nullptr;
         for (u32 i = 1; i <= 16; ++i) {
@@ -297,8 +302,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_UNLESS(movPtr, ldr::ResultInvalidEmcRateList());
 
         /* min(maxCount, 32) -> min(maxCount, EmcDvfsTableEntryCount). */
-        PATCH_OFFSET(ptr, AsmSubsSetImm12(*ptr, static_cast<u16>(EmcDvfsTableEntryCount)));     /* cmp  w?,#64 */
-        PATCH_OFFSET(movPtr, asm_set_imm16(*movPtr, static_cast<u16>(EmcDvfsTableEntryCount))); /* movz w?,#64 */
+        PATCH_OFFSET(ptr,    _asm::Set(*ptr,    _asm::field::Imm12, EmcDvfsTableEntryCount)); /* cmp  w?,#64 */
+        PATCH_OFFSET(movPtr, _asm::Set(*movPtr, _asm::field::Imm16, EmcDvfsTableEntryCount)); /* movz w?,#64 */
         R_SUCCEED();
     }
 
@@ -384,44 +389,47 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     Result SocVoltAsm(u32 *compareSpeedos) {
+        using namespace _asm::field;
+
         constexpr u32 VoltageScanLimit = 10;
         /* Might actually be speedo id. */
-        u32 *writeProcessId = ScanAssembly(compareSpeedos, VoltageScanLimit, SocVoltWriteProcessIdAsm, asm_compare_no_rd);
+        u32 *writeProcessId = _asm::ScanAssembly(compareSpeedos, VoltageScanLimit, SocVoltWriteProcessIdAsm, Rd);
         R_UNLESS(writeProcessId != nullptr, ldr::ResultInvalidSocVoltPattern());
-        u8 writeProcessIdRd = asm_get_rd(*writeProcessId);
+        u8 writeProcessIdRd = _asm::Get(*writeProcessId, Rd);
 
         /* This writes 1050mV. */
-        u32 *writeVoltage = ScanAssembly(writeProcessId, VoltageScanLimit, SocVoltWriteVoltageAsm, asm_compare_no_rd);
+        u32 *writeVoltage = _asm::ScanAssembly(writeProcessId, VoltageScanLimit, SocVoltWriteVoltageAsm, Rd);
         R_UNLESS(writeVoltage != nullptr, ldr::ResultInvalidSocVoltPattern());
-        u8 writeVoltageRd = asm_get_rd(*writeVoltage);
+        u8 writeVoltageRd = _asm::Get(*writeVoltage, Rd);
 
         /* A csel instruction is used to select the soc voltage limit register. */
         /* We care about its destination register since that is used for verification. */
         constexpr u32 VoltageSelectScanLimit = 24;
-        u32 *selectVoltage                   = ScanAssembly(writeVoltage, VoltageSelectScanLimit, SocVoltSelectRegisterAsm, AsmCompareCselNoReg);
+        u32 *selectVoltage                   = _asm::ScanAssembly(writeVoltage, VoltageSelectScanLimit, SocVoltSelectRegisterAsm, Rd, Rn, Rm);
         R_UNLESS(selectVoltage != nullptr, ldr::ResultInvalidSocVoltPattern());
         /* Todo: check rm and rn? */
-        u8 selectVoltageRd = asm_get_rd(*selectVoltage);
+        u8 selectVoltageRd = _asm::Get(*selectVoltage, Rd);
 
         /* rdCsel is then multiplied by 1000 to convert to uV. */
         /* This is pretty far down the function. */
         constexpr u32 MultiplierScanLimit = 200;
-        u32 *multiplier                   = ScanAssembly(selectVoltage, MultiplierScanLimit, SocVoltMultiplyVoltsAsm, AsmCompareMullNoReg);
+        u32 *multiplier                   = _asm::ScanAssembly(selectVoltage, MultiplierScanLimit, SocVoltMultiplyVoltsAsm, Rd, Rn, Rm);
         R_UNLESS(multiplier != nullptr, ldr::ResultInvalidSocVoltPattern());
-        u8 multiplierRn = AsmGetMullRn(*multiplier);
-        u8 multiplierRm = AsmGetMullRm(*multiplier);
+        u8 multiplierRn = _asm::Get(*multiplier, Rn);
+        u8 multiplierRm = _asm::Get(*multiplier, Rm);
         /* One of the two registers has to be rdCsel. */
         R_UNLESS((multiplierRn == selectVoltageRd) || (multiplierRm == selectVoltageRd), ldr::ResultInvalidSocVoltPattern());
-        u8 multiplierRd = asm_get_rd(*multiplier);
+        u8 multiplierRd = _asm::Get(*multiplier, Rd);
 
         /* Subs instruction is then used to verify against absolute limit. */
-        u32 limitValidationPattern = AsmSubsSetRn(SocVoltValidateLimitAsm, multiplierRd);
-        u32 *limitValidation = ScanAssembly(multiplier, VoltageScanLimit, limitValidationPattern, AsmSubsCompareNoReg);
+        /* NB: Rn is written into the pattern and then ignored by the comparison; only Rm is matched. */
+        u32 limitValidationPattern = _asm::Set(SocVoltValidateLimitAsm, Rn, multiplierRd);
+        u32 *limitValidation = _asm::ScanAssembly(multiplier, VoltageScanLimit, limitValidationPattern, Rd, Rn);
         R_UNLESS(limitValidation != nullptr, ldr::ResultInvalidSocVoltPattern());
 
         /* There is a b.gt instruction right after (checks for socVoltageCap < socVoltageMax). */
         u32 *branchToAbort = limitValidation + 1;
-        R_UNLESS(AsmCompareBrConNoImm19(*branchToAbort, SocVoltBranchToAbortAsm), ldr::ResultInvalidSocVoltPattern());
+        R_UNLESS(_asm::Ignoring(*branchToAbort, SocVoltBranchToAbortAsm, Imm19), ldr::ResultInvalidSocVoltPattern());
 
         if (!C.marikoSocVmax || C.marikoSocVmax <= 1000) {
             R_SKIP();
@@ -429,7 +437,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         /* Adjust 1598 speedo minimum to ensure it always goes down process id 0 branch. */
         /* 2200 should be high enough :D */
-        u32 compareSpeedosPatch = AsmSubsSetImm12(*compareSpeedos, 2200);
+        u32 compareSpeedosPatch = _asm::Set(*compareSpeedos, Imm12, 2200);
         PATCH_OFFSET(compareSpeedos, compareSpeedosPatch);
 
         u32 socSpeedo = 0;
@@ -438,15 +446,15 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* Adjust processId from 0 to [process id of switch booting this]. */
         /* We're overwriting the orr instruction entirly. */
         u32 processId           = GetSocProcessId(socSpeedo);
-        u32 writeProcessIdPatch = asm_set_rd(asm_set_imm16(SocVoltWriteVoltageAsm, processId), writeProcessIdRd);
+        u32 writeProcessIdPatch = _asm::Encode(_asm::op::MovzW, {Rd, writeProcessIdRd}, {Imm16, processId});
         PATCH_OFFSET(writeProcessId, writeProcessIdPatch);
 
         /* Adjust voltage limit. */
-        u32 voltageLimitPatch = asm_set_rd(asm_set_imm16(SocVoltWriteVoltageAsm, C.marikoSocVmax), writeVoltageRd);
+        u32 voltageLimitPatch = _asm::Encode(_asm::op::MovzW, {Rd, writeVoltageRd}, {Imm16, C.marikoSocVmax});
         PATCH_OFFSET(writeVoltage, voltageLimitPatch);
 
         /* Branches to an abort if limits are invalid -- we patch the branch instruction with NOP. */
-        PATCH_OFFSET(branchToAbort, NopIns);
+        PATCH_OFFSET(branchToAbort, _asm::NopIns);
 
         R_SUCCEED();
     }
@@ -479,7 +487,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* Reject cmd11 GetDvfsTable. */
         for (u32 i = 1; i <= 24; ++i) {
             const u32 w = ptr[i];
-            if (AsmIsSubX29Imm(w) && AsmGetImm12(w) >= 0x20u) {  /* sub x?,x29,#>=0x20 */
+            if (_asm::IsOp(w, _asm::op::SubImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12)
+                && _asm::Get(w, _asm::field::Rn) == _asm::reg::Fp && _asm::Get(w, _asm::field::Imm12) >= 0x20u) {  /* sub x?,x29,#>=0x20 */
                 R_THROW(ldr::ResultInvalidEmcRateList());
             }
         }
@@ -487,7 +496,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         /*  mov x<desc>,x2 */
         u32 descReg = 0xFFu;
         for (u32 i = 1; i <= 24; ++i) {
-            if (AsmIsMovReg(ptr[i], 2)) { descReg = asm_get_rd(ptr[i]); break; }
+            if (_asm::Ignoring(ptr[i], _asm::MovReg64(0, 2), _asm::field::Rd)) { descReg = _asm::Get(ptr[i], _asm::field::Rd); break; }
         }
         R_UNLESS(descReg != 0xFFu, ldr::ResultInvalidEmcRateList());
 
@@ -495,9 +504,9 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 *adds[8]; u32 addImm[8]; u32 nAdds = 0;
         for (u32 i = 1; i <= 24 && nAdds < 8; ++i) {
             const u32 w = ptr[i];
-            if (AsmIsAddSpImm(w)) {   /* add x?,sp,#imm12 (shift 0) */
+            if (_asm::IsOp(w, _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(w, _asm::field::Rn) == _asm::reg::Sp) {   /* add x?,sp,#imm12 (shift 0) */
                 adds[nAdds]   = ptr + i;
-                addImm[nAdds] = AsmGetImm12(w);
+                addImm[nAdds] = _asm::Get(w, _asm::field::Imm12);
                 ++nAdds;
             }
         }
@@ -508,15 +517,17 @@ namespace ams::ldr::hoc::pcv::mariko {
                 if (a != b && addImm[a] == addImm[b]) { dup = true; break; }
             }
             if (dup) {
-                PATCH_OFFSET(adds[a], AsmMakeLdrImm64(asm_get_rd(*adds[a]), descReg, 0)); /* ldr x?,[x<desc>] */
+                PATCH_OFFSET(adds[a], _asm::Encode(_asm::op::LdrImm64, {_asm::field::Rt, _asm::Get(*adds[a], _asm::field::Rd)},
+                                                            {_asm::field::Rn, descReg},
+                                                            {_asm::field::Off8, 0})); /* ldr x?,[x<desc>] */
                 ++patched;
             }
         }
         R_UNLESS(patched == 2, ldr::ResultInvalidEmcRateList());
 
         /* min(maxCount, 32) -> min(maxCount, EmcDvfsTableEntryCount) */
-        PATCH_OFFSET(ptr,         AsmSubsSetImm12(*ptr, static_cast<u16>(EmcDvfsTableEntryCount)));           /* cmp  w?,#64 */
-        PATCH_OFFSET(ptr + movzI, asm_set_imm16(*(ptr + movzI), static_cast<u16>(EmcDvfsTableEntryCount)));  /* movz w?,#64 */
+        PATCH_OFFSET(ptr,         _asm::Set(*ptr,            _asm::field::Imm12, EmcDvfsTableEntryCount)); /* cmp  w?,#64 */
+        PATCH_OFFSET(ptr + movzI, _asm::Set(*(ptr + movzI), _asm::field::Imm16, EmcDvfsTableEntryCount)); /* movz w?,#64 */
         R_SUCCEED();
     }
 

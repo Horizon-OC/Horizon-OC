@@ -177,7 +177,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     ALWAYS_INLINE bool MemMtcGetGetTablePatternFn(u32 *ptr) {
         /* This builds an address that gets returned, so the register must be x0 by convention. */
-        return AsmCompareAddNoImm12(*ptr, MtcAddAsm);
+        return _asm::Ignoring(*ptr, MtcAddAsm, _asm::field::Imm12);
     }
 
     void MtcGenerateFreqTables();

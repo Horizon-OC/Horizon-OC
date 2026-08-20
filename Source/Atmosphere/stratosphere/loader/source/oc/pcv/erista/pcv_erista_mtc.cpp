@@ -447,27 +447,28 @@ namespace ams::ldr::hoc::pcv::erista {
         R_UNLESS(ptr - MovOffset >= nsoStart, ldr::ResultInvalidMtcTablePattern());
 
         u32 adrp = *(ptr - AddrpOffset);
-        R_UNLESS(AsmCompareAdrpNoImm(adrp, MtcAdrpAsm), ldr::ResultInvalidMtcTablePattern());
+        R_UNLESS(_asm::Ignoring(adrp, MtcAdrpAsm, _asm::field::ImmAdrpHi, _asm::field::ImmAdrpLo), ldr::ResultInvalidMtcTablePattern());
 
-        /* Check for the branch instruction above the cbz to ensure we are patching the right location*/
+        /* Check for the branch instruction above the cbz to ensure we are patching the right location. */
+        /* Only the opcode is checked; the call target varies by firmware (0x97ffae64 on one build). */
         u32 bl = *(ptr - BlOffset);
-        R_UNLESS(AsmBlCompareOpcodeOnly(bl, MtcBlIns), ldr::ResultInvalidMtcTablePattern());
+        R_UNLESS(_asm::IsOp(bl, _asm::op::Bl, _asm::field::Imm26), ldr::ResultInvalidMtcTablePattern());
 
         /* Check for the mov that actually sets the mtc table count. */
         u32 mov = *(ptr - MovOffset);
         bool foundMov = false;
-        foundMov = asm_compare_no_rd(mov, MtcMovAsm);
+        foundMov = _asm::Ignoring(mov, MtcMovAsm, _asm::field::Rd);
 
         if (!foundMov) {
             mov = *(ptr + MovOffsetOld);
             /* Check old firmware offset. */
-            foundMov = asm_compare_no_rd(mov, MtcMovAsm);
+            foundMov = _asm::Ignoring(mov, MtcMovAsm, _asm::field::Rd);
         }
 
         R_UNLESS(foundMov, ldr::ResultInvalidMtcTablePattern());
 
         constexpr u32 PrologueWindow = 140;
-        u32 *functionPrologue = FindFnPrologue(ptr, PrologueWindow, nsoStart);
+        u32 *functionPrologue = _asm::FindFnPrologue(ptr, PrologueWindow, nsoStart);
         R_UNLESS(functionPrologue != nullptr, ldr::ResultInvalidMtcTablePattern());
 
         getMtcTableCache.getEristaMtcTableFnSite = functionPrologue;

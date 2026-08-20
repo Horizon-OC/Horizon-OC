@@ -78,13 +78,13 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result GpuFreqMaxAsm(u32 *ptr32) {
         // Check if both two instructions match the pattern
         u32 ins1 = *ptr32, ins2 = *(ptr32 + 1);
-        if (!(asm_compare_no_rd(ins1, GpuAsmPattern[0]) && asm_compare_no_rd(ins2, GpuAsmPattern[1]))) {
+        if (!(_asm::Ignoring(ins1, GpuAsmPattern[0], _asm::field::Rd) && _asm::Ignoring(ins2, GpuAsmPattern[1], _asm::field::Rd))) {
             R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
         }
 
         // Both instructions should operate on the same register
-        u8 rd = asm_get_rd(ins1);
-        if (rd != asm_get_rd(ins2)) {
+        u8 rd = _asm::Get(ins1, _asm::field::Rd);
+        if (rd != _asm::Get(ins2, _asm::field::Rd)) {
             R_THROW(ldr::ResultInvalidGpuFreqMaxPattern());
         }
 
@@ -111,8 +111,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
 
         u32 asm_patch[2] = {
-            asm_set_rd(asm_set_imm16(GpuAsmPattern[0], max_clock), rd),
-            asm_set_rd(asm_set_imm16(GpuAsmPattern[1], max_clock >> 16), rd)
+            _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, rd}, {_asm::field::Imm16, max_clock}),
+            _asm::Encode(_asm::op::MovkW, {_asm::field::Rd, rd}, {_asm::field::Imm16, max_clock >> 16}, {_asm::field::Hw, 1})
         };
 
         PATCH_OFFSET(ptr32,     asm_patch[0]);

@@ -56,7 +56,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     constexpr u32 SocVoltBranchToAbortAsm  = 0x540020AC; /* B.ge Branches to abort if limits are invalid. */
 
     ALWAYS_INLINE bool SocVoltPatternFn(u32 *ptr) {
-        return asm_compare_no_rd(*ptr, SocVoltCompareSpeedoAsm);
+        return _asm::Ignoring(*ptr, SocVoltCompareSpeedoAsm, _asm::field::Rd);
     }
 
     constexpr u32 SocVoltLimitOfficial                      = 1050;
@@ -77,13 +77,14 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     inline bool EmcDvfsCountPatternFn(u32 *ptr) {
         /* Local context: cbz w?,<skip> ; cmp w?,#0x21 ; b.cs <abort> */
-        return asm_compare_no_rd(*ptr, EmcCountCmpAsm) && AsmCompareBrConNoImm19(*(ptr + 1), 0x54000002) /* b.cs */
-               && AsmCbzCompareOpcodeOnly(*(ptr - 1), 0x34000000);                                       /* cbz */
+        return _asm::Ignoring(*ptr, EmcCountCmpAsm, _asm::field::Rd)
+               && _asm::Ignoring(*(ptr + 1), _asm::Encode(_asm::op::BCond, {_asm::field::BCond, _asm::cond::Cs}), _asm::field::Imm19) /* b.cs */
+               && _asm::IsOp(*(ptr - 1), _asm::op::Cbz, _asm::field::Imm19, _asm::field::Rt);                             /* cbz */
     }
 
     inline bool EmcSocLutPatternFn(u32 *ptr) {
-        return asm_compare_no_rd(*ptr, EmcSocLutPtrStoreAsm)             /* str x?,[x0,#0x120] */
-               && asm_compare_no_rd(*(ptr + 1), EmcSocLutCountStoreAsm); /* str w?,[x0,#0x154] */
+        return _asm::Ignoring(*ptr, EmcSocLutPtrStoreAsm, _asm::field::Rt)             /* str x?,[x0,#0x120] */
+               && _asm::Ignoring(*(ptr + 1), EmcSocLutCountStoreAsm, _asm::field::Rt); /* str w?,[x0,#0x154] */
     }
 
     /*
@@ -94,16 +95,16 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         cmp  w?,#0x20            ; (maxCount)
         csel w?,<same>,<cap>,lt  ; min(maxCount, 32)
-        bl   <Get*DvfsFreqTable>
+        bl   <_asm::Get*DvfsFreqTable>
     */
     constexpr u32 EmcRateCapCmpAsm = 0x710082FF;  /* cmp  w?,#0x20 */
     constexpr u32 EmcRateCapCselAsm = 0x1A80B000; /* csel w?,w?,w?,lt */
 
     inline bool EmcRateListPatternFn(u32 *ptr) {
-        return AsmSubsCompareNoReg(*ptr, EmcRateCapCmpAsm)           /* cmp w?,#0x20 */
-               && AsmCompareCselNoReg(*(ptr + 1), EmcRateCapCselAsm) /* csel w?,w?,w?,lt */
-               && (AsmGetRn(*ptr) == AsmGetRn(*(ptr + 1)))           /* min(reg, 0x20) */
-               && AsmBlCompareOpcodeOnly(*(ptr + 2), 0x94000000);    /* bl <Get*DvfsFreqTable> */
+        return _asm::Ignoring(*ptr, EmcRateCapCmpAsm, _asm::field::Rd, _asm::field::Rn)                            /* cmp w?,#0x20 */
+               && _asm::Ignoring(*(ptr + 1), EmcRateCapCselAsm, _asm::field::Rd, _asm::field::Rn, _asm::field::Rm)       /* csel w?,w?,w?,lt */
+               && (_asm::Get(*ptr, _asm::field::Rn) == _asm::Get(*(ptr + 1), _asm::field::Rn))                           /* min(reg, 0x20) */
+               && _asm::IsOp(*(ptr + 2), _asm::op::Bl, _asm::field::Imm26);                                        /* bl <_asm::Get*DvfsFreqTable> */
     }
 
     constexpr u32 EmcRateSessCmpAsm  = 0x710082FF; /* cmp  w?,#0x20 */
@@ -111,14 +112,14 @@ namespace ams::ldr::hoc::pcv::mariko {
     constexpr u32 EmcRateSessCselAsm = 0x1A80B000; /* csel w?,w?,w?,lt (opcode + cond) */
 
     inline bool EmcRateSessFindClamp(u32 *ptr, u32 *out_c, u32 *out_cap, u32 *out_movz_i) {
-        if (!AsmSubsCompareNoReg(ptr[0], EmcRateSessCmpAsm)) return false;   /* cmp w<c>,#0x20 */
-        const u32 c = AsmGetRn(ptr[0]);
+        if (!_asm::Ignoring(ptr[0], EmcRateSessCmpAsm, _asm::field::Rd, _asm::field::Rn)) return false;   /* cmp w<c>,#0x20 */
+        const u32 c = _asm::Get(ptr[0], _asm::field::Rn);
         for (u32 i = 1; i <= 14; ++i) {
             const u32 w = ptr[i];
-            if (AsmCompareCselNoReg(w, EmcRateSessCselAsm) && AsmGetRn(w) == c && asm_get_rd(w) == c) {
-                const u32 cap = AsmGetRm(w);
+            if (_asm::Ignoring(w, EmcRateSessCselAsm, _asm::field::Rd, _asm::field::Rn, _asm::field::Rm) && _asm::Get(w, _asm::field::Rn) == c && _asm::Get(w, _asm::field::Rd) == c) {
+                const u32 cap = _asm::Get(w, _asm::field::Rm);
                 for (u32 j = 1; j < i; ++j) {
-                    if ((ptr[j] & 0xFFFFFFE0u) == EmcRateSessMovAsm && asm_get_rd(ptr[j]) == cap) {
+                    if (_asm::Ignoring(ptr[j], EmcRateSessMovAsm, _asm::field::Rd) && _asm::Get(ptr[j], _asm::field::Rd) == cap) {
                         if (out_c)      *out_c      = c;
                         if (out_cap)    *out_cap    = cap;
                         if (out_movz_i) *out_movz_i = j;
@@ -142,12 +143,12 @@ namespace ams::ldr::hoc::pcv::mariko {
         if (reinterpret_cast<uintptr_t>(ptr + 4) > g_pcv_cave) {   /* the call site lives in .text */
             return false;
         }
-        if (!(AsmIsLdrImm64(ptr[0]) && AsmGetLdStImm64Off(ptr[0]) == 0x10)) return false; /* ldr Xbuf,[Xbus,#0x10] */
-        if (!(AsmIsAddImm64(ptr[1]) && AsmGetImm12(ptr[1])       == 0x18)) return false; /* add Xcnt,Xbus,#0x18   */
-        if (!(AsmIsStrImm64(ptr[2]) && AsmGetLdStImm64Off(ptr[2]) == 0x50)) return false; /* str Xrail,[Xbus,#0x50]*/
-        if (!AsmIsBl(ptr[3]))                                              return false; /* bl GetDvfsRailUnique  */
-        const u32 bus = AsmGetRn(ptr[0]);
-        return AsmGetRn(ptr[1]) == bus && AsmGetRn(ptr[2]) == bus;
+        if (!(_asm::IsOp(ptr[0], _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)  && _asm::Get(ptr[0], _asm::field::Off8)  == 0x10)) return false; /* ldr Xbuf,[Xbus,#0x10] */
+        if (!(_asm::IsOp(ptr[1], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(ptr[1], _asm::field::Imm12) == 0x18)) return false; /* add Xcnt,Xbus,#0x18   */
+        if (!(_asm::IsOp(ptr[2], _asm::op::StrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)  && _asm::Get(ptr[2], _asm::field::Off8)  == 0x50)) return false; /* str Xrail,[Xbus,#0x50]*/
+        if (!_asm::IsOp(ptr[3], _asm::op::Bl, _asm::field::Imm26))                                                                    return false; /* bl GetDvfsRailUnique  */
+        const u32 bus = _asm::Get(ptr[0], _asm::field::Rn);
+        return _asm::Get(ptr[1], _asm::field::Rn) == bus && _asm::Get(ptr[2], _asm::field::Rn) == bus;
     }
 
     inline bool ForceVerbosityPatternFn(u32 *ptr) {
@@ -158,9 +159,9 @@ namespace ams::ldr::hoc::pcv::mariko {
             return false;
         }
         if (ptr[0] != 0xA9BE7BFDu || ptr[1] != 0xF9000BF3u || ptr[2] != 0x910003FDu) return false; /* stp/str/mov x29,sp */
-        if (!(AsmIsAddImm64(ptr[3]) && asm_get_rd(ptr[3]) == 0  && AsmGetRn(ptr[3]) == 29)) return false; /* add x0,x29,#imm  */
-        if (!(AsmIsAddImm64(ptr[4]) && asm_get_rd(ptr[4]) == 19 && AsmGetRn(ptr[4]) == 29)) return false; /* add x19,x29,#imm */
-        if (AsmGetImm12(ptr[3]) != AsmGetImm12(ptr[4]) || !AsmIsBl(ptr[5])) return false;
+        if (!(_asm::IsOp(ptr[3], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(ptr[3], _asm::field::Rd) == 0  && _asm::Get(ptr[3], _asm::field::Rn) == _asm::reg::Fp)) return false; /* add x0,x29,#imm  */
+        if (!(_asm::IsOp(ptr[4], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(ptr[4], _asm::field::Rd) == 19 && _asm::Get(ptr[4], _asm::field::Rn) == _asm::reg::Fp)) return false; /* add x19,x29,#imm */
+        if (_asm::Get(ptr[3], _asm::field::Imm12) != _asm::Get(ptr[4], _asm::field::Imm12) || !_asm::IsOp(ptr[5], _asm::op::Bl, _asm::field::Imm26)) return false;
         for (u32 j = 6; j <= 10; ++j) {
             if (ptr[j] == 0x7100001Fu) { /* cmp w0,#0 */
                 return true;
