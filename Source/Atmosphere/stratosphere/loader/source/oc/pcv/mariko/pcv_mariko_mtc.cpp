@@ -36,6 +36,8 @@ namespace ams::ldr::hoc::pcv::mariko {
          *     https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual
          *     Section 18.11.1:  MC Registers
          *     Section 18.11.2: EMC Registers
+         *
+         * Additional information from reverse-engineering public Tegra K1 (T124) memory characterization tools.
          */
 
         #define WRITE_PARAM_ALL_REG(TABLE, PARAM, VALUE) \

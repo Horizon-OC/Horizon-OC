@@ -164,8 +164,12 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRTM  = FLOOR((10.0 + RL) + (3.502 / tCK_avg)) + FLOOR(7.489 / tCK_avg);
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
-        rdv               = RL + FLOOR((5.105 / tCK_avg) + 17.017);
+        /* Read data valid: Read command -> data ready to be latched into the registers. */
+        rdv               = RL + 16 + CEIL((fly_by_time + tDQSCK_max) / tCK_avg);
+
+        /* Read command -> data poppable at the pad macros, 14 cycles ahead of rdv. */
         qpop              = rdv - 14;
+
         quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
         quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
         einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
