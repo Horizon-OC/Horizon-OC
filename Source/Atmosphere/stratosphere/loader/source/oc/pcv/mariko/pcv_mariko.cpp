@@ -224,7 +224,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     #if HOC_UART_LOG
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
     Result ForceVerbosity(u32 *ptr) {
-        i f(C.pcvLogVerbosity != 0xff) {
+        if (C.pcvLogVerbosity != 0xff) {
             PATCH_OFFSET(&ptr[0], _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, 0}, {_asm::field::Imm16, C.pcvLogVerbosity})); /* movz w0,#level */
             PATCH_OFFSET(&ptr[1], _asm::RetIns);                                                     /* ret            */
         }
