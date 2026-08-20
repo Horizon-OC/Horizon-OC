@@ -60,6 +60,7 @@ class DisplaySubMenuGui;
 class SafetySubMenuGui;
 class RamSubmenuGui;
 class RamTimingsSubmenuGui;
+class RamTimingPresetsSubmenuGui;
 class RamLatenciesSubmenuGui;
 class SocCustomTableSubmenuGui;
 class CpuSubmenuGui;
@@ -1365,6 +1366,67 @@ class RamSubmenuGui : public MiscGui {
     }
 };
 
+struct RamTimingPresetSet {
+    uint32_t t[8];
+};
+
+struct RamTimingPresetRow {
+    std::initializer_list<uint8_t> dramIds;
+    RamTimingPresetSet common;
+    RamTimingPresetSet st;
+};
+
+static const RamTimingPresetRow kMarikoRamTimingPresets[] = {
+    { { 32, 33, 34 }, { { 4, 4, 5, 4, 2, 6, 5, 6 } }, { { 6, 6, 7, 5, 2, 6, 5, 6 } } },              // WT:B
+    { { 3, 5, 6, 29, 30, 31 }, { { 3, 3, 2, 1, 5, 5, 4, 6 } }, { { 4, 4, 4, 2, 7, 6, 5, 6 } } },     // NEE / x267
+    { { 17, 19, 24 }, { { 4, 4, 5, 4, 5, 5, 6, 6 } }, { { 4, 4, 8, 5, 5, 6, 7, 6 } } },              // AA-MGCL 4GB
+    { { 11, 15 }, { { 2, 2, 2, 1, 4, 4, 4, 6 } }, { { 3, 5, 3, 2, 5, 4, 5, 6 } } },                  // WT:E
+    { { 8, 12 }, { { 3, 2, 4, 1, 4, 4, 4, 6 } }, { { 4, 3, 8, 1, 5, 4, 4, 6 } } },                   // AM-MGCJ 4GB
+    { { 25, 26, 27 }, { { 4, 4, 2, 4, 4, 6, 3, 6 } }, { { 5, 5, 4, 4, 5, 6, 5, 6 } } },              // WT:F
+    { { 20, 21, 22 }, { { 4, 4, 4, 3, 4, 5, 6, 6 } }, { { 4, 4, 8, 4, 5, 6, 8, 6 } } },              // AB-MGCL
+    { { 10, 14 }, { { 2, 2, 3, 0, 1, 2, 2, 6 } }, { { 5, 3, 4, 1, 8, 3, 3, 6 } } },                  // NME
+};
+
+static const RamTimingPresetSet kEristaCommonTiming = { { 4, 4, 4, 0, 1, 5, 4, 6 } };
+static const RamTimingPresetSet kEristaSTTiming = { { 4, 5, 9, 1, 2, 6, 4, 6 } };
+
+// 8GB DRAM modules are commonly used for ram upgrade
+// and are not representative of the actual ram in the console
+// Theoretically you could do it via MRR Vendor registers
+// but thats for the future
+static bool isEightGigRamID(u8 dramID) {
+    switch (dramID) {
+        case 7:
+        case 9:
+        case 13:
+        case 18:
+        case 23:
+        case 28:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static const RamTimingPresetRow *findMarikoRamTimingPreset(u8 dramID) {
+    for (const auto &row : kMarikoRamTimingPresets) {
+        for (auto id : row.dramIds) {
+            if (id == dramID)
+                return &row;
+        }
+    }
+    return nullptr;
+}
+
+static void applyRamTimingPreset(HocClkConfigValueList *configList, const RamTimingPresetSet &set) {
+    static constexpr HocClkConfigValue keys[8] = {
+        KipConfigValue_t1_tRCD, KipConfigValue_t2_tRP,  KipConfigValue_t3_tRAS, KipConfigValue_t4_tRRD,
+        KipConfigValue_t5_tRFC, KipConfigValue_t6_tRTW, KipConfigValue_t7_tWTR, KipConfigValue_t8_tREFI,
+    };
+    for (int i = 0; i < 8; i++)
+        configList->values[keys[i]] = set.t[i];
+}
+
 class RamTimingsSubmenuGui : public MiscGui {
     public:
     RamTimingsSubmenuGui() {
@@ -1389,6 +1451,17 @@ class RamTimingsSubmenuGui : public MiscGui {
             return;
         }
         this->listElement->addItem(new CompactCategoryHeader("Memory Timings"));
+
+        tsl::elm::ListItem *timingPresetsSubMenu = new tsl::elm::ListItem("Timing Presets");
+        timingPresetsSubMenu->setClickListener([](u64 keys) {
+            if (keys & HidNpadButton_A) {
+                tsl::swapTo<RamTimingPresetsSubmenuGui>();
+                return true;
+            }
+            return false;
+        });
+        timingPresetsSubMenu->setValue(R_ARROW);
+        this->listElement->addItem(timingPresetsSubMenu);
 
         addConfigTrackbar(KipConfigValue_t1_tRCD, "t1 tRCD", ValueRange(0, 7, 1));
         addConfigTrackbar(KipConfigValue_t2_tRP, "t2 tRP", ValueRange(0, 7, 1));
@@ -1605,6 +1678,114 @@ class RamTimingsSubmenuGui : public MiscGui {
                                 { "-2", "-1", " 0", "+1", "+2" });
         addMappedConfigTrackbar(KipConfigValue_t7_tWTR_fine_tune, "t7 tWTR Fine Tune", { 0xFFFFFFFDu, 0xFFFFFFFEu, 0xFFFFFFFFu, 0u, 1u, 2u, 3u },
                                 { "-3", "-2", "-1", " 0", "+1", "+2", "+3" });
+
+        if (!lastItemName.empty()) {
+            this->listElement->jumpToItem(lastItemName);
+        }
+        lastItemName = "";
+    }
+};
+
+class RamTimingPresetsSubmenuGui : public MiscGui {
+    public:
+    RamTimingPresetsSubmenuGui() {
+    }
+
+    bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState leftJoyStick,
+                      HidAnalogStickState rightJoyStick) override {
+        if (keysDown & KEY_B) {
+            triggerExitFeedback();
+            lastItemName = "Timing Presets";
+            tsl::swapTo<RamTimingsSubmenuGui>();
+            return true;
+        }
+        return false;
+    }
+
+    protected:
+    void listUI() override {
+        Result rc = hocclkIpcGetConfigValues(this->configList);
+        if (R_FAILED(rc)) [[unlikely]] {
+            FatalGui::openWithResultCode("hocclkIpcGetConfigValues", rc);
+            return;
+        }
+
+        if (!this->context) {
+            this->context = new HocClkContext;
+        }
+        Result crc = hocclkIpcGetCurrentContext(this->context);
+        if (R_FAILED(crc)) [[unlikely]] {
+            FatalGui::openWithResultCode("hocclkIpcGetCurrentContext", crc);
+            return;
+        }
+        u8 dramID = this->context->dramID;
+        this->listElement->addItem(new CompactCategoryHeader("Timing Presets: " + formatRamModule(dramID)));
+
+        tsl::elm::CustomDrawer *presetWarning = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+            renderer->drawString("\uE150 Timing presets are only a baseline and", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
+            renderer->drawString("may need adjustment for your particular", false, x + 20, y + 50, 18, tsl::style::color::ColorText);
+            renderer->drawString("DRAM Module", false, x + 20, y + 70, 18, tsl::style::color::ColorText);
+        });
+        presetWarning->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, 90);
+        this->listElement->addItem(presetWarning);
+
+        const RamTimingPresetSet *presetCommon = nullptr;
+        const RamTimingPresetSet *presetST = nullptr;
+        if (!isEightGigRamID(dramID)) {
+            if (IsMariko()) {
+                const RamTimingPresetRow *row = findMarikoRamTimingPreset(dramID);
+                if (row) {
+                    presetCommon = &row->common;
+                    presetST = &row->st;
+                }
+            } else {
+                presetCommon = &kEristaCommonTiming;
+                presetST = &kEristaSTTiming;
+            }
+        }
+
+        if (presetCommon && presetST) {
+            tsl::elm::ListItem *commonPresetBtn = new tsl::elm::ListItem("Apply Common Preset");
+            commonPresetBtn->setClickListener([this, presetCommon](u64 keys) {
+                if (!(keys & HidNpadButton_A))
+                    return false;
+                applyRamTimingPreset(this->configList, *presetCommon);
+                Result rc = hocclkIpcSetConfigValues(this->configList);
+                if (R_FAILED(rc)) {
+                    FatalGui::openWithResultCode("hocclkIpcSetConfigValues", rc);
+                    return false;
+                }
+                shouldSaveKip = true;
+                lastItemName = "Timing Presets";
+                tsl::swapTo<RamTimingsSubmenuGui>();
+                return true;
+            });
+            this->listElement->addItem(commonPresetBtn);
+
+            tsl::elm::ListItem *stPresetBtn = new tsl::elm::ListItem("Apply Super Tight (ST) Preset");
+            stPresetBtn->setClickListener([this, presetST](u64 keys) {
+                if (!(keys & HidNpadButton_A))
+                    return false;
+                applyRamTimingPreset(this->configList, *presetST);
+                Result rc = hocclkIpcSetConfigValues(this->configList);
+                if (R_FAILED(rc)) {
+                    FatalGui::openWithResultCode("hocclkIpcSetConfigValues", rc);
+                    return false;
+                }
+                shouldSaveKip = true;
+                lastItemName = "Timing Presets";
+                tsl::swapTo<RamTimingsSubmenuGui>();
+                return true;
+            });
+            this->listElement->addItem(stPresetBtn);
+        } else {
+            tsl::elm::CustomDrawer *noPresetText = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+                renderer->drawString("Timing presets are not available", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
+                renderer->drawString("for your RAM module.", false, x + 20, y + 50, 18, tsl::style::color::ColorText);
+            });
+            noPresetText->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, 70);
+            this->listElement->addItem(noPresetText);
+        }
     }
 };
 

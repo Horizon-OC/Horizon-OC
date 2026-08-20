@@ -36,7 +36,4 @@ public:
     void listUI() override;
     void update() override;
     void refresh() override;
-
-private:
-    std::string formatRamModule();
 };
