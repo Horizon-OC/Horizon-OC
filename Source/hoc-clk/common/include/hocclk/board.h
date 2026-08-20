@@ -162,6 +162,7 @@ typedef enum {
 typedef enum {
     RamDisplayMode_VDD2 = 0,
     RamDisplayMode_VDDQ,
+    RamDisplayMode_VDD2VDDQ,
     RamDisplayMode_EnumMax,
 } RamDisplayMode;
 

@@ -284,6 +284,10 @@ void BaseMenuGui::refresh() {
             sprintf(displayStrings[10], "%u.%u mV", context->voltages[HocClkVoltage_EMCVDDQ] / 1000U,
                     (context->voltages[HocClkVoltage_EMCVDDQ] % 1000U) / 100U);
             break;
+        case RamDisplayMode_VDD2VDDQ:
+            sprintf(displayStrings[10], "%u/%u mV", context->voltages[HocClkVoltage_EMCVDD2] / 1000U,
+                    context->voltages[HocClkVoltage_EMCVDDQ] / 1000U);
+            break;
         default:
             strcpy(displayStrings[10], "N/A");
             break;

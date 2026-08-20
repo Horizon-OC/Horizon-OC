@@ -785,6 +785,7 @@ class GeneralSettingsSubMenuGui : public MiscGui {
         std::vector<NamedValue> ramVoltDispModes = {
             NamedValue("VDD2", RamDisplayMode_VDD2),
             NamedValue("VDDQ", RamDisplayMode_VDDQ),
+            NamedValue("VDD2/VDDQ", RamDisplayMode_VDD2VDDQ),
         };
 
         if (IsMariko()) {
