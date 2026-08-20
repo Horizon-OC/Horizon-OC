@@ -83,9 +83,10 @@ typedef struct {
     u16 kipVersion;
     bool isKipLoaded;
     bool rebootRequired;
-
+    bool isFirstLoad;
+    
     // Reserved for future use
-    u8 reserved[0x359];
+    u8 reserved[0x358];
 } HocClkContext;
 
 typedef struct

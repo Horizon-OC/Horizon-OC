@@ -818,7 +818,8 @@ namespace clockManager {
         gContext.dramID = board::GetDramID();
         gContext.isDram8GB = board::IsDram8GB();
         gContext.consoleType = board::GetConsoleType();
-
+        gContext.isFirstLoad = config::GetConfigValue(HocClkConfigValue_IsFirstLoad);
+        
         board::SetGpuSchedulingMode((GpuSchedulingMode)config::GetConfigValue(HocClkConfigValue_GPUScheduling),
                                     (GpuSchedulingOverrideMethod)config::GetConfigValue(HocClkConfigValue_GPUSchedulingMethod));
         gContext.gpuSchedulingMode = (GpuSchedulingMode)config::GetConfigValue(HocClkConfigValue_GPUScheduling);
