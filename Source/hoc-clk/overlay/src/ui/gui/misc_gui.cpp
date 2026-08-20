@@ -909,7 +909,7 @@ class ExperimentalSettingsSubMenuGui : public MiscGui {
             NamedValue("100mA", 100),
             NamedValue("150mA", 150),
             NamedValue("500mA", 500),
-            NamedValue("900mA", 900, "Hoag Default"),
+            NamedValue("900mA", 900, "Default (Lite)"),
             NamedValue("1200mA", 1200, "Default"),
             NamedValue("1500mA", 1500),
             NamedValue("2000mA", 2000),
