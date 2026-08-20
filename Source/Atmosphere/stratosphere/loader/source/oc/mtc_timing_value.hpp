@@ -61,8 +61,8 @@ namespace ams::ldr::hoc {
     const u32 tWR = 18;
 
     /* TODO: Add comments (lazy) */
-    const double chip_delay       = 1.109; /* ps. */
-    const double round_trip_delay = 0.5;   /* ps. */
+    const double chip_delay       = 1.109; /* ns. */
+    const double round_trip_delay = 0.5;   /* ns. */
     const double fly_by_time      = chip_delay + round_trip_delay;
 
     namespace pcv::erista {
