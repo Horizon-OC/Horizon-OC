@@ -1183,7 +1183,7 @@ class RamSubmenuGui : public MiscGui {
         };
 
         ValueThresholds vdd2Thresholds(IsMariko() ? 1212500 : 1237500, IsMariko() ? 1250000 : 1275000);
-        addConfigButton(KipConfigValue_commonEmcMemVolt, "RAM VDD2 Voltage", ValueRange(912500, 1350000, 12500, "mV", 1000, 1), "Voltage",
+        addConfigButton(KipConfigValue_commonEmcMemVolt, "RAM VDD2 Voltage", ValueRange(912500, IsMariko ? 1275000 : 1350000, 12500, "mV", 1000, 1), "Voltage",
                         &vdd2Thresholds, emc_voltage_label, noNamedValues, false, true);
 
         if (IsMariko()) {
