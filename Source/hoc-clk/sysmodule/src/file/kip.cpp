@@ -131,7 +131,7 @@ namespace kip {
 
         CUST_WRITE_FIELD_BATCH(&table, commonGpuVoltOffset, config::GetConfigValue(KipConfigValue_commonGpuVoltOffset));
 
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < 25; i++) {
             table.marikoGpuVoltArray[i] = config::GetConfigValue((HocClkConfigValue)(KipConfigValue_g_volt_76800 + i));
         }
 
@@ -315,7 +315,7 @@ namespace kip {
         configValues.values[KipConfigValue_marikoGpuVmax] = cust_get_mariko_gpu_vmax(&table);
         configValues.values[KipConfigValue_commonGpuVoltOffset] = cust_get_common_gpu_offset(&table);
 
-        for (int i = 0; i < 24; i++) {
+        for (int i = 0; i < 25; i++) {
             configValues.values[KipConfigValue_g_volt_76800 + i] = cust_get_mariko_gpu_volt(&table, i);
         }
 
@@ -369,10 +369,11 @@ namespace kip {
             config::DeleteKey(CONFIG_VAL_SECTION, "tdp_limit");
             config::DeleteKey(CONFIG_VAL_SECTION, "tdp_limit_l");
         }
-        config::SetConfigValues(&configValues, true);
         if(previousVersion < 300 && version >= 300) {
-            
+            configValues.values[KipConfigValue_g_volt_1574400] = 2000;
         }
+        config::SetConfigValues(&configValues, true);
+
     }
 
 }  // namespace kip

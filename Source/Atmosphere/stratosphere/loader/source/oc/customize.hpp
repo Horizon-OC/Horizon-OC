@@ -126,7 +126,7 @@ struct CustomizeTable {
     s32 commonGpuVoltOffset;
 
     u32 eristaGpuVoltArray[27];
-    u32 marikoGpuVoltArray[24];
+    u32 marikoGpuVoltArray[25];
     s32 marikoSocVoltArray[28];
 
     u32 fineTune_t6_tRTW;
@@ -134,7 +134,7 @@ struct CustomizeTable {
 
     u32 pcvLogVerbosity;
 
-    u32 reserved[58];
+    u32 reserved[57];
 
     CustomizeCpuDvfsTable eristaCpuDvfsTable;
     CustomizeCpuDvfsTable eristaCpuDvfsTableSLT;

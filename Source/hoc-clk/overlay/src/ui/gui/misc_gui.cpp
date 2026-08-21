@@ -2558,7 +2558,7 @@ class GpuSubmenuGui : public MiscGui {
                             false, true);
             ValueThresholds MgpuVmaxThresholds(805, 850);
             if(IsMariko()) {
-                addConfigButton(KipConfigValue_marikoGpuVmax, "GPU Maximum Voltage", ValueRange(800, 960, 5, "mV", 1), "GPU Maximum Voltage",
+                addConfigButton(KipConfigValue_marikoGpuVmax, "GPU Maximum Voltage", ValueRange(800, 995, 5, "mV", 1), "GPU Maximum Voltage",
                                 &MgpuVmaxThresholds, {}, {}, false, true);
             }
         }
@@ -2665,7 +2665,7 @@ class GpuCustomTableSubmenuGui : public MiscGui {
 
         this->listElement->addItem(new CompactCategoryHeader("GPU Custom Table (mV)"));
 
-        ValueThresholds MgpuVmaxThresholds(800, 850);
+        ValueThresholds MgpuVmaxThresholds(825, 900);
         ValueThresholds EgpuVmaxThresholds(950, 975);
 
         std::vector<NamedValue> mGpuVolts = {
@@ -2688,7 +2688,9 @@ class GpuCustomTableSubmenuGui : public MiscGui {
             NamedValue("870mV", 870),     NamedValue("875mV", 875), NamedValue("880mV", 880), NamedValue("885mV", 885), NamedValue("890mV", 890),
             NamedValue("895mV", 895),     NamedValue("900mV", 900), NamedValue("905mV", 905), NamedValue("910mV", 910), NamedValue("915mV", 915),
             NamedValue("920mV", 920),     NamedValue("925mV", 925), NamedValue("930mV", 930), NamedValue("935mV", 935), NamedValue("940mV", 940),
-            NamedValue("945mV", 945),     NamedValue("950mV", 950), NamedValue("955mV", 955), NamedValue("960mV", 960),
+            NamedValue("945mV", 945),     NamedValue("950mV", 950), NamedValue("955mV", 955), NamedValue("960mV", 960), NamedValue("965mV", 965),
+            NamedValue("970mV", 970),     NamedValue("975mV", 975), NamedValue("980mV", 980), NamedValue("985mV", 985), NamedValue("990mV", 990),
+            NamedValue("995mV", 995),
         };
 
         std::vector<NamedValue> eGpuVolts = {
@@ -2728,7 +2730,8 @@ class GpuCustomTableSubmenuGui : public MiscGui {
             NamedValue("875mV", 875),     NamedValue("880mV", 880), NamedValue("885mV", 885), NamedValue("890mV", 890), NamedValue("895mV", 895),
             NamedValue("900mV", 900),     NamedValue("905mV", 905), NamedValue("910mV", 910), NamedValue("915mV", 915), NamedValue("920mV", 920),
             NamedValue("925mV", 925),     NamedValue("930mV", 930), NamedValue("935mV", 935), NamedValue("940mV", 940), NamedValue("945mV", 945),
-            NamedValue("950mV", 950),     NamedValue("955mV", 955), NamedValue("960mV", 960),
+            NamedValue("950mV", 950),     NamedValue("955mV", 955), NamedValue("960mV", 960), NamedValue("965mV", 965), NamedValue("970mV", 970),     
+            NamedValue("975mV", 975),     NamedValue("980mV", 980), NamedValue("985mV", 985), NamedValue("990mV", 990), NamedValue("995mV", 995),
         };
 
         std::vector<NamedValue> eGpuVolts_noAuto = {
@@ -2810,6 +2813,9 @@ class GpuCustomTableSubmenuGui : public MiscGui {
                                             &MgpuVmaxThresholds, {}, mGpuVolts_noAuto, false, true);
                     addGpuFreqVoltageButton(KipConfigValue_g_volt_1536000, "1536.0MHz", 1'536'000'000, ValueRange(0, 0, 0, "0", 1), "Voltage",
                                             &MgpuVmaxThresholds, {}, mGpuVolts_noAuto, false, true);
+                    addGpuFreqVoltageButton(KipConfigValue_g_volt_1574400, "1574.4MHz", 1'574'400'000, ValueRange(0, 0, 0, "0", 1), "Voltage",
+                                            &MgpuVmaxThresholds, {}, mGpuVolts_noAuto, false, true);
+
                 }
             }
         } else {

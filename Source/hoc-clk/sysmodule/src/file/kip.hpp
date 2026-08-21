@@ -94,7 +94,7 @@ namespace kip {
         u32 commonGpuVoltOffset;
 
         u32 eristaGpuVoltArray[27];
-        u32 marikoGpuVoltArray[24];
+        u32 marikoGpuVoltArray[25];
         s32 marikoSocVoltArray[28];
 
         u32 t6_tRTW_fine_tune;
@@ -102,7 +102,7 @@ namespace kip {
         
         u32 pcvLogVerbosity;
 
-        u32 reserved[58];
+        u32 reserved[57];
     } CustomizeTable;
 
 #define CUST_MAGIC "CUST"
@@ -395,7 +395,7 @@ namespace kip {
     }
 
     static inline bool cust_set_mariko_gpu_volt(const char *p, int idx, u32 v) {
-        if (idx < 0 || idx >= 24)
+        if (idx < 0 || idx >= 25)
             return false;
         CustomizeTable t;
         if (!cust_read_table(p, &t))
@@ -607,7 +607,7 @@ namespace kip {
     }
 
     static inline u32 cust_get_mariko_gpu_volt(const CustomizeTable *t, int idx) {
-        if (!t || idx < 0 || idx >= 24)
+        if (!t || idx < 0 || idx >= 25)
             return 0;
         return t->marikoGpuVoltArray[idx];
     }
@@ -685,6 +685,7 @@ namespace kip {
     DECL_MARIKO_GPU_VOLT_HELPER(1459200, 21)
     DECL_MARIKO_GPU_VOLT_HELPER(1497600, 22)
     DECL_MARIKO_GPU_VOLT_HELPER(1536000, 23)
+    DECL_MARIKO_GPU_VOLT_HELPER(1574400, 24)
 
     DECL_MARIKO_SOC_VOLT_HELPER(1866000,  0)
     DECL_MARIKO_SOC_VOLT_HELPER(2000000,  1)
@@ -790,6 +791,7 @@ namespace kip {
     DECL_MARIKO_GPU_VOLT_GET(1459200, 21)
     DECL_MARIKO_GPU_VOLT_GET(1497600, 22)
     DECL_MARIKO_GPU_VOLT_GET(1536000, 23)
+    DECL_MARIKO_GPU_VOLT_GET(1574400, 24)
 
     DECL_MARIKO_SOC_VOLT_GET(1866000,  0)
     DECL_MARIKO_SOC_VOLT_GET(2000000,  1)

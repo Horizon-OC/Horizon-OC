@@ -167,6 +167,7 @@ typedef enum {
     KipConfigValue_g_volt_1459200,
     KipConfigValue_g_volt_1497600,
     KipConfigValue_g_volt_1536000,
+    KipConfigValue_g_volt_1574400,
 
     KipConfigValue_g_volt_e_76800,
     KipConfigValue_g_volt_e_115200,
@@ -483,6 +484,7 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
         case KipConfigValue_g_volt_1459200: return pretty ? "Mariko GPU Volt 1459 MHz" : "g_volt_1459200";
         case KipConfigValue_g_volt_1497600: return pretty ? "Mariko GPU Volt 1497 MHz" : "g_volt_1497600";
         case KipConfigValue_g_volt_1536000: return pretty ? "Mariko GPU Volt 1536 MHz" : "g_volt_1536000";
+        case KipConfigValue_g_volt_1574400: return pretty ? "Mariko GPU Volt 1574 MHz" : "g_volt_1574400";
 
         // Erista GPU voltages (27)
         case KipConfigValue_g_volt_e_76800: return pretty ? "Erista GPU Volt 76 MHz" : "g_volt_e_76800";
@@ -712,6 +714,7 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case KipConfigValue_g_volt_1459200:
         case KipConfigValue_g_volt_1497600:
         case KipConfigValue_g_volt_1536000:
+        case KipConfigValue_g_volt_1574400:
         case KipConfigValue_g_volt_e_76800:
         case KipConfigValue_g_volt_e_115200:
         case KipConfigValue_g_volt_e_153600:
