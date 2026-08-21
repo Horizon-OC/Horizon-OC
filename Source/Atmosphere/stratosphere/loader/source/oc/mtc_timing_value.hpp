@@ -60,10 +60,7 @@ namespace ams::ldr::hoc {
     /* Write recovery time. */
     const u32 tWR = 18;
 
-    /* TODO: Add comments (lazy) */
-    const double chip_delay       = 1.109; /* ns. */
-    const double round_trip_delay = 0.5;   /* ns. */
-    const double fly_by_time      = chip_delay + round_trip_delay;
+    const double roundTripDelay = 0.5; /* ns. */
 
     namespace pcv::erista {
         const std::array<u32,       8> tRCD_values    = { 18, 17, 16, 15, 14, 13, 12, 11 };
@@ -96,6 +93,16 @@ namespace ams::ldr::hoc {
         inline u32 tR2W;
         inline u32 rext;
 
+        inline u32 rdv;
+        inline u32 qpop;
+        inline u32 quse_width;
+        inline u32 quse;
+        inline u32 einput_duration;
+        inline u32 einput;
+        inline u32 qrst;
+        inline u32 ibdly;
+        inline u32 qsafe;
+
         inline u32 tW2P;
         inline u32 tWTPDEN;
         inline u32 tW2R;
@@ -113,6 +120,12 @@ namespace ams::ldr::hoc {
         inline double pdex2mrr;
 
         inline u8 mrw2;
+
+        namespace {
+            double chipDelay = 1.165; /* Guessed. */
+        }
+
+        const double flyByTime = chipDelay + roundTripDelay;
     }
 
     namespace pcv::mariko {
@@ -176,6 +189,13 @@ namespace ams::ldr::hoc {
         inline u32 pdex2mrr;
 
         inline u8 mrw2;
+
+        /* TODO: Add comments (lazy) */
+        namespace {
+            const double chipDelay = 1.109; /* ns. */
+        }
+
+        const double flyByTime = chipDelay + roundTripDelay;
     }
 
 }

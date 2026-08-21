@@ -165,7 +165,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
         /* Read data valid: Read command -> data ready to be latched into the registers. */
-        rdv               = RL + 16 + CEIL((fly_by_time + tDQSCK_max) / tCK_avg);
+        rdv               = RL + 16 + CEIL((flyByTime + tDQSCK_max) / tCK_avg);
 
         /* Read command -> data poppable at the pad macros, 14 cycles ahead of rdv. */
         qpop              = rdv - 14;

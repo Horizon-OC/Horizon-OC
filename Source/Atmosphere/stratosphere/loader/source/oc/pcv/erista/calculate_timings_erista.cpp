@@ -95,7 +95,7 @@ namespace ams::ldr::hoc::pcv::erista {
         u32 wlIndex = 0;
 
         for (u32 i = 0; i < std::size(rlMapDBI); ++i) {
-            if (rlMapDBI[i] == 32) {
+            if (rlMapDBI[i] == RL) {
                 rlIndex = i;
                 break;
             }
@@ -121,6 +121,19 @@ namespace ams::ldr::hoc::pcv::erista {
 
         tR2P = CEIL((RL * 0.426) - 2.0);
         tR2W = FLOOR(FLOOR((5.0 / tCK_avg) + ((FLOOR(48.0 / WL) - 0.478) * 3.0)) / 1.501) + RL - (C.t6_tRTW * 3) + finetRTW;
+
+        rdv  = RL + 19 + CEIL((flyByTime + tDQSCK_max) / tCK_avg);
+        qpop = rdv - 16;
+
+        quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
+        quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
+        einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
+        einput            = quse - CEIL(9.928 / tCK_avg);
+        u32 qrst_duration = FLOOR(8.399 - tCK_avg);
+        u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
+        qrst              = PACK_U32(qrst_duration, qrstLow);
+        ibdly             = PACK_U32_NIBBLE_HIGH_BYTE_LOW(1, quse - qrst_duration - 2.0);
+        qsafe             = (einput_duration + 3) + MAX(MIN(qrstLow * rdv, qrst_duration + qrst_duration), einput);
 
         tW2P    = (CEIL(WL * 1.7303) * 2) - 5;
         tWTPDEN = CEIL(((1.803 / tCK_avg) + MAX(RL + (2.694 / tCK_avg), static_cast<double>(tW2P))) + (BL / 2));

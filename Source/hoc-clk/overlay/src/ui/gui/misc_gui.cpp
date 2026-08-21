@@ -1252,6 +1252,11 @@ class RamSubmenuGui : public MiscGui {
                 NamedValue("2361 MHz", 2361600),
                 NamedValue("2380 MHz", 2380800),
                 NamedValue("2400 MHz", 2400000, "JEDEC."),
+                NamedValue("2419 MHz", 2419200),
+                NamedValue("2438 MHz", 2438400),
+                NamedValue("2457 MHz", 2457600),
+                NamedValue("2476 MHz", 2476800),
+                NamedValue("2496 MHz", 2496000),
             };
         } else {
             emcMaxClock = {
@@ -1880,7 +1885,8 @@ class RamLatenciesSubmenuGui : public MiscGui {
             kFreqOptions = {
                 1633000, 1666000, 1700000, 1733000, 1800000, 1833000, 1862400, 1881600, 1900800, 1920000, 1939200, 1958400,
                 1977600, 1996800, 2016000, 2035200, 2054400, 2073600, 2092800, 2112000, 2131200, 2150400, 2169600, 2188800,
-                2208000, 2227200, 2246400, 2265600, 2284800, 2304000, 2323200, 2342400, 2361600, 2380800, 2400000,
+                2208000, 2227200, 2246400, 2265600, 2284800, 2304000, 2323200, 2342400, 2361600, 2380800, 2400000, 2419200,
+                2438400, 2457600, 2476800, 2496000,
             };
         }
 
@@ -2730,7 +2736,7 @@ class GpuCustomTableSubmenuGui : public MiscGui {
             NamedValue("875mV", 875),     NamedValue("880mV", 880), NamedValue("885mV", 885), NamedValue("890mV", 890), NamedValue("895mV", 895),
             NamedValue("900mV", 900),     NamedValue("905mV", 905), NamedValue("910mV", 910), NamedValue("915mV", 915), NamedValue("920mV", 920),
             NamedValue("925mV", 925),     NamedValue("930mV", 930), NamedValue("935mV", 935), NamedValue("940mV", 940), NamedValue("945mV", 945),
-            NamedValue("950mV", 950),     NamedValue("955mV", 955), NamedValue("960mV", 960), NamedValue("965mV", 965), NamedValue("970mV", 970),     
+            NamedValue("950mV", 950),     NamedValue("955mV", 955), NamedValue("960mV", 960), NamedValue("965mV", 965), NamedValue("970mV", 970),
             NamedValue("975mV", 975),     NamedValue("980mV", 980), NamedValue("985mV", 985), NamedValue("990mV", 990), NamedValue("995mV", 995),
         };
 
