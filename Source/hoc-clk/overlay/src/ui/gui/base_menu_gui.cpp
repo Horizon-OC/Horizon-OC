@@ -61,7 +61,7 @@ void BaseMenuGui::preDraw(tsl::gfx::Renderer *renderer) {
 
     // All constants pre-calculated and cached
     const char *labels[] = { "App ID", "Profile", "CPU", "GPU", "MEM",  "SoC", "Board",
-                             "Skin",   "Now",     "Avg", "BAT", "PMIC", "Fan", IsAula() || this->context->isUsingRetroSuper ? "OLED" : "LCD",
+                             "Skin",   "Now",     "Avg", "BAT", "PMIC", "Fan", IsAula() ? "OLED" : "LCD",
                              "FPS",    "RES" };
 
     static constexpr u32 dataPositions[6] = { 63 - 3 + 3, 200 - 1, 344 - 1 - 3, 200 - 1, 342 - 1, 321 - 1 };

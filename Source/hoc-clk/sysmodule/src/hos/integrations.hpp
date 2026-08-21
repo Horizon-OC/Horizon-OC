@@ -61,7 +61,7 @@ namespace integrations {
 
     bool GetSysDockState();
     bool GetSaltyNXState();
-    bool GetRETROSuperStatus();
+
     void LoadSaltyNX();
     u8 GetSaltyNXFPS();
     u16 GetSaltyNXResolutionHeight();

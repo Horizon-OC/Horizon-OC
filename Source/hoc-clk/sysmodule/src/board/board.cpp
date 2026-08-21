@@ -193,7 +193,7 @@ namespace board {
         display::DisplayRefreshConfig cfg = { .clkVirtAddr = clkVirtAddr,
                                               .dsiVirtAddr = dsiVirtAddr,
                                               .isLite = (GetConsoleType() == HocClkConsoleType_Hoag),
-                                              .isRetroSUPER = integrations::GetRETROSuperStatus() };
+                                              .isRetroSUPER = false };
         display::Initialize(&cfg);
 
         CacheDfllData();
@@ -268,10 +268,6 @@ namespace board {
 
     u8 GetGpuSpeedoBracket() {
         return speedoBracket;
-    }
-
-    bool IsUsingRetroSuperDisplay() {
-        return false; /* stub for now. */
     }
 
 }  // namespace board

@@ -45,6 +45,7 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Options:",
                 "- VDD2 - Display VDD2 voltage",
                 "- VDDQ - Display VDDQ voltage",
+                "- VDD2/VDDQ - Display both voltages, but without decimal place",
                 "Default: VDD2"
             };
 

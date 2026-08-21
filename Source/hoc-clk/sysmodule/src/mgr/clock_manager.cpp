@@ -830,7 +830,6 @@ namespace clockManager {
             integrations::LoadSaltyNX();
         }
 
-        gContext.isUsingRetroSuper = integrations::GetRETROSuperStatus();
         governor::startThreads();
     }
 

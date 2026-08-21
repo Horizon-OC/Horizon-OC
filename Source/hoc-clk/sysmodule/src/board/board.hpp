@@ -58,6 +58,5 @@ namespace board {
     bool IsDram8GB();
     void SetDisplayRefreshDockedState(bool docked);
     FuseData *GetFuseData();
-    bool IsUsingRetroSuperDisplay();
 
 }  // namespace board

@@ -320,7 +320,7 @@ public:
         static constexpr struct { const char* label; int shift; } kAll[] = {
             {"CPU", 0}, {"GPU", 8}, {"VRR", 16}
         };
-        int count = configList.values[HocClkConfigValue_OverwriteRefreshRate] || this->context->isUsingRetroSuper ? 3 : 2;
+        int count = configList.values[HocClkConfigValue_OverwriteRefreshRate] && this->context->profile != HocClkProfile_Docked ? 3 : 2;
 
         for (int i = 0; i < count; i++) {
             u8 cur = (this->packed >> kAll[i].shift) & 0xFF;
@@ -375,7 +375,7 @@ void GlobalOverrideGui::listUI()
     #if IS_MINIMAL == 0
         ValueThresholds lcdThresholds(60, 65);
         if(configList.values[HocClkConfigValue_OverwriteRefreshRate])
-            this->addModuleListItemValue(HocClkModule_Display, "Display", IsAula() ? 45 : 40, configList.values[HocClkConfigValue_MaxDisplayClockH], this->context->isUsingRetroSuper ? 5 : 1, " Hz", 1, 0, lcdThresholds);
+            this->addModuleListItemValue(HocClkModule_Display, "Display", IsAula() ? 45 : 40, configList.values[HocClkConfigValue_MaxDisplayClockH], 1, " Hz", 1, 0, lcdThresholds);
     #endif
 
     this->addGovernorSection();

@@ -31,7 +31,6 @@ tsl::elm::ListItem* IddqItem = NULL;
 tsl::elm::ListItem* DramModule = NULL;
 tsl::elm::ListItem* sysdockStatusItem = NULL;
 tsl::elm::ListItem* saltyNXStatusItem = NULL;
-tsl::elm::ListItem* RETROStatusItem = NULL;
 tsl::elm::ListItem* waferCordsItem = NULL;
 tsl::elm::ListItem* ramVoltItem = NULL;
 tsl::elm::ListItem* eristaPLLXItem = NULL;
@@ -141,12 +140,6 @@ void AboutGui::listUI()
         new tsl::elm::ListItem("Wafer Position:");
     this->listElement->addItem(waferCordsItem);
 
-    if(IsHoag()) {
-        RETROStatusItem =
-            new tsl::elm::ListItem("RR Display status:");
-        this->listElement->addItem(RETROStatusItem);
-    }
-
     this->listElement->addItem(
         new tsl::elm::CategoryHeader("Software Info")
     );
@@ -223,9 +216,6 @@ void AboutGui::refresh()
         sysdockStatusItem->setValue(this->context->isSysDockInstalled ? "Installed" : "Not Installed");
 
     saltyNXStatusItem->setValue(this->context->isSaltyNXInstalled ? "Installed" : "Not Installed");
-
-    if(IsHoag())
-        RETROStatusItem->setValue(this->context->isUsingRetroSuper ? "Installed" : "Not Installed");
 
     sprintf(strings[2], "X: %d Y: %d", this->context->waferX, this->context->waferY);
     waferCordsItem->setValue(strings[2]);

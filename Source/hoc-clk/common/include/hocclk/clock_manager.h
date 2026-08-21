@@ -70,7 +70,6 @@ typedef struct {
     GpuSchedulingMode gpuSchedulingMode;
     bool isSysDockInstalled;
     bool isSaltyNXInstalled;
-    bool isUsingRetroSuper;
     u8 maxDisplayFreq;
     u8 dramID;
     bool isDram8GB;
@@ -84,7 +83,7 @@ typedef struct {
     bool isKipLoaded;
     bool rebootRequired;
     bool isFirstLoad;
-    
+
     // Reserved for future use
     u8 reserved[0x358];
 } HocClkContext;

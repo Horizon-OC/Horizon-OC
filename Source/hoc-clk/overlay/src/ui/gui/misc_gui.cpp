@@ -1048,20 +1048,18 @@ class DisplaySubMenuGui : public MiscGui {
 
         this->listElement->addItem(new CompactCategoryHeader("Display Settings"));
         addConfigToggle(HocClkConfigValue_OverwriteRefreshRate, nullptr);
-        if (!this->context->isUsingRetroSuper) {
-            tsl::elm::CustomDrawer *warningText = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
-                renderer->drawString("\uE150 Usage of unsafe display", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
-                renderer->drawString("refresh rates may cause stress", false, x + 20, y + 50, 18, tsl::style::color::ColorText);
-                renderer->drawString("or damage to your display! ", false, x + 20, y + 70, 18, tsl::style::color::ColorText);
-                renderer->drawString("Proceed at your own risk!", false, x + 20, y + 90, 18, tsl::style::color::ColorText);
-            });
+        tsl::elm::CustomDrawer *warningText = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+            renderer->drawString("\uE150 Usage of unsafe display", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
+            renderer->drawString("refresh rates may cause stress", false, x + 20, y + 50, 18, tsl::style::color::ColorText);
+            renderer->drawString("or damage to your display! ", false, x + 20, y + 70, 18, tsl::style::color::ColorText);
+            renderer->drawString("Proceed at your own risk!", false, x + 20, y + 90, 18, tsl::style::color::ColorText);
+        });
 
-            warningText->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, 110);
-            this->listElement->addItem(warningText);
-            ValueThresholds displayThresholds(60, 65);
-            addConfigButton(HocClkConfigValue_MaxDisplayClockH, "Max Handheld Display Hz", ValueRange(60, IsAula() ? 65 : 75, 1, " Hz", 1),
-                            "Display Clock", &displayThresholds, {}, {}, false);
-        }
+        warningText->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, 110);
+        this->listElement->addItem(warningText);
+        ValueThresholds displayThresholds(60, 65);
+        addConfigButton(HocClkConfigValue_MaxDisplayClockH, "Max Handheld Display Hz", ValueRange(60, IsAula() ? 65 : 75, 1, " Hz", 1),
+                        "Display Clock", &displayThresholds, {}, {}, false);
         if (!IsAula()) {
             tsl::elm::CustomDrawer *warningTextDV = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
                 renderer->drawString("\uE150 Adjust the display voltage", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
