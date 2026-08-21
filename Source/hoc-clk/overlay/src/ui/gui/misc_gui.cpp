@@ -1141,10 +1141,15 @@ class RamSubmenuGui : public MiscGui {
         std::vector<NamedValue> noNamedValues = {};
 
         this->listElement->addItem(new CompactCategoryHeader("RAM Settings"));
-
-        addMappedConfigTrackbar(KipConfigValue_emcDvbShift, "DVB Shift",
-                                { 0xFFFFFFFCu, 0xFFFFFFFDu, 0xFFFFFFFEu, 0xFFFFFFFFu, 0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u },
-                                { "-4", "-3", "-2", "-1", " 0", "1", "2", "3", "4", "5", "6", "7", "8" });
+        if(IsMariko()) {
+            addMappedConfigTrackbar(KipConfigValue_emcDvbShift, "DVB Shift",
+                                    { 0xFFFFFFFCu, 0xFFFFFFFDu, 0xFFFFFFFEu, 0xFFFFFFFFu, 0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u },
+                                    { "-4", "-3", "-2", "-1", "0", "1", "2", "3", "4", "5", "6", "7", "8" });
+        } else {
+            addMappedConfigTrackbar(KipConfigValue_emcDvbShift, "DVB Shift",
+                                    { 0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u },
+                                    { "0", "1", "2", "3", "4", "5", "6", "7", "8" });
+        }
 
         if (IsMariko()) {
             u32 socSpeedo = this->context->speedos[HocClkSpeedo_SOC];

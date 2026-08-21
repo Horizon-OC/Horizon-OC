@@ -189,15 +189,21 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
             };
 
         case KipConfigValue_emcDvbShift:
-            return {
-                "Each level adds/removes 25mV from the SOC Voltage table",
-                "Consoles are bracketed by SoC Speedo. The brackets are as follows:",
-                " - Speedo 1487-1598: Bracket 0",
-                " - Speedo 1598-1709: Bracket 1",
-                " - Speedo 1709-1820: Bracket 2",
-                "Default: 0"
-            };
-
+            if(isMariko) {
+                return {
+                    "Each level adds/removes 25mV from the SOC Voltage table",
+                    "Consoles are bracketed by SoC Speedo. The brackets are as follows:",
+                    " - Speedo 1487-1598: Bracket 0",
+                    " - Speedo 1598-1709: Bracket 1",
+                    " - Speedo 1709-1820: Bracket 2",
+                    "Default: 0"
+                };
+            } else {
+                return {
+                    "Each level adds 25mV from the SOC Voltage table",
+                    "Default: 0"
+                };
+            }
         case KipConfigValue_marikoSocVmax:
             return {
                 "The maximum available SOC Voltage that the DVB-adjusted table can use",
