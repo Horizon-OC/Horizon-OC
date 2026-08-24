@@ -110,13 +110,17 @@ if [ "$NO_EXO" -eq 0 ]; then
     EXO_DEST="build/atmosphere/exosphere/program/source/smc"
     LIBEXO_DEST="build/atmosphere/libraries/libexosphere/include/exosphere/secmon"
 
-    cp -v "$EXO_SRC/secmon_emc_access_table_data.inc"       "$EXO_DEST/"
-    cp -v "$EXO_SRC/secmon_define_emc_access_table.inc"     "$EXO_DEST/"
-    cp -v "$EXO_SRC/secmon_rtc_pmc_access_table_data.inc"   "$EXO_DEST/"
-    cp -v "$EXO_SRC/secmon_define_rtc_pmc_access_table.inc" "$EXO_DEST/"
-    cp -v "$EXO_SRC/secmon_smc_register_access.cpp"         "$EXO_DEST/"
-    cp -v "$EXO_SRC/secmon_smc_handler.cpp"                 "$EXO_DEST/"
-    cp -v "$EXO_SRC/secmon_memory_layout.hpp"               "$LIBEXO_DEST/"
+    cp -v "$EXO_SRC/secmon_define_emc_access_table.inc"               "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_emc_access_table_data.inc"                 "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_define_rtc_pmc_access_table.inc"           "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_rtc_pmc_access_table_data.inc"             "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_define_flow_controller_access_table.inc"   "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_flow_controller_access_table_data.inc"     "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_define_exception_vectors_access_table.inc" "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_exception_vectors_access_table_data.inc"   "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_smc_register_access.cpp"                   "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_smc_handler.cpp"                           "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_memory_layout.hpp"                         "$LIBEXO_DEST/"
 fi
 
 CCACHE_MKS="build/atmosphere/libraries/config/common.mk
