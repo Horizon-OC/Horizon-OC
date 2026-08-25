@@ -20,6 +20,15 @@ for arg in "$@"; do
 done
 
 echo
+echo "*** Compiling bpmpfw ***"
+pushd "$ROOT_DIR/bpmpfw"
+make -j$CORES
+popd > /dev/null
+
+mkdir -p "$ROOT_DIR/sysmodule/data"
+cp -vf "$ROOT_DIR/bpmpfw/out/bpmpfw.bin" "$ROOT_DIR/sysmodule/data/bpmpfw.bin"
+echo
+
 echo "*** Compiling hoc-clk ***"
 TITLE_ID="$(grep -oP '"title_id":\s*"0x\K(\w+)' "$ROOT_DIR/sysmodule/perms.json")"
 
@@ -40,15 +49,6 @@ popd > /dev/null
 
 mkdir -p "$DIST_DIR/switch/.overlays"
 cp -vf "$ROOT_DIR/overlay/out/horizon-oc-overlay.ovl" "$DIST_DIR/switch/.overlays/horizon-oc-overlay.ovl"
-echo
-
-echo "*** Compiling bpmpfw ***"
-pushd "$ROOT_DIR/bpmpfw"
-make -j$CORES
-popd > /dev/null
-
-mkdir -p "$DIST_DIR/config/horizon-oc"
-cp -vf "$ROOT_DIR/bpmpfw/out/bpmpfw.bin" "$DIST_DIR/config/horizon-oc/bpmpfw.bin"
 echo
 
 echo "*** Copying assets ***"

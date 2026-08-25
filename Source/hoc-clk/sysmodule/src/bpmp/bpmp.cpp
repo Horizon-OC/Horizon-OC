@@ -15,7 +15,6 @@
  *
  */
 
-#include <cstdio>
 #include <cstring>
 #include <switch.h>
 
@@ -24,6 +23,8 @@
 #include "../file/file_utils.hpp"
 #include "../mapping/mem_map.hpp"
 #include "bpmp.hpp"
+
+#include "bpmpfw_bin.h"
 
 namespace bpmp {
 
@@ -60,6 +61,7 @@ namespace bpmp {
         constexpr u32 FwStagingSize  = 0x8000;
         constexpr u64 WorkRamPhysBase = FwIramPhysBase + FwStagingSize; // matches bpmpfw's WorkRamStart
 
+        /* secmon will return error unless we apply thiss workaround */
         alignas(4096) u8 s_fwStageBuf[FwStagingSize];
 
         HocClkBpmpSharedInfo s_sharedInfo = {};
@@ -108,23 +110,15 @@ namespace bpmp {
             return (Result)1;
         }
 
-        std::memset(s_fwStageBuf, 0, sizeof(s_fwStageBuf));
-
-        FILE *f = fopen("sdmc:/config/horizon-oc/bpmpfw.bin", "rb");
-        if (!f) {
-            fileUtils::LogLine("[bpmp] StartBpmfwExecution: bpmpfw.bin not found");
+        const size_t fw_size = bpmpfw_bin_size;
+        if (fw_size == 0 || fw_size > FwStagingSize) {
+            fileUtils::LogLine("[bpmp] StartBpmfwExecution: bpmpfw of %zu bytes is invalid (should not happen)!", fw_size);
             return (Result)1;
         }
 
-        const size_t fw_size = fread(s_fwStageBuf, 1, sizeof(s_fwStageBuf), f);
-        fclose(f);
+        std::memcpy(s_fwStageBuf, bpmpfw_bin, fw_size);
 
-        if (fw_size == 0) {
-            fileUtils::LogLine("[bpmp] StartBpmfwExecution: bpmpfw.bin is empty");
-            return (Result)1;
-        }
-
-        fileUtils::LogLine("[bpmp] StartBpmfwExecution: loaded %zu bytes, loading at 0x%llx",
+        fileUtils::LogLine("[bpmp] StartBpmfwExecution: loading %zu bytes at 0x%llx",
                             fw_size, static_cast<unsigned long long>(FwIramPhysBase));
 
         /* Set BPMP reset */
