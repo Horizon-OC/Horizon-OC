@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Souldbminer, Lightos_ and Horizon OC Contributors
+ * Copyright (c) Souldbminer, Lightos and Horizon OC Contributors
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,24 +16,19 @@
  */
 
 #pragma once
+#include "regs.hpp"
 
-#include <stdint.h>
-#include "board.h"
+constexpr u32 SocthermBase       = 0x700E2000;
+constexpr u32 SocthermSensorTemp1 = 0x1C8;
+constexpr u32 SocthermSensorTemp2 = 0x1CC;
 
-#define HOCCLK_BPMP_MAGIC 0x42504D50 // 'BPMP'
-
-/*
- * Shared with BPMP-FW
- * Any 64 bit data type is not permitted.
- */
-typedef struct {
-    u32 magic;      // should be HOCCLK_BPMP_MAGIC once bpmpfw is running
-    u32 status;     // Reserved for error codes and such
-    s32 tempCpu;
-    s32 tempGpu;
-    s32 tempMem;
-    s32 tempPllx;
-    u32 reserved[2];
-} HocClkBpmpSharedInfo;
-
-static_assert(sizeof(HocClkBpmpSharedInfo) == 0x20);
+inline s32 TranslateSocthermTemp(u16 val) {
+    s32 t = ((val >> 8) & 0xFF) * 1000;
+    if (val & (1u << 7)) {
+        t += 500;
+    }
+    if (val & (1u << 0)) {
+        t = -t;
+    }
+    return t;
+}

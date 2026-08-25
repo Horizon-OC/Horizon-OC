@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Souldbminer, Lightos_ and Horizon OC Contributors
+ * Copyright (c) Souldbminer, Lightos and Horizon OC Contributors
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,24 +16,11 @@
  */
 
 #pragma once
+#include <cstdint>
 
-#include <stdint.h>
-#include "board.h"
-
-#define HOCCLK_BPMP_MAGIC 0x42504D50 // 'BPMP'
-
-/*
- * Shared with BPMP-FW
- * Any 64 bit data type is not permitted.
- */
-typedef struct {
-    u32 magic;      // should be HOCCLK_BPMP_MAGIC once bpmpfw is running
-    u32 status;     // Reserved for error codes and such
-    s32 tempCpu;
-    s32 tempGpu;
-    s32 tempMem;
-    s32 tempPllx;
-    u32 reserved[2];
-} HocClkBpmpSharedInfo;
-
-static_assert(sizeof(HocClkBpmpSharedInfo) == 0x20);
+using u8  = std::uint8_t;
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using s8  = std::int8_t;
+using s16 = std::int16_t;
+using s32 = std::int32_t;

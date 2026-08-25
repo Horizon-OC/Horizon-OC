@@ -127,7 +127,7 @@ namespace bpmp {
                         }
 
                         s_isAwake = true;
-                    } else if (state == PscPmState_ReadySleep) {
+                    } else if (state == PscPmState_ReadySleep || state == PscPmState_ReadyShutdown) {
                         RestoreStockState();
                         s_isAwake = false;
                     }

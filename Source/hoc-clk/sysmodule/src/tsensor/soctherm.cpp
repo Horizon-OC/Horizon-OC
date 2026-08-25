@@ -24,6 +24,7 @@
 #include <switch.h>
 
 #include "../board/board.hpp"
+#include "../bpmp/bpmp.hpp"
 #include "../file/file_utils.hpp"
 #include "../mapping/mem_map.hpp"
 #include "soctherm.hpp"
@@ -413,15 +414,6 @@ namespace tsensor {
         bool isMariko;
     }  // namespace
 
-    bool IsDisabledThroughSleep() {
-        return (ReadReg(carVa, CLK_RST_CONTROLLER_RST_DEVICES) & SWR_SOC_THERM_RST) ||
-               !(ReadReg(carVa, CLK_RST_CONTROLLER_CLK_OUT_ENB) & CLK_ENB_SOC_THERM);
-    }
-
-    bool IsSensorEnabled() {
-        return ReadReg(socthermVa, TSENSOR_TSENSOR_CLKEN);
-    }
-
     void EnableSensor(const TSensor *sensor, u32 sensorIdx) {
         u32 val = sensor->config->tall << SENSOR_CONFIG0_TALL_SHIFT;
         WriteReg(socthermVa, sensor->base + SENSOR_CONFIG0, val);
@@ -432,21 +424,6 @@ namespace tsensor {
         val |= SENSOR_CONFIG1_TEMP_ENABLE;
         WriteReg(socthermVa, sensor->base + SENSOR_CONFIG1, val);
         WriteReg(socthermVa, sensor->base + SENSOR_CONFIG2, calib[sensorIdx]);
-    }
-
-    s32 TranslateTemp(u16 val) {
-        s32 t;
-
-        t = ((val & READBACK_VALUE_MASK) >> READBACK_VALUE_SHIFT) * 1000;
-        if (val & READBACK_ADD_HALF) {
-            t += 500;
-        }
-
-        if (val & READBACK_NEGATE) {
-            t *= -1;
-        }
-
-        return t;
     }
 
     void StartSensors() {
@@ -474,23 +451,15 @@ namespace tsensor {
     }
 
     void ReadTSensors(TSensorTemps &temps) {
-        if (IsDisabledThroughSleep()) {
+        const HocClkBpmpSharedInfo *bpmpInfo = bpmp::GetSharedInfo();
+        if (bpmpInfo->magic != HOCCLK_BPMP_MAGIC) {
             return;
         }
 
-        if (!IsSensorEnabled()) {
-            StartSensors();
-        }
-
-        temps.cpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) >> 16);
-        temps.gpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) & SENSOR_TEMP1_GPU_TEMP_MASK);
-        temps.pllx = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP2) & SENSOR_TEMP2_PLLX_TEMP_MASK);
-
-        if (board::GetSocType() == HocClkSocType_Erista) {
-            temps.mem = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP2) >> 16);
-        } else {
-            temps.mem = -1;
-        }
+        temps.cpu = bpmpInfo->tempCpu;
+        temps.gpu = bpmpInfo->tempGpu;
+        temps.pllx = bpmpInfo->tempPllx;
+        temps.mem = (board::GetSocType() == HocClkSocType_Erista) ? bpmpInfo->tempMem : bpmpInfo->tempPllx;
     }
 
     void InitializeSoctherm() {

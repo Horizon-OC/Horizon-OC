@@ -16,11 +16,7 @@
  */
 
 #pragma once
-#include <cstdint>
-
-using u8  = std::uint8_t;
-using u16 = std::uint16_t;
-using u32 = std::uint32_t;
+#include "defs.hpp"
 
 #define MMIO32(addr) (*reinterpret_cast<volatile u32 *>(addr))
 
@@ -37,6 +33,15 @@ constexpr u32 HaltUsec          = (0u << 24);
 
 [[maybe_unused]] inline void FlowCtlrHaltUsec(u32 usec) {
     MMIO32(FlowCtlrBase + FlowCtlrHaltCopEvents) = HaltModeWaitEvent | HaltUsec | (usec & 0xFFFFFFu);
+}
+
+constexpr u32 TmrBase        = 0x60005000;
+constexpr u32 TimerUsCntr1Us = 0x10;
+
+[[maybe_unused]] inline void usleep(u32 us) {
+    const u32 start = MMIO32(TmrBase + TimerUsCntr1Us);
+    while ((MMIO32(TmrBase + TimerUsCntr1Us) - start) <= us)
+        ;
 }
 
 constexpr u32 UartBBase = 0x70006040;

@@ -20,6 +20,7 @@
 
 #include "libc_platform.hpp"
 #include "regs.hpp"
+#include "sensors.hpp"
 
 #include <hocclk/bpmp.h>
 
@@ -34,7 +35,7 @@ namespace {
 extern "C" void main() {
     InitializeLibc();
 
-    printf("[hoc-bpmpfw] Starting bpmpfw\n");
+    printf("[hoc-bpmpfw]: Starting bpmpfw\n");
 
     HocClkBpmpSharedInfo &info = SharedInfo();
     memset(&info, 0, sizeof(info));
@@ -42,6 +43,14 @@ extern "C" void main() {
     info.magic = HOCCLK_BPMP_MAGIC; // written last
 
     for (;;) {
+        const u32 temp1 = MMIO32(SocthermBase + SocthermSensorTemp1);
+        const u32 temp2 = MMIO32(SocthermBase + SocthermSensorTemp2);
 
+        info.tempCpu  = TranslateSocthermTemp(static_cast<u16>(temp1 >> 16));
+        info.tempGpu  = TranslateSocthermTemp(static_cast<u16>(temp1));
+        info.tempMem  = TranslateSocthermTemp(static_cast<u16>(temp2 >> 16));
+        info.tempPllx = TranslateSocthermTemp(static_cast<u16>(temp2));
+
+        usleep(250000); // 250ms
     }
 }
