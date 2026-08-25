@@ -276,7 +276,7 @@ void AboutGui::refresh()
     bqtempitem->setValue(strings[10]);
 
     cTypeItem->setValue(hocClkFormatConsoleType(this->context->consoleType, true));
-    bpmpStatusItem->setValue(this->context->bpmpInfo.magic == HOCCLK_BPMP_MAGIC ? "Enabled" : "Disabled");
+    bpmpStatusItem->setValue(this->context->bpmpInfo.magic == HOCCLK_BPMP_MAGIC ? "Enabled" : "Halted");
 }
 
 class CreditsSubMenu : public AboutGui {
