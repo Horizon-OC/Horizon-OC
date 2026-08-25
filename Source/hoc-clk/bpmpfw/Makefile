@@ -19,7 +19,8 @@ OBJS := $(patsubst $(SOURCEDIR)/%.cpp,$(BUILDDIR)/%.o,$(CPP_SOURCES)) \
         $(patsubst $(SOURCEDIR)/%.s,$(BUILDDIR)/%.o,$(S_SOURCES))
 
 ARCH     := -march=armv4t -mtune=arm7tdmi -mthumb-interwork
-INCLUDE  := -I$(SOURCEDIR) -I$(LIBCDIR)/include -I$(LIBCDIR)/include/fslc
+COMMONDIR := ../common/include
+INCLUDE  := -I$(SOURCEDIR) -I$(LIBCDIR)/include -I$(LIBCDIR)/include/fslc -I$(COMMONDIR)
 CFLAGS   := $(ARCH) -O2 -g -ffreestanding -nostdlib -ffunction-sections -fdata-sections \
             -fomit-frame-pointer -std=gnu11 -Wall -Wextra $(CUSTOMDEFINES)
 CXXFLAGS := $(ARCH) -O2 -g -ffreestanding -nostdlib -fno-exceptions -fno-rtti \

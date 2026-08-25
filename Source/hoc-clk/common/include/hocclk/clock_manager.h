@@ -29,6 +29,7 @@
 
 #include <stdint.h>
 #include "board.h"
+#include "bpmp.h"
 
 typedef struct {
 
@@ -84,6 +85,9 @@ typedef struct {
     bool rebootRequired;
     bool isFirstLoad;
 
+    // Populated from bpmpfw's work-RAM via SmcCopyFromIram (see HocClkBpmpSharedInfo above).
+    HocClkBpmpSharedInfo bpmpInfo;
+
     // Reserved for future use
     u8 reserved[0x358];
 } HocClkContext;
@@ -100,4 +104,4 @@ typedef struct
 
 #define HOCCLK_GLOBAL_PROFILE_TID 0xA111111111111111
 
-static_assert(sizeof(HocClkContext) == 0x500);
+static_assert(sizeof(HocClkContext) == 0x520);

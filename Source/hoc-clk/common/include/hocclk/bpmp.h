@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Souldbminer, Lightos and Horizon OC Contributors
+ * Copyright (c) Souldbminer, Lightos_ and Horizon OC Contributors
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,15 +16,20 @@
  */
 
 #pragma once
-#include <switch.h>
 
-#include <hocclk/bpmp.h>
+#include <stdint.h>
+#include "board.h"
 
-namespace bpmp {
-    Result StartBpmfwExecution();
+#define HOCCLK_BPMP_MAGIC 0x42504D50 // 'BPMP'
 
-    void StartSleepMonitorThread();
-    void StopSleepMonitorThread();
+/*
+ * Shared with BPMP-FW
+ * Any 64 bit data type is not permitted.
+ */
+typedef struct {
+    u32 magic;   // should be HOCCLK_BPMP_MAGIC once bpmpfw is running
+    u32 status;  // Reserved for error codes and such
+    u32 reserved[6];
+} HocClkBpmpSharedInfo;
 
-    const HocClkBpmpSharedInfo *GetSharedInfo();
-}
+static_assert(sizeof(HocClkBpmpSharedInfo) == 0x20);

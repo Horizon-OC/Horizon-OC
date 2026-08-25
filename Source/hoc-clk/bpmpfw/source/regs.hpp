@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) Souldbminer, Lightos and Horizon OC Contributors
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #pragma once
 #include <cstdint>
 
@@ -26,11 +43,18 @@ constexpr u32 UartBBase = 0x70006040;
 constexpr u32 UartThr   = 0x00;
 constexpr u32 UartLsr   = 0x14;
 constexpr u32 UartLsrThre = (1u << 5);
+constexpr u32 UartLsrTmty = (1u << 6);
 
 inline void UartPutc(char c) {
     while (!(MMIO32(UartBBase + UartLsr) & UartLsrThre))
         ;
     MMIO32(UartBBase + UartThr) = static_cast<u32>(static_cast<u8>(c));
+}
+
+// Waits for the byte to be fully transmitted
+inline void UartFlush() {
+    while (!(MMIO32(UartBBase + UartLsr) & UartLsrTmty))
+        ;
 }
 
 inline void UartPuts(const char *s) {

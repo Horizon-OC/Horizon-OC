@@ -30,6 +30,7 @@
 #include <i2c.h>
 
 #include "../board/board.hpp"
+#include "../bpmp/bpmp.hpp"
 #include "../display/aula.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"
@@ -625,6 +626,8 @@ namespace clockManager {
 
     bool RefreshContext() {
         bool hasChanged = false;
+
+        gContext.bpmpInfo = *bpmp::GetSharedInfo();
 
         std::uint32_t mode = 0;
         Result rc = apmExtGetCurrentPerformanceConfiguration(&mode);

@@ -43,6 +43,7 @@ tsl::elm::ListItem* bqtempitem = NULL;
 tsl::elm::ListItem* aotagTempItem = NULL;
 tsl::elm::ListItem* cTypeItem = NULL;
 tsl::elm::ListItem* creditsItem = NULL;
+tsl::elm::ListItem* bpmpStatusItem = NULL;
 
 #define R_ARROW "\u2192"
 
@@ -146,6 +147,9 @@ void AboutGui::listUI()
 
     // custRevItem = new tsl::elm::ListItem("CUST revision:");
     // this->listElement->addItem(custRevItem);
+
+    bpmpStatusItem = new tsl::elm::ListItem("BPMP Status:");
+    this->listElement->addItem(bpmpStatusItem);
 
     kipVersionItem = new tsl::elm::ListItem("KIP version:");
     this->listElement->addItem(kipVersionItem);
@@ -272,6 +276,7 @@ void AboutGui::refresh()
     bqtempitem->setValue(strings[10]);
 
     cTypeItem->setValue(hocClkFormatConsoleType(this->context->consoleType, true));
+    bpmpStatusItem->setValue(this->context->bpmpInfo.magic == HOCCLK_BPMP_MAGIC ? "Enabled" : "Disabled");
 }
 
 class CreditsSubMenu : public AboutGui {

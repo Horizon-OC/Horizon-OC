@@ -20,6 +20,7 @@
 #include <switch.h>
 
 #include "../board/board.hpp"
+#include "../file/config.hpp"
 #include "../file/file_utils.hpp"
 #include "../mapping/mem_map.hpp"
 #include "bpmp.hpp"
@@ -57,8 +58,11 @@ namespace bpmp {
 
         constexpr u64 FwIramPhysBase = 0x40004000;
         constexpr u32 FwStagingSize  = 0x8000;
+        constexpr u64 WorkRamPhysBase = FwIramPhysBase + FwStagingSize; // matches bpmpfw's WorkRamStart
 
         alignas(4096) u8 s_fwStageBuf[FwStagingSize];
+
+        HocClkBpmpSharedInfo s_sharedInfo = {};
 
         inline volatile u32 &Mmio(u64 base_va, u32 offset) {
             return *reinterpret_cast<volatile u32 *>(base_va + offset);
@@ -211,6 +215,16 @@ namespace bpmp {
         pscPmModuleClose(&s_pscModule);
         pscmExit();
         s_pscPrepared = false;
+    }
+
+    const HocClkBpmpSharedInfo *GetSharedInfo() {
+        if (!IsPatchedExosphere()) {
+            s_sharedInfo = {};
+            return &s_sharedInfo;
+        }
+
+        SmcCopyFromIram(&s_sharedInfo, WorkRamPhysBase, sizeof(s_sharedInfo));
+        return &s_sharedInfo;
     }
 
 } // namespace bpmp
