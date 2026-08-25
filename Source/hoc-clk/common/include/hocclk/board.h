@@ -30,7 +30,10 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#ifdef __SWITCH__ // Wont be defined in BPMP-FW
 #include <switch/types.h>
+#endif
+
 typedef enum
 {
     HocClkSocType_Erista = 0, // T210, found in Icosa and Copper

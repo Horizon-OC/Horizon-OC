@@ -35,6 +35,7 @@
 #include <t210.h>
 #include <tmp451.h>
 
+#include "../bpmp/bpmp.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/file_utils.hpp"
 #include "../hos/apm_ext.h"
@@ -52,7 +53,7 @@
 
 namespace board {
 
-    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr;
+    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr;
 
     HocClkSocType gSocType;
     u8 gDramID;
@@ -153,6 +154,10 @@ namespace board {
         rc = QueryMemoryMapping(&fuseVirtAddr, 0x7000F000, 0x1000);
         ASSERT_RESULT_OK(rc, "QueryMemoryMapping (fuse)");
 
+        rc = QueryMemoryMapping(&sysVirtAddr, 0x6000C000, 0x1000);
+        ASSERT_RESULT_OK(rc, "QueryMemoryMapping (sys)");
+        actmonVirtAddr = sysVirtAddr + 0x800;
+
         FetchHardwareInfos();
 
         Result nvCheck = 1;
@@ -172,6 +177,12 @@ namespace board {
         batteryInfoInitialize();
 
         tsensor::InitializeSoctherm();  // SOCTHERM must be init before AOTAG
+
+        Result bpmpfwRc = bpmp::StartBpmfwExecution();
+        if (R_FAILED(bpmpfwRc)) {
+            fileUtils::LogLine("[bpmp] StartBpmfwExecution failed: 0x%x", bpmpfwRc);
+        }
+        bpmp::StartSleepMonitorThread();
 
         // PMC exosphere check
         SecmonArgs args = {};
@@ -201,6 +212,8 @@ namespace board {
     }
 
     void Exit() {
+        bpmp::StopSleepMonitorThread();
+
         if (HOSSVC_HAS_CLKRST) {
             clkrstExit();
         } else {

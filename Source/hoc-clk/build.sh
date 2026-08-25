@@ -20,6 +20,15 @@ for arg in "$@"; do
 done
 
 echo
+echo "*** Compiling bpmpfw ***"
+pushd "$ROOT_DIR/bpmpfw"
+make -j$CORES
+popd > /dev/null
+
+mkdir -p "$ROOT_DIR/sysmodule/data"
+cp -vf "$ROOT_DIR/bpmpfw/out/bpmpfw.bin" "$ROOT_DIR/sysmodule/data/bpmpfw.bin"
+echo
+
 echo "*** Compiling hoc-clk ***"
 TITLE_ID="$(grep -oP '"title_id":\s*"0x\K(\w+)' "$ROOT_DIR/sysmodule/perms.json")"
 
