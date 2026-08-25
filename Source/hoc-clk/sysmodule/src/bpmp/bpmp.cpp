@@ -43,8 +43,13 @@ namespace bpmp {
         constexpr u32 ApbMiscSlaveSecurityReg2 = 0xC08;
 
         /* Relative to actmonVirtAddr */
+        constexpr u32 ActmonGlbPeriodCtrl = 0x004;
         constexpr u32 ActmonCopCtrl       = 0xC0;
+        constexpr u32 ActmonCopUpperWmark = 0xC4;
         constexpr u32 ActmonCopIntrStatus = 0xE4;
+
+        constexpr u32 ActmonGlbPeriodCtrlUsec  = (1u << 8);
+        constexpr u32 ActmonCopCtrlStockArmed  = (1u << 31) | (1u << 30) | (1u << 18);
 
         constexpr u32 EvpCopResetVector         = 0x200;
         constexpr u32 EvpCopUndefVector         = 0x204;
@@ -55,8 +60,11 @@ namespace bpmp {
         constexpr u32 EvpCopIrqVector           = 0x218;
         constexpr u32 EvpCopFiqVector           = 0x21C;
 
+        constexpr u32 StockBpmpExceptionVector = 0x7D000000;
+
         constexpr u32 FlowCtlrHaltCopEvents = 0x004;
         constexpr u32 FlowModeNone          = 0x00000000;
+        constexpr u32 FlowModeStop          = (2u << 29);
 
         constexpr u64 FwIramPhysBase = 0x40004000;
         constexpr u32 FwStagingSize  = 0x8000;
@@ -82,6 +90,24 @@ namespace bpmp {
 
         std::atomic_bool s_isAwake = true;
 
+        void RestoreStockState() {
+            SmcReadWriteRegister(EvpPhysBase + EvpCopResetVector,         0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopUndefVector,         0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopSwiVector,           0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopPrefetchAbortVector, 0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopDataAbortVector,     0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopRsvdVector,          0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopIrqVector,           0xFFFFFFFF, StockBpmpExceptionVector);
+            SmcReadWriteRegister(EvpPhysBase + EvpCopFiqVector,           0xFFFFFFFF, StockBpmpExceptionVector);
+
+            SmcReadWriteRegister(FlowCtlrPhysBase + FlowCtlrHaltCopEvents, 0xFFFFFFFF, FlowModeStop);
+
+            Mmio(board::actmonVirtAddr, ActmonGlbPeriodCtrl) = ActmonGlbPeriodCtrlUsec;
+            Mmio(board::actmonVirtAddr, ActmonCopUpperWmark) = 0;
+            Mmio(board::actmonVirtAddr, ActmonCopIntrStatus) = Mmio(board::actmonVirtAddr, ActmonCopIntrStatus);
+            Mmio(board::actmonVirtAddr, ActmonCopCtrl) = ActmonCopCtrlStockArmed;
+        }
+
         void PscThreadFunc(void *) {
             while (!s_pscExit) {
                 Result rc = eventWait(&s_pscModule.event, 1'000'000'000ULL);
@@ -94,6 +120,7 @@ namespace bpmp {
                 rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
                 if (R_SUCCEEDED(rc)) {
                     if (state == PscPmState_Awake) {
+                        svcSleepThread(500'000'000); // 500ms
                         Result wrc = StartBpmfwExecution();
                         if (R_FAILED(wrc)) {
                             fileUtils::LogLine("[bpmp] restart after wake failed: 0x%x", wrc);
@@ -101,6 +128,7 @@ namespace bpmp {
 
                         s_isAwake = true;
                     } else if (state == PscPmState_ReadySleep) {
+                        RestoreStockState();
                         s_isAwake = false;
                     }
 
