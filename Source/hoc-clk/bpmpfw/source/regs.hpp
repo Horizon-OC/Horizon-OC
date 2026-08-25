@@ -29,20 +29,27 @@ constexpr u32 FlowCtlrBase        = 0x60007000;
 constexpr u32 FlowCtlrHaltCopEvents = 0x004;
 
 constexpr u32 HaltModeWaitEvent = (2u << 29);
-constexpr u32 HaltUsec          = (0u << 24);
+constexpr u32 HaltMsec          = (1u << 24);
+constexpr u32 HaltUsec          = (1u << 25);
+constexpr u32 HaltMaxCnt        = 0xFF;
 
-[[maybe_unused]] inline void FlowCtlrHaltUsec(u32 usec) {
-    MMIO32(FlowCtlrBase + FlowCtlrHaltCopEvents) = HaltModeWaitEvent | HaltUsec | (usec & 0xFFFFFFu);
+[[maybe_unused]] inline void usleep(u32 us) {
+    while (us) {
+        const u32 delay = (us > HaltMaxCnt) ? HaltMaxCnt : us;
+        us -= delay;
+        MMIO32(FlowCtlrBase + FlowCtlrHaltCopEvents) = HaltModeWaitEvent | HaltUsec | delay;
+    }
+}
+[[maybe_unused]] inline void msleep(u32 ms) {
+    while (ms) {
+        const u32 delay = (ms > HaltMaxCnt) ? HaltMaxCnt : ms;
+        ms -= delay;
+        MMIO32(FlowCtlrBase + FlowCtlrHaltCopEvents) = HaltModeWaitEvent | HaltMsec | delay;
+    }
 }
 
 constexpr u32 TmrBase        = 0x60005000;
 constexpr u32 TimerUsCntr1Us = 0x10;
-
-[[maybe_unused]] inline void usleep(u32 us) {
-    const u32 start = MMIO32(TmrBase + TimerUsCntr1Us);
-    while ((MMIO32(TmrBase + TimerUsCntr1Us) - start) <= us)
-        ;
-}
 
 constexpr u32 UartBBase = 0x70006040;
 constexpr u32 UartThr   = 0x00;
