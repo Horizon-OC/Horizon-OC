@@ -23,6 +23,7 @@
 #include "../file/config.hpp"
 #include "../file/file_utils.hpp"
 #include "../mapping/mem_map.hpp"
+#include "../tsensor/soctherm.hpp"
 #include "bpmp.hpp"
 
 #include "bpmpfw_bin.h"
@@ -121,6 +122,10 @@ namespace bpmp {
                 if (R_SUCCEEDED(rc)) {
                     if (state == PscPmState_Awake) {
                         svcSleepThread(500'000'000); // 500ms
+
+                        /* I have no clue why this is needed as it wasn't needed before ¯\(ツ)/¯ */
+                        tsensor::InitializeSoctherm();
+
                         Result wrc = StartBpmfwExecution();
                         if (R_FAILED(wrc)) {
                             fileUtils::LogLine("[bpmp] restart after wake failed: 0x%x", wrc);

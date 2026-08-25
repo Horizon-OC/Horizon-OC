@@ -36,7 +36,7 @@ void MainLoop(HocClkBpmpSharedInfo &info) {
     for (;;) {
         const u32 temp1 = MMIO32(SocthermBase + SocthermSensorTemp1);
         const u32 temp2 = MMIO32(SocthermBase + SocthermSensorTemp2);
-        
+
         info.tempCpu  = TranslateSocthermTemp(static_cast<u16>(temp1 >> 16));
         info.tempGpu  = TranslateSocthermTemp(static_cast<u16>(temp1));
         info.tempMem  = TranslateSocthermTemp(static_cast<u16>(temp2 >> 16));
@@ -60,6 +60,7 @@ extern "C" void main() {
     MainLoop(info);
 
     printf("[hoc-bpmpfw]: PANIC\n");
+
     /* Clear the magic so sysmodule knows of a panic */
     info.magic = 0x0; 
 
