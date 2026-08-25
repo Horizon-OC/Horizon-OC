@@ -41,9 +41,8 @@ void MainLoop(HocClkBpmpSharedInfo &info) {
         info.tempGpu  = TranslateSocthermTemp(static_cast<u16>(temp1));
         info.tempMem  = TranslateSocthermTemp(static_cast<u16>(temp2 >> 16));
         info.tempPllx = TranslateSocthermTemp(static_cast<u16>(temp2));
-        // printf("tmr=%u\n", MMIO32(TmrBase + TimerUsCntr1Us));
+
         msleep(500);
-        //printf("[hoc-bpmpfw]: Done logging\n");
     }
 }
 
