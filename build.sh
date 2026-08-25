@@ -120,6 +120,7 @@ if [ "$NO_EXO" -eq 0 ]; then
     cp -v "$EXO_SRC/secmon_exception_vectors_access_table_data.inc"   "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_smc_register_access.cpp"                   "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_smc_handler.cpp"                           "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_smc_power_management.cpp"                  "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_memory_layout.hpp"                         "$LIBEXO_DEST/"
 fi
 

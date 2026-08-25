@@ -68,17 +68,25 @@ Result SmcCopyToIram(uintptr_t dest, const void *src, u32 size) {
 }
 
 bool IsPatchedExosphere() {
-    constexpr u64 EvpPhysBase          = 0x6000F000;
-    constexpr u64 EvpCopResetVector    = 0x200;
+    static bool checked = false;
+    static bool patched = false;
 
-    SecmonArgs args = {};
-    args.X[0] = 0xF0000002;
-    args.X[1] = EvpPhysBase + EvpCopResetVector;
-    args.X[2] = 0;
-    args.X[3] = 0;
-    svcCallSecureMonitor(&args);
+    if (!checked) {
+        constexpr u64 EvpPhysBase       = 0x6000F000;
+        constexpr u64 EvpCopResetVector = 0x200;
 
-    return args.X[0] == 0;
+        SecmonArgs args = {};
+        args.X[0] = 0xF0000002;
+        args.X[1] = EvpPhysBase + EvpCopResetVector;
+        args.X[2] = 0;
+        args.X[3] = 0;
+        svcCallSecureMonitor(&args);
+
+        patched = (args.X[0] == 0);
+        checked = true;
+    }
+
+    return patched;
 }
 
 u32 SmcReadWriteRegister(u64 phys_addr, u32 mask, u32 value) {

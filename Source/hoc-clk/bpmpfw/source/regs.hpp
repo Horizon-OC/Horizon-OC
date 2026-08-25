@@ -13,7 +13,7 @@ constexpr u32 FlowCtlrHaltCopEvents = 0x004;
 constexpr u32 HaltModeWaitEvent = (2u << 29);
 constexpr u32 HaltUsec          = (0u << 24);
 
-inline void FlowCtlrHaltUsec(u32 usec) {
+[[maybe_unused]] inline void FlowCtlrHaltUsec(u32 usec) {
     MMIO32(FlowCtlrBase + FlowCtlrHaltCopEvents) = HaltModeWaitEvent | HaltUsec | (usec & 0xFFFFFFu);
 }
 
