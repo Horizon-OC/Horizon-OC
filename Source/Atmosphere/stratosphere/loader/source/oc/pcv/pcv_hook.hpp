@@ -18,7 +18,8 @@
 
 #include "../oc_common.hpp"
 
-#define HOOK_PAYLOAD_FN __attribute__((section("hoc_hookpayload"), used, noinline, visibility("hidden")))
+/* aligned(4) is the ARM64 instruction alignment. This saves some memory over 16 byte padding */
+#define HOOK_PAYLOAD_FN __attribute__((section("hoc_hookpayload"), used, noinline, visibility("hidden"), aligned(4)))
 
 /* Inline asm because fuck compilers: GCC refuses to put a variable and a function in the same section. */
 /* It wants alloc+write for one and alloc+exec for the other.                                           */
@@ -147,6 +148,10 @@ namespace ams::ldr::hoc::pcv {
             }
 
             uintptr_t CaveVa() const { return ToVa(reinterpret_cast<const void *>(m_cave)); }
+            uintptr_t CaveBase() const { return m_cave; }
+
+            /* Todo remove? */
+            u32 *Reserve(size_t words) { return this->AllocCode(words); }
 
             Result CopyPayload() {
                 R_TRY(this->CheckEnabled());
@@ -284,6 +289,8 @@ namespace ams::ldr::hoc::pcv {
             Result ValidatePayloadFn(const void *fn) const {
                 constexpr u32 MaxInstructions = 512;
                 constexpr u32 RetInsn         = 0xD65F03C0u;
+                constexpr u32 BrMask          = 0xFFFFFC1Fu;
+                constexpr u32 BrInsn          = 0xD61F0000u;
 
                 const uintptr_t lo = m_payload;
                 const uintptr_t hi = m_payload + m_payload_sz;
@@ -302,7 +309,7 @@ namespace ams::ldr::hoc::pcv {
                     const u32 insn      = insns[i];
                     const uintptr_t site = base + i * sizeof(u32);
 
-                    if (insn == RetInsn) {
+                    if (insn == RetInsn || (insn & BrMask) == BrInsn) {
                         R_SUCCEED();
                     }
 
@@ -334,7 +341,7 @@ namespace ams::ldr::hoc::pcv {
         private:
             u32 *AllocCode(size_t words) {
                 const size_t bytes = words * sizeof(u32);
-                if (!this->IsEnabled() || m_used + bytes > m_cave_size) {
+                if (!this->IsEnabled() || m_payload == 0 || m_used + bytes > m_cave_size) {
                     return nullptr;
                 }
 

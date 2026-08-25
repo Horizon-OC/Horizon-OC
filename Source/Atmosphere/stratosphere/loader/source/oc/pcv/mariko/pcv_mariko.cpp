@@ -34,20 +34,19 @@ namespace ams::ldr::hoc::pcv::mariko {
     u32 *nsoStart;
 
     namespace {
-        size_t g_nso_size = 0;
-        uintptr_t g_cave_cursor = 0;
+        struct {
+            u32 *site = nullptr;
+        } busInitCache;
     }
 
-    static uintptr_t CaveReserve(size_t count) {
-        if (g_pcv_cave == 0 || g_cave_cursor == 0) {
-            return 0;
-        }
-        if (g_cave_cursor + count * sizeof(u32) > g_pcv_cave + g_pcv_cave_size) {
-            return 0;
-        }
-        const uintptr_t entry = g_cave_cursor;
-        g_cave_cursor += count * sizeof(u32);
-        return entry;
+    DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
+
+    namespace {
+        size_t g_nso_size = 0;
+    }
+
+    [[maybe_unused]] static uintptr_t CaveReserve(size_t count) {
+        return reinterpret_cast<uintptr_t>(Hooks().Reserve(count));
     }
 
     #if HOC_UART_LOG
@@ -176,50 +175,27 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
     #endif
 
-    /* Relocate C2/C3Bus to avoid issues*/
-    Result BusFreqReloc(u32 *ptr) {
-        const u32 busReg  = _asm::Get(ptr[0], _asm::field::Rn);   /* ldr Xbuf,[Xbus,#0x10] : bus struct pointer  */
-        const u32 bufReg  = _asm::Get(ptr[0], _asm::field::Rt);   /*                       : freq-buffer arg     */
-        const u32 bufOff  = _asm::Get(ptr[0], _asm::field::Off8); /*                       : bus->freqBuf offset */
-        const u32 cntReg  = _asm::Get(ptr[1], _asm::field::Rd);   /* add Xcnt,Xbus,#0x18   : arg2 (&count)       */
-        const u32 railReg = _asm::Get(ptr[2], _asm::field::Rt);   /* str Xrail,[Xbus,#0x50]: arg0 (rail)         */
-        u32 *call = ptr + 3; /* the bl to relocate                          */
-        const uintptr_t realFn = _asm::Target26(*call, reinterpret_cast<uintptr_t>(call));
+    HOOK_PAYLOAD_FN u64 BusFreqExtendImpl(SharedClkBus *bus) {
+        HookPayloadData *data = HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
 
-        /* Pick 3 scratch registers */
-        u32 s[3], sc = 0;
-        for (u32 r = 9; r <= 15 && sc < 3; ++r) {
-            if (r != busReg && r != bufReg && r != cntReg && r != railReg) {
-                s[sc++] = r;
-            }
-        }
-        R_UNLESS(sc == 3, ldr::ResultInvalidBusFreqReloc());
+        u32 *table            = data->busData.next;
+        bus->allowedFreqTable = table;
+        data->busData.next    = table + EmcDvfsTableEntryCount;
 
-        const uintptr_t tramp = CaveReserve(9);
-        R_UNLESS(tramp != 0, ldr::ResultInvalidBusFreqReloc());
-
-        const uintptr_t region = g_pcv_scratch + HocBusFreqBufOffset; /* [0]=counter, +0x10 + i*0x400 = bufs */
-        u32 *t = reinterpret_cast<u32 *>(tramp);
-        size_t n = 0;
-        auto emit = [&](u32 ins) { t[n] = ins; ++n; };
-        using namespace _asm::field;
-        emit(_asm::RetargetAdrp(_asm::Encode(_asm::op::Adrp, {Rd, s[0]}), tramp + n * 4, region));       /* adrp s0,<region>           */
-        emit(_asm::Encode(_asm::op::AddImm64, {Rd, s[0]}, {Rn, s[0]}, {Imm12, region & 0xFFFu}));  /* add  s0,s0,#lo             */
-        emit(_asm::Encode(_asm::op::LdrImm32, {Rt, s[1]}, {Rn, s[0]}, {Off4, 0x00}));              /* s1 = counter               */
-        emit(_asm::Encode(_asm::op::AddImm64, {Rd, s[2]}, {Rn, s[1]}, {Imm12, 1}));                /* s2 = counter+1             */
-        emit(_asm::Encode(_asm::op::StrImm32, {Rt, s[2]}, {Rn, s[0]}, {Off4, 0x00}));              /* counter++                  */
-        emit(_asm::Encode(_asm::op::AddImm64, {Rd, s[0]}, {Rn, s[0]}, {Imm12, 0x10}));             /* s0 = region+0x10 (buffers) */
-        emit(_asm::Encode(_asm::op::AddShifted64, {Rd, bufReg}, {Rn, s[0]}, {Rm, s[1]}, {Imm6, 10})); /* Xbuf = s0 + counter*0x400 */
-        emit(_asm::Encode(_asm::op::StrImm64, {Rt, bufReg}, {Rn, busReg}, {Off8, bufOff}));        /* bus[freqBuf] = Xbuf        */
-        emit(_asm::Retarget26(_asm::op::B, tramp + n * 4, realFn));                                /* tail-call the real function */
-
-        PATCH_OFFSET(call, _asm::Retarget26(_asm::op::Bl, reinterpret_cast<uintptr_t>(call), tramp));
-        const uintptr_t base = reinterpret_cast<uintptr_t>(nsoStart);
-        (void) base;
-        LOGGING("BusFreqReloc: call@+%lx -> tramp@+%lx realfn@+%lx (bus=x%u buf=x%u off=0x%x scratch=x%u,x%u,x%u)", reinterpret_cast<uintptr_t>(call) - base, tramp - base, realFn - base, busReg, bufReg, bufOff, s[0], s[1], s[2]);
-        R_SUCCEED();
+        /* Call the original function. */
+        return reinterpret_cast<u64 (*)(SharedClkBus *)>(data->busData.originalFnCallback)(bus);
     }
 
+    /* Relocate and extend C2/C3Bus to avoid issues (likely buffer overflow) */
+    Result BusFreqReloc(u32 *ptr) {
+        constexpr u32 PrologueMargin = 140;
+        u32 *functionPrologue        = _asm::FindFnPrologue(ptr, PrologueMargin, nsoStart);
+        R_UNLESS(functionPrologue != nullptr, ldr::ResultInvalidBusFreqReloc());
+
+        busInitCache.site = functionPrologue;
+
+        R_SUCCEED();
+    }
 
     #if HOC_UART_LOG
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
@@ -531,12 +507,35 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_SUCCEED();
     }
 
+    Result SharedClkBusInstallHooks(HookPayloadData *data) {
+        R_UNLESS(busInitCache.site != nullptr, ldr::ResultInvalidBusFreqReloc());
+
+        uintptr_t originalFn = 0;
+        R_TRY(INSTALL_IMPL_HOOK_ORIG(busInitCache.site, BusFreqExtendImpl, &originalFn));
+        data->busData.originalFnCallback = originalFn;
+        data->busData.next               = reinterpret_cast<u32 *>(Hooks().ToVa(data->busData.table[0]));
+
+        R_SUCCEED();
+    }
+
+    Result InstallHooks() {
+        R_TRY(Hooks().CheckEnabled());
+
+        R_TRY(Hooks().CopyPayload());
+
+        auto *data = Hooks().BindData(m_HookPayloadData);
+        R_UNLESS(data != nullptr, ldr::ResultHookDataOutOfMemory());
+
+        R_TRY(SharedClkBusInstallHooks(data));
+
+        R_SUCCEED();
+    }
+
     void Patch(uintptr_t mapped_nso, size_t nso_size) {
         nsoStart = reinterpret_cast<u32 *>(mapped_nso);
 
         g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
         g_nso_size    = nso_size;
-        g_cave_cursor = g_pcv_cave;   /* start the .text-cave bump allocator (0 if unavailable) */
 
         MtcGenerateFreqTables();
 
@@ -592,6 +591,10 @@ namespace ams::ldr::hoc::pcv::mariko {
 
                 CRASH(entry.description);
             }
+        }
+
+        if (R_FAILED(InstallHooks())) {
+            panic::SmcError(panic::Patch);
         }
     }
 

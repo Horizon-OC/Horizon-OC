@@ -95,7 +95,7 @@ namespace ams::ldr::hoc::pcv::erista {
         u32 wlIndex = 0;
 
         for (u32 i = 0; i < std::size(rlMapDBI); ++i) {
-            if (rlMapDBI[i] == RL) {
+            if (rlMapDBI[i] == 32) {
                 rlIndex = i;
                 break;
             }

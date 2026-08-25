@@ -26,6 +26,17 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
+    constexpr u32 BusFreqTableCount = 2;
+
+    struct HookPayloadData {
+        struct {
+            u32 *next; /* Save the bytes. */
+            uintptr_t originalFnCallback;
+            u32 table[BusFreqTableCount][EmcDvfsTableEntryCount]; /* Original bus table size: 32. */
+        } busData;
+    };
+    DECLARE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
+
     extern u32 *nsoStart;
 
     struct DvbEntry {

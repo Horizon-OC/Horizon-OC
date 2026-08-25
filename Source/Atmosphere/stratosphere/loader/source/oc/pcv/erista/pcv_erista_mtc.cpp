@@ -119,28 +119,28 @@ namespace ams::ldr::hoc::pcv::erista {
 
         /* Accept imperfection or prepare for suffering. */
         // #if defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
-        WRITE_PARAM_ALL_REG(table, emc_einput, einput);
-        WRITE_PARAM_ALL_REG(table, emc_einput_duration, einput_duration);
-        WRITE_PARAM_ALL_REG(table, emc_obdly, obdly);
+        // WRITE_PARAM_ALL_REG(table, emc_einput, einput);
+        // WRITE_PARAM_ALL_REG(table, emc_einput_duration, einput_duration);
+        // WRITE_PARAM_ALL_REG(table, emc_obdly, obdly);
         WRITE_PARAM_ALL_REG(table, emc_ibdly, ibdly);
         WRITE_PARAM_ALL_REG(table, emc_wdv_mask, wdv);
-        WRITE_PARAM_ALL_REG(table, emc_quse_width, quse_width);
-        WRITE_PARAM_ALL_REG(table, emc_quse, quse);
+        // WRITE_PARAM_ALL_REG(table, emc_quse_width, quse_width);
+        // WRITE_PARAM_ALL_REG(table, emc_quse, quse);
         WRITE_PARAM_ALL_REG(table, emc_wdv, wdv);
         WRITE_PARAM_ALL_REG(table, emc_wsv, wsv);
         WRITE_PARAM_ALL_REG(table, emc_wev, wev);
-        WRITE_PARAM_ALL_REG(table, emc_qrst, qrst);
-        WRITE_PARAM_ALL_REG(table, emc_tr_qrst, qrst);
-        WRITE_PARAM_ALL_REG(table, emc_qsafe, qsafe);
-        WRITE_PARAM_ALL_REG(table, emc_tr_qsafe, qsafe);
-        WRITE_PARAM_ALL_REG(table, emc_tr_qpop, qpop);
-        WRITE_PARAM_ALL_REG(table, emc_qpop, qpop);
-        WRITE_PARAM_ALL_REG(table, emc_rdv, rdv);
-        WRITE_PARAM_ALL_REG(table, emc_tr_rdv_mask, rdv + 2);
-        WRITE_PARAM_ALL_REG(table, emc_rdv_early, rdv - 2);
-        WRITE_PARAM_ALL_REG(table, emc_rdv_early_mask, rdv);
-        WRITE_PARAM_ALL_REG(table, emc_rdv_mask, rdv + 2);
-        WRITE_PARAM_ALL_REG(table, emc_tr_rdv, rdv);
+        // WRITE_PARAM_ALL_REG(table, emc_qrst, qrst);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_qrst, qrst);
+        // WRITE_PARAM_ALL_REG(table, emc_qsafe, qsafe);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_qsafe, qsafe);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_qpop, qpop);
+        // WRITE_PARAM_ALL_REG(table, emc_qpop, qpop);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv, rdv);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_rdv_mask, rdv + 2);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv_early, rdv - 2);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv_early_mask, rdv);
+        // WRITE_PARAM_ALL_REG(table, emc_rdv_mask, rdv + 2);
+        // WRITE_PARAM_ALL_REG(table, emc_tr_rdv, rdv);
         table->emc_mrw2 = (table->emc_mrw2 & ~0xFFu) | static_cast<u32>(mrw2);
         table->dram_timings.rl = RL;
         // #endif

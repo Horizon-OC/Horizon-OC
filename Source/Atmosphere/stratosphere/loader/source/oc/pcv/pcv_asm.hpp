@@ -245,9 +245,23 @@ namespace ams::ldr::hoc::pcv::_asm {
         return ScanAssembly(ptr, scanLimit, pattern, [=](u32 a, u32 b) ALWAYS_INLINE_LAMBDA { return Ignoring(a, b, ignoreFields...); });
     }
 
-    constexpr bool IsFramePush(u32 ins) {
+    constexpr bool IsFramePushPre(u32 ins) {
         constexpr u32 Pattern = Encode(op::StpPreImm64, {field::Rt, reg::Fp}, {field::Rt2, reg::Lr}, {field::Rn, reg::Sp});
         return Ignoring(ins, Pattern, field::PairOff8);
+    }
+
+    constexpr bool IsFramePushOffset(u32 ins) {
+        constexpr u32 Pattern = Encode(op::StpImm64, {field::Rt, reg::Fp}, {field::Rt2, reg::Lr}, {field::Rn, reg::Sp});
+        return Ignoring(ins, Pattern, field::PairOff8);
+    }
+
+    constexpr bool IsSpSubImm(u32 ins) {
+        constexpr u32 Pattern = Encode(op::SubImm64, {field::Rd, reg::Sp}, {field::Rn, reg::Sp});
+        return Ignoring(ins, Pattern, field::Imm12);
+    }
+
+    constexpr bool IsFramePush(u32 ins) {
+        return IsFramePushPre(ins) || IsFramePushOffset(ins);
     }
 
     inline u32 *FindFnPrologue(u32 *ptr, u32 margin, u32 *nsoStart) {
@@ -257,8 +271,12 @@ namespace ams::ldr::hoc::pcv::_asm {
                 break;
             }
 
-            if (IsFramePush(*candidate)) {
+            if (IsFramePushPre(*candidate)) {
                 return candidate;
+            }
+
+            if (IsFramePushOffset(*candidate) && candidate - 1 >= nsoStart && IsSpSubImm(candidate[-1])) {
+                return candidate - 1;
             }
         }
 

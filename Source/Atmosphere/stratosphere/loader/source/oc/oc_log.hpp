@@ -23,6 +23,8 @@ namespace ams::ldr::hoc {
 
     Result SmcCopyToIram(uintptr_t dest, const void *src, u32 size);
     void Log(const char *data, ...);
+    void SdLog(const char *data, ...);
+    void SaveLog();
     void ViewLog();
 
     /* Emit a formatted line over the kernel debug UART via svcOutputDebugString.
