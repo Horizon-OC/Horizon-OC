@@ -53,6 +53,9 @@ namespace clockManager {
     LockableMutex gContextMutex;
     HocClkContext gContext = {};
     FreqTable gFreqTable[HocClkModule_EnumMax];
+    /* Hack: Fixes emc 64 lut freq list hack edge case. */
+    /* The clock in the config may differ from the actual max clock, so it's read out from the kip before migration or any other potential overwrite. */
+    u32 patchedEmcMaxClock = {};
     std::uint64_t gLastTempLogNs = 0;
     std::uint64_t gLastFreqLogNs = 0;
     std::uint64_t gLastPowerLogNs = 0;
@@ -297,7 +300,7 @@ namespace clockManager {
 
         /* Since it is a pain to patch the vtables in ipc we can just hack the freqs in. You can still set them. */
         constexpr u64 EmcClkOSLimitHz = 1600000ULL * 1000;  // 1600 MHz
-        const u64 maxHz = static_cast<u64>(config::GetConfigValue(KipConfigValue_marikoEmcMaxClock)) * 1000;
+        const u64 maxHz = patchedEmcMaxClock * 1000;
         if (module == HocClkModule_MEM && board::GetSocType() == HocClkSocType_Mariko &&
             kip::kipAvailable && maxHz >= EmcClkOSLimitHz &&
             config::GetConfigValue(KipConfigValue_stepMode) == 4 /* 33 MHz */) {
@@ -819,7 +822,7 @@ namespace clockManager {
         gContext.isDram8GB = board::IsDram8GB();
         gContext.consoleType = board::GetConsoleType();
         gContext.isFirstLoad = config::GetConfigValue(HocClkConfigValue_IsFirstLoad);
-        
+
         board::SetGpuSchedulingMode((GpuSchedulingMode)config::GetConfigValue(HocClkConfigValue_GPUScheduling),
                                     (GpuSchedulingOverrideMethod)config::GetConfigValue(HocClkConfigValue_GPUSchedulingMethod));
         gContext.gpuSchedulingMode = (GpuSchedulingMode)config::GetConfigValue(HocClkConfigValue_GPUScheduling);

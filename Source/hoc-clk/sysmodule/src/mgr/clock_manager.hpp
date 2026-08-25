@@ -45,6 +45,7 @@ namespace clockManager {
     extern LockableMutex gContextMutex;
     extern HocClkContext gContext;
     extern FreqTable gFreqTable[HocClkModule_EnumMax];
+    extern u32 patchedEmcMaxClock;
     extern std::uint64_t gLastTempLogNs;
     extern std::uint64_t gLastFreqLogNs;
     extern std::uint64_t gLastPowerLogNs;

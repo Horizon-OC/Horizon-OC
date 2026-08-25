@@ -219,6 +219,18 @@ namespace kip {
         //     return;
         // }
 
+        /* Hack: Get the actually applied and in use emc max clock for 64 lut freq hack. */
+        /* I hate this. */
+        /* Don't fetch frequency if it's already set or we would overwrite it. */
+        /* This technically only applies to Mariko *for now*. */
+        if (clockManager::patchedEmcMaxClock == 0) {
+            if (board::GetSocType() == HocClkSocType_Mariko) {
+                clockManager::patchedEmcMaxClock = cust_get_mariko_emc_max(&table);
+            } else {
+                clockManager::patchedEmcMaxClock = cust_get_erista_emc_max(&table);
+            }
+        }
+
         if ((u64)crc32::checksum_file("sdmc:/atmosphere/kips/hoc.kip") != config::GetConfigValue(KipCrc32) &&
             !config::GetConfigValue(HocClkConfigValue_IsFirstLoad)) {
             MigrateKipData(cust_get_cust_rev(&table), cust_get_kip_version(&table));
