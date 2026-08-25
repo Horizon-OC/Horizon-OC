@@ -35,7 +35,6 @@
 #include <vector>
 
 #define FILE_CONFIG_DIR "/config/" CONFIG_DIR
-#define FILE_FLAG_CHECK_INTERVAL_NS (10000ULL * 1000000000ULL)
 #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"
 #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
 #define FILE_UART_FLAG_PATH FILE_CONFIG_DIR "/uart.flag"

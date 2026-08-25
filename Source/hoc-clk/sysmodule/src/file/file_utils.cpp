@@ -46,7 +46,6 @@ namespace fileUtils {
         std::atomic_bool g_has_initialized = false;
         bool g_log_enabled = false;
         bool g_uart_enabled = false;
-        std::uint64_t g_last_flag_check = 0;
 
         bool FlagExists(const char *path) {
             FILE *file = fopen(path, "r");
@@ -57,16 +56,9 @@ namespace fileUtils {
             return false;
         }
 
-        void RefreshFlags(bool force) {
-            std::uint64_t now = armTicksToNs(armGetSystemTick());
-            if (!force && (now - g_last_flag_check) < FILE_FLAG_CHECK_INTERVAL_NS) {
-                return;
-            }
-
+        void RefreshFlags() {
             g_log_enabled = FlagExists(FILE_LOG_FLAG_PATH);
             g_uart_enabled = FlagExists(FILE_UART_FLAG_PATH);
-
-            g_last_flag_check = now;
         }
 
         void InitializeThreadFunc(void *args) {
@@ -93,8 +85,6 @@ namespace fileUtils {
         if (!g_has_initialized) {
             return;
         }
-
-        RefreshFlags(false);
 
         if (!g_log_enabled && !g_uart_enabled) {
             return;
@@ -223,7 +213,7 @@ namespace fileUtils {
         }
 
         if (R_SUCCEEDED(rc)) {
-            RefreshFlags(true);
+            RefreshFlags();
             g_has_initialized = true;
             LogLine("=== hoc-clk " TARGET_VERSION " ===");
             LogLine("by m4xw, natinusala, p-sam, Souldbminer, Lightos_ and Dominatorul");
