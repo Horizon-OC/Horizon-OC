@@ -27,4 +27,7 @@ namespace bpmp {
     void StopSleepMonitorThread();
 
     const HocClkBpmpSharedInfo *GetSharedInfo();
+    
+    // Always true on stock exosphere
+    bool IsAwake();
 }

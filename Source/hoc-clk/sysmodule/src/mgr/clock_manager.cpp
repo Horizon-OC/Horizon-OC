@@ -879,6 +879,11 @@ namespace clockManager {
     }
 
     void WaitForNextTick() {
+        if (!bpmp::IsAwake()) {
+            svcSleepThread(250 * 1000000ULL);  // 250ms
+            return;
+        }
+
         if (board::GetHz(HocClkModule_MEM) > 665000000)
             svcSleepThread(config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
         else

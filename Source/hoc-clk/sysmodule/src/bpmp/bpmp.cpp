@@ -15,6 +15,7 @@
  *
  */
 
+#include <atomic>
 #include <cstring>
 #include <switch.h>
 
@@ -79,6 +80,8 @@ namespace bpmp {
         Thread s_pscThread;
         bool s_pscExit = false;
 
+        std::atomic_bool s_isAwake = true;
+
         void PscThreadFunc(void *) {
             while (!s_pscExit) {
                 Result rc = eventWait(&s_pscModule.event, 1'000'000'000ULL);
@@ -95,6 +98,10 @@ namespace bpmp {
                         if (R_FAILED(wrc)) {
                             fileUtils::LogLine("[bpmp] restart after wake failed: 0x%x", wrc);
                         }
+
+                        s_isAwake = true;
+                    } else if (state == PscPmState_ReadySleep) {
+                        s_isAwake = false;
                     }
 
                     pscPmModuleAcknowledge(&s_pscModule, state);
@@ -219,6 +226,10 @@ namespace bpmp {
 
         SmcCopyFromIram(&s_sharedInfo, WorkRamPhysBase, sizeof(s_sharedInfo));
         return &s_sharedInfo;
+    }
+
+    bool IsAwake() {
+        return s_isAwake;
     }
 
 } // namespace bpmp
