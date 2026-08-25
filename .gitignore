@@ -9,3 +9,4 @@ Source/hekate
 dist/*
 !dist/.gitignore
 Source/hoc-clk/sysmodule/data/bpmpfw.bin
+Source/hoc-clk/bpmpfw/out/bpmpfw.bin
