@@ -103,7 +103,7 @@ namespace fileUtils {
         va_list args;
         va_start(args, format);
 
-        char buff[0xfff];
+        char buff[0x200];
         int len = vsnprintf(buff, sizeof(buff), format, args);
         va_end(args);
 

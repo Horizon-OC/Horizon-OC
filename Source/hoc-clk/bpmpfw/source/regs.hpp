@@ -7,6 +7,11 @@ using u32 = std::uint32_t;
 
 #define MMIO32(addr) (*reinterpret_cast<volatile u32 *>(addr))
 
+constexpr u32 FwRamStart    = 0x40004000;
+constexpr u32 FwRamEnd      = 0x4000C000;
+constexpr u32 WorkRamStart  = FwRamEnd;
+constexpr u32 WorkRamEnd    = 0x40010000;
+
 constexpr u32 FlowCtlrBase        = 0x60007000;
 constexpr u32 FlowCtlrHaltCopEvents = 0x004;
 

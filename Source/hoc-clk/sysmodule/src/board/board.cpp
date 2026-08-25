@@ -182,6 +182,7 @@ namespace board {
         if (R_FAILED(bpmpfwRc)) {
             fileUtils::LogLine("[bpmp] StartBpmfwExecution failed: 0x%x", bpmpfwRc);
         }
+        bpmp::StartSleepMonitorThread();
 
         // PMC exosphere check
         SecmonArgs args = {};
@@ -211,6 +212,8 @@ namespace board {
     }
 
     void Exit() {
+        bpmp::StopSleepMonitorThread();
+
         if (HOSSVC_HAS_CLKRST) {
             clkrstExit();
         } else {

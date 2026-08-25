@@ -20,4 +20,7 @@
 
 namespace bpmp {
     Result StartBpmfwExecution();
+
+    void StartSleepMonitorThread();
+    void StopSleepMonitorThread();
 }

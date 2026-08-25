@@ -30,7 +30,6 @@
 #include <i2c.h>
 
 #include "../board/board.hpp"
-#include "../bpmp/bpmp.hpp"
 #include "../display/aula.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"
@@ -41,7 +40,6 @@
 #include "../hos/process_management.hpp"
 #include "../i2c/i2cDrv.h"
 #include "../ipc/ipc_service.hpp"
-#include "../mapping/mem_map.hpp"
 #include "../soc/gm20b.hpp"
 #include "../util/lockable_mutex.h"
 #include "clock_manager.hpp"
@@ -356,23 +354,6 @@ namespace clockManager {
         static u32 tick = 0;
         if (++tick > 10) {
             tick = 0;
-
-            // Restart BPMP after sleep.
-            if (IsPatchedExosphere()) {
-                svcSleepThread(1'500'000'000);
-                constexpr u32 FlowCtlrPhysBase = 0x60007000;
-                constexpr u32 FlowCtlrHaltCopEvents = 0x004;
-                constexpr u32 HaltCopEventsModeShift = 29;
-                constexpr u32 HaltCopEventsModeStop = 2;
-
-                u32 haltReg = SmcReadWriteRegister(FlowCtlrPhysBase + FlowCtlrHaltCopEvents, 0, 0);
-                if ((haltReg >> HaltCopEventsModeShift) == HaltCopEventsModeStop) {
-                    Result rc = bpmp::StartBpmfwExecution();
-                    if (R_FAILED(rc)) {
-                        fileUtils::LogLine("[bpmp] restart after sleep failed: 0x%x", rc);
-                    }
-                }
-            }
 
             if (config::GetConfigValue(HocClkConfigValue_BatteryChargeCurrent)) {
                 I2c_Bq24193_SetFastChargeCurrentLimit(config::GetConfigValue(HocClkConfigValue_BatteryChargeCurrent));

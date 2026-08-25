@@ -64,6 +64,38 @@ namespace bpmp {
             return *reinterpret_cast<volatile u32 *>(base_va + offset);
         }
 
+        // Late in the boot chain, otherwise a fatal will occur from invalid boot state
+        constexpr u32 pscDependencies[] = { PscPmModuleId_Olsc };
+        constexpr PscPmModuleId PscModuleId = (PscPmModuleId)705;
+
+        PscPmModule s_pscModule;
+        bool s_pscPrepared = false;
+        Thread s_pscThread;
+        bool s_pscExit = false;
+
+        void PscThreadFunc(void *) {
+            while (!s_pscExit) {
+                Result rc = eventWait(&s_pscModule.event, 1'000'000'000ULL);
+                if (R_FAILED(rc)) {
+                    continue; // Timeout
+                }
+
+                PscPmState state;
+                u32 flags;
+                rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
+                if (R_SUCCEEDED(rc)) {
+                    if (state == PscPmState_Awake) {
+                        Result wrc = StartBpmfwExecution();
+                        if (R_FAILED(wrc)) {
+                            fileUtils::LogLine("[bpmp] restart after wake failed: 0x%x", wrc);
+                        }
+                    }
+
+                    pscPmModuleAcknowledge(&s_pscModule, state);
+                }
+            }
+        }
+
     } // namespace
 
     Result StartBpmfwExecution() {
@@ -135,6 +167,50 @@ namespace bpmp {
         SmcReadWriteRegister(FlowCtlrPhysBase + FlowCtlrHaltCopEvents, 0xFFFFFFFF, FlowModeNone);
 
         return 0;
+    }
+
+    void StartSleepMonitorThread() {
+        if (!IsPatchedExosphere()) {
+            fileUtils::LogLine("[bpmp] Cant start BPMP without exosphere patch");
+            return;
+        }
+
+        Result rc = pscmInitialize();
+        if (R_FAILED(rc)) {
+            fileUtils::LogLine("[bpmp] pscmInitialize failed: 0x%x", rc);
+            return;
+        }
+
+        rc = pscmGetPmModule(&s_pscModule, PscModuleId, pscDependencies, sizeof(pscDependencies) / sizeof(u32), true);
+        if (R_FAILED(rc)) {
+            fileUtils::LogLine("[bpmp] pscmGetPmModule failed: 0x%x", rc);
+            pscmExit();
+            return;
+        }
+        s_pscPrepared = true;
+
+        rc = threadCreate(&s_pscThread, PscThreadFunc, nullptr, NULL, 0x1000, 0x10, 3);
+        if (R_FAILED(rc)) {
+            fileUtils::LogLine("[bpmp] failed to create psc thread: 0x%x", rc);
+            return;
+        }
+        threadStart(&s_pscThread);
+    }
+
+    void StopSleepMonitorThread() {
+        if (!s_pscPrepared) {
+            return;
+        }
+
+        s_pscExit = true;
+        eventFire(&s_pscModule.event);
+        threadWaitForExit(&s_pscThread);
+        threadClose(&s_pscThread);
+
+        pscPmModuleFinalize(&s_pscModule);
+        pscPmModuleClose(&s_pscModule);
+        pscmExit();
+        s_pscPrepared = false;
     }
 
 } // namespace bpmp
