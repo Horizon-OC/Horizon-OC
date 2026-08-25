@@ -359,6 +359,7 @@ namespace clockManager {
 
             // Restart BPMP after sleep.
             if (IsPatchedExosphere()) {
+                svcSleepThread(1'000'000'000);
                 constexpr u32 FlowCtlrPhysBase = 0x60007000;
                 constexpr u32 FlowCtlrHaltCopEvents = 0x004;
                 constexpr u32 HaltCopEventsModeShift = 29;
