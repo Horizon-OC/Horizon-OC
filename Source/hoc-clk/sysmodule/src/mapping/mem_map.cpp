@@ -66,3 +66,27 @@ Result SmcCopyToIram(uintptr_t dest, const void *src, u32 size) {
     }
     return rc;
 }
+
+bool IsPatchedExosphere() {
+    constexpr u64 EvpPhysBase          = 0x6000F000;
+    constexpr u64 EvpCopResetVector    = 0x200;
+
+    SecmonArgs args = {};
+    args.X[0] = 0xF0000002;
+    args.X[1] = EvpPhysBase + EvpCopResetVector;
+    args.X[2] = 0;
+    args.X[3] = 0;
+    svcCallSecureMonitor(&args);
+
+    return args.X[0] == 0;
+}
+
+u32 SmcReadWriteRegister(u64 phys_addr, u32 mask, u32 value) {
+    SecmonArgs args = {};
+    args.X[0] = 0xF0000002;
+    args.X[1] = phys_addr;
+    args.X[2] = mask;
+    args.X[3] = value;
+    svcCallSecureMonitor(&args);
+    return (u32)args.X[1];
+}

@@ -42,6 +42,15 @@ mkdir -p "$DIST_DIR/switch/.overlays"
 cp -vf "$ROOT_DIR/overlay/out/horizon-oc-overlay.ovl" "$DIST_DIR/switch/.overlays/horizon-oc-overlay.ovl"
 echo
 
+echo "*** Compiling bpmpfw ***"
+pushd "$ROOT_DIR/bpmpfw"
+make -j$CORES
+popd > /dev/null
+
+mkdir -p "$DIST_DIR/config/horizon-oc"
+cp -vf "$ROOT_DIR/bpmpfw/out/bpmpfw.bin" "$DIST_DIR/config/horizon-oc/bpmpfw.bin"
+echo
+
 echo "*** Copying assets ***"
 mkdir -p "$DIST_DIR/config/horizon-oc"
 cp -vf "$ROOT_DIR/config.ini.template" "$DIST_DIR/config/horizon-oc/config.ini.template"
