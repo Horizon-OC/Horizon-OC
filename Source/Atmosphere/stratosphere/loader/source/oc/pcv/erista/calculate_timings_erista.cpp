@@ -44,8 +44,8 @@ namespace ams::ldr::hoc::pcv::erista {
             return;
         }
 
-        /* > 3200 */
-        rext = 0x1E;
+        /* Fallback */
+        rext = 0x1A;
     }
 
     void SwitchLatency(volatile u32 &latency, u32 index, u32 latencyStep) {
