@@ -26,7 +26,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             return;
         }
 
-        /* > 3200 */
+        /* Fallback */
         rext = 0x1E;
     }
 
