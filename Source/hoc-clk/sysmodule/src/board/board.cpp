@@ -52,7 +52,7 @@
 
 namespace board {
 
-    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr;
+    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr, gpuVirtAddr;
 
     HocClkSocType gSocType;
     u8 gDramID;
@@ -156,6 +156,9 @@ namespace board {
         rc = QueryMemoryMapping(&sysVirtAddr, 0x6000C000, 0x1000);
         ASSERT_RESULT_OK(rc, "QueryMemoryMapping (sys)");
         actmonVirtAddr = sysVirtAddr + 0x800;
+
+        rc = QueryMemoryMapping(&gpuVirtAddr, 0x57000000, 0x1000000);
+        ASSERT_RESULT_OK(rc, "QueryMemoryMapping (gpu)");
 
         FetchHardwareInfos();
 

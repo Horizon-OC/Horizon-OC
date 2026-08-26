@@ -180,8 +180,27 @@ namespace board {
         switch (module) {
             case HocClkModule_CPU:
                 return bpmp::GetSharedInfo()->freqCpu * 1000;
-            case HocClkModule_GPU:
-                return bpmp::GetSharedInfo()->freqGpu * 1000;
+            case HocClkModule_GPU: {
+                constexpr u32 ClkOutEnbX  = 0x280;
+                constexpr u32 RstDevicesX = 0x28C;
+                constexpr u32 GpuBit      = (1u << 24);
+
+                const bool gpuEnabled = (*reinterpret_cast<volatile u32 *>(clkVirtAddr + ClkOutEnbX) & GpuBit) &&
+                                        !(*reinterpret_cast<volatile u32 *>(clkVirtAddr + RstDevicesX) & GpuBit);
+                if (!gpuEnabled) {
+                    return 0;
+                }
+
+                const u32 coeff = *reinterpret_cast<volatile u32 *>(gpuVirtAddr + 0x137004);
+                const u32 divm  = coeff & 0xFF;
+                const u32 divn  = (coeff >> 8) & 0xFF;
+                const u32 divp  = (coeff >> 16) & 0x3F;
+                if (divm == 0 || divp == 0) {
+                    return 0;
+                }
+
+                return static_cast<u32>((static_cast<u64>(38400000) * divn) / (divm * divp) / 2);
+            }
             case HocClkModule_MEM:
                 return config::GetConfigValue(HocClkConfigValue_MemoryFrequencyMeasurementMode) == MemoryFrequencyMeasurementMode_PLL
                            ? pllmb::getRamClockRatePLLMB()

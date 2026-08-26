@@ -42,7 +42,7 @@
 #define HOSSVC_HAS_TC (hosversionAtLeast(5, 0, 0))
 
 namespace board {
-    extern u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr;
+    extern u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr, gpuVirtAddr;
     extern HocClkSocType gSocType;
     extern u8 gDramID;
     extern HocClkConsoleType gConsoleType;
