@@ -1,0 +1,55 @@
+131,156c131,157
+<     #define AMS_SECMON_FOREACH_DEVICE_REGION(HANDLER, ...)                                                            \
+<         HANDLER(GicDistributor,                Empty, UINT64_C(0x50041000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(GicCpuInterface,      GicDistributor, UINT64_C(0x50042000),  UINT64_C(0x2000),  true, ## __VA_ARGS__) \
+<         HANDLER(Uart,                GicCpuInterface, UINT64_C(0x70006000),  UINT64_C(0x1000), false, ## __VA_ARGS__) \
+<         HANDLER(ClkRst,                         Uart, UINT64_C(0x60006000),  UINT64_C(0x1000), false, ## __VA_ARGS__) \
+<         HANDLER(RtcPmc,                       ClkRst, UINT64_C(0x7000E000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(Timer,                        RtcPmc, UINT64_C(0x60005000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(System,                        Timer, UINT64_C(0x6000C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(SecurityEngine,               System, UINT64_C(0x70012000),  UINT64_C(0x2000),  true, ## __VA_ARGS__) \
+<         HANDLER(SecurityEngine2,      SecurityEngine, UINT64_C(0x70412000),  UINT64_C(0x2000),  true, ## __VA_ARGS__) \
+<         HANDLER(SysCtr0,             SecurityEngine2, UINT64_C(0x700F0000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(MemoryController,            SysCtr0, UINT64_C(0x70019000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(FuseKFuse,          MemoryController, UINT64_C(0x7000F000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(ApbMisc,                   FuseKFuse, UINT64_C(0x70000000),  UINT64_C(0x4000),  true, ## __VA_ARGS__) \
+<         HANDLER(FlowController,              ApbMisc, UINT64_C(0x60007000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(BootloaderParams,     FlowController, UINT64_C(0x40000000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(I2c5,               BootloaderParams, UINT64_C(0x7000D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(Gpio,                           I2c5, UINT64_C(0x6000D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(I2c1,                           Gpio, UINT64_C(0x7000C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(ExceptionVectors,               I2c1, UINT64_C(0x6000F000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(MemoryController0,  ExceptionVectors, UINT64_C(0x7001C000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(MemoryController1, MemoryController0, UINT64_C(0x7001D000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(Sdmmc,             MemoryController1, UINT64_C(0x700B0000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(Disp1,                         Sdmmc, UINT64_C(0x54200000),  UINT64_C(0x3000),  true, ## __VA_ARGS__) \
+<         HANDLER(Dsi,                           Disp1, UINT64_C(0x54300000),  UINT64_C(0x1000),  true, ## __VA_ARGS__) \
+<         HANDLER(MipiCal,                         Dsi, UINT64_C(0x700E3000),  UINT64_C(0x1000),  true, ## __VA_ARGS__)
+---
+>     #define AMS_SECMON_FOREACH_DEVICE_REGION(HANDLER, ...)                                                                 \
+>         HANDLER(GicDistributor,                                Empty, UINT64_C(0x50041000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(GicCpuInterface,                      GicDistributor, UINT64_C(0x50042000), UINT64_C(0x2000), true, ## __VA_ARGS__)  \
+>         HANDLER(Uart,                                GicCpuInterface, UINT64_C(0x70006000), UINT64_C(0x1000), false, ## __VA_ARGS__) \
+>         HANDLER(ClkRst,                                         Uart, UINT64_C(0x60006000), UINT64_C(0x1000), false, ## __VA_ARGS__) \
+>         HANDLER(RtcPmc,                                       ClkRst, UINT64_C(0x7000E000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(Timer,                                        RtcPmc, UINT64_C(0x60005000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(System,                                        Timer, UINT64_C(0x6000C000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(SecurityEngine,                               System, UINT64_C(0x70012000), UINT64_C(0x2000), true, ## __VA_ARGS__)  \
+>         HANDLER(SecurityEngine2,                      SecurityEngine, UINT64_C(0x70412000), UINT64_C(0x2000), true, ## __VA_ARGS__)  \
+>         HANDLER(SysCtr0,                             SecurityEngine2, UINT64_C(0x700F0000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(MemoryController,                            SysCtr0, UINT64_C(0x70019000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(ExternalMemoryController,           MemoryController, UINT64_C(0x7001b000), UINT64_C(0x1000), true, ## __VA_ARGS__)  \
+>         HANDLER(FuseKFuse,                  ExternalMemoryController, UINT64_C(0x7000F000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(ApbMisc,                                   FuseKFuse, UINT64_C(0x70000000), UINT64_C(0x4000), true, ## __VA_ARGS__) \
+>         HANDLER(FlowController,                              ApbMisc, UINT64_C(0x60007000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(BootloaderParams,                     FlowController, UINT64_C(0x40000000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(I2c5,                               BootloaderParams, UINT64_C(0x7000D000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(Gpio,                                           I2c5, UINT64_C(0x6000D000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(I2c1,                                           Gpio, UINT64_C(0x7000C000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(ExceptionVectors,                               I2c1, UINT64_C(0x6000F000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(MemoryController0,                  ExceptionVectors, UINT64_C(0x7001C000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(MemoryController1,                 MemoryController0, UINT64_C(0x7001D000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(Sdmmc,                             MemoryController1, UINT64_C(0x700B0000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(Disp1,                                         Sdmmc, UINT64_C(0x54200000), UINT64_C(0x3000), true, ## __VA_ARGS__) \
+>         HANDLER(Dsi,                                           Disp1, UINT64_C(0x54300000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+>         HANDLER(MipiCal,                                         Dsi, UINT64_C(0x700E3000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
