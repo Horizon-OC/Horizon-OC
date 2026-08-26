@@ -68,17 +68,50 @@ _panic:
 7:
     ldrb r1, [r3], #1
     cmp  r1, #0
-    beq  _panic_hang
+    beq  9f
 8:
     ldr r2, [r0, #0x14] /* UART_LSR */
     tst r2, #0x20       /* UART_LSR_THRE */
     beq 8b
     str r1, [r0]
     b   7b
+9:
+    ldr r2, [r0, #0x14] /* UART_LSR */
+    tst r2, #0x40       /* UART_LSR_TMTY */
+    beq 9b
+    b   _panic_reboot
 
 _panic_msg:
     .asciz "[bpmpfw] PANIC\n"
     .align 2
+
+.global     _panic_reboot
+_panic_reboot:
+    ldr r0, =0x7000EC40 /* PMC_BASE + APBDEV_PMC_SCRATCH200 */
+    ldr r1, =0xF8F00000 /* Panic code. */
+    str r1, [r0]
+
+    ldr r4, =0x60005000 /* TMR_BASE */
+
+    /* Write the magic */
+    ldr r1, =0xC45A
+    str r1, [r4, #0x18C]
+
+    /* Disable the counters */
+    mov r1, #0x2
+    str r1, [r4, #0x188]
+
+    /* Start periodic timer */
+    ldr r1, =0xC0000000
+    str r1, [r4, #0x080]
+
+    /* Set reboot source to the timer we started */
+    ldr r1, =0x8019
+    str r1, [r4, #0x180]
+
+    /* Enable the counters */
+    mov r1, #0x1
+    str r1, [r4, #0x188]
 
 _panic_hang:
     b _panic_hang

@@ -27,6 +27,8 @@
 
 #include <hocclk/bpmp.h>
 
+extern "C" [[noreturn]] void _panic_reboot();
+
 namespace {
 
     HocClkBpmpSharedInfo &SharedInfo() {
@@ -82,12 +84,7 @@ extern "C" void main() {
     MainLoop(info);
 
     printf("[hoc-bpmpfw]: PANIC\n");
-
-    /* Clear the magic so sysmodule knows of a panic */
-    info.magic = 0x0; 
-
-    /* Give a panic code */
-    info.status = ~0;
-    for(;;)
-        ;
+    
+    /* Kill execution */    
+    _panic_reboot();
 }
