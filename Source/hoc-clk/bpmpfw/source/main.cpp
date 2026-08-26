@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "actmon.hpp"
+#include "aotag.hpp"
 #include "bpmp_mmu.hpp"
 #include "freq.hpp"
 #include "libc_platform.hpp"
@@ -53,6 +54,7 @@ void MainLoop(HocClkBpmpSharedInfo &info) {
 
         freq::Update(info);
         actmon::Update(info);
+        aotag::Update(info);
 
         msleep(250);
     }

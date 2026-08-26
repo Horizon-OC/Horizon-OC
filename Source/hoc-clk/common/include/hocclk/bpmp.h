@@ -41,7 +41,7 @@ typedef struct {
     u32 emcBwCpu;
     u32 emcBwGpu;
     u32 exitRequested; // Request BPMP-FW to shutdown for sleep mode
-    u32 reserved[1];
+    s32 tempAO;
 } HocClkBpmpSharedInfo;
 
 static_assert(sizeof(HocClkBpmpSharedInfo) == 0x3C);
