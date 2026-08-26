@@ -1,41 +1,7 @@
-467,474c467,474
-<             reg::Write(TIMER + TIMER_SHARED_TIMER_SECURE_CFG, TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR5, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR6, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR7, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR8, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT0, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT1, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT2, ENABLE),
-<                                                               TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT3, ENABLE));
+1221c1221
+<         const auto target_fw = GetTargetFirmware();
 ---
->             // reg::Write(TIMER + TIMER_SHARED_TIMER_SECURE_CFG, TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR5, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR6, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR7, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR8, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT0, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT1, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT2, ENABLE),
->             //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT3, ENABLE));
-757c757
-<         void SetupGpuCarveout() {
----
->         [[maybe_unused]] void SetupGpuCarveout() {
-903c903
-<         void EnableBpmpSmmu() {
----
->         [[maybe_unused]] void EnableBpmpSmmu() {
-1165c1165
-<         SetupGpuCarveout();
----
->         // SetupGpuCarveout();
-1197c1197
-<         reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
----
->         // reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
-1200c1200
-<         EnableBpmpSmmu();
----
->         // EnableBpmpSmmu();
+>         // const auto target_fw = GetTargetFirmware();
 1223,1226c1223,1226
 <         if (target_fw >= TargetFirmware_2_0_0) {
 <             /* Set the PMC secure. */
@@ -43,6 +9,21 @@
 <         }
 ---
 >         // if (target_fw >= TargetFirmware_2_0_0) {
->         //     /* Set the PMC secure. */
+>         //     /* Set the PMC secure. */ I REFUSE
 >         //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
 >         // }
+1228,1233c1228,1234
+<         if (target_fw >= TargetFirmware_4_0_0) {
+<             /* Set the MC secure. */
+<             reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
+<                                                                                              SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
+<                                                                                              SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
+<         }
+---
+>         // if (target_fw >= TargetFirmware_4_0_0) {
+>         //     /* Set the MC secure. */ I REFUSE
+>         //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
+>         //                                                                                      SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
+>         //                                                                                      SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
+>         // }
+>         return;

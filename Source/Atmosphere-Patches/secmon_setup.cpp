@@ -464,14 +464,14 @@ namespace ams::secmon {
 
         void SetupSecureRegisters() {
             /* Configure timers 5-8 and watchdog timers 0-3 as secure. */
-            // reg::Write(TIMER + TIMER_SHARED_TIMER_SECURE_CFG, TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR5, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR6, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR7, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR8, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT0, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT1, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT2, ENABLE),
-            //                                                   TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT3, ENABLE));
+            reg::Write(TIMER + TIMER_SHARED_TIMER_SECURE_CFG, TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR5, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR6, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR7, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_TMR8, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT0, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT1, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT2, ENABLE),
+                                                              TIMER_REG_BITS_ENUM(SHARED_TIMER_SECURE_CFG_WDT3, ENABLE));
 
             /* Lock cluster switching, to prevent usage of the A53 cores. */
             reg::Write(FLOW_CTLR + FLOW_CTLR_BPMP_CLUSTER_CONTROL, FLOW_REG_BITS_ENUM(BPMP_CLUSTER_CONTROL_ACTIVE_CLUSTER_LOCK,    ENABLE),
@@ -754,7 +754,7 @@ namespace ams::secmon {
             hw::InstructionSynchronizationBarrier();
         }
 
-        [[maybe_unused]] void SetupGpuCarveout() {
+        void SetupGpuCarveout() {
             /* Configure carveout 2. */
             reg::Write(MC + MC_SECURITY_CARVEOUT2_BOM,                           static_cast<u32>(MemoryRegionDramGpuCarveout.GetAddress() >> 0));
             reg::Write(MC + MC_SECURITY_CARVEOUT2_BOM_HI,                        static_cast<u32>(MemoryRegionDramGpuCarveout.GetAddress() >> BITSIZEOF(u32)));
@@ -900,7 +900,7 @@ namespace ams::secmon {
             reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH39, REG_BITS_VALUE(0, 27, WarmbootCarveoutConfig));
         }
 
-        [[maybe_unused]] void EnableBpmpSmmu() {
+        void EnableBpmpSmmu() {
             /* Define the ASID contents. */
             constexpr int       BpmpAsid    = 1;
             constexpr uintptr_t BpmpAsidPde = MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
@@ -1162,7 +1162,7 @@ namespace ams::secmon {
 
     void SetupSocProtections() {
         /* Setup the GPU carveout. */
-        // SetupGpuCarveout();
+        SetupGpuCarveout();
 
         /* Configure the two kernel carveouts. */
         SetupKernelCarveouts();
@@ -1194,10 +1194,10 @@ namespace ams::secmon {
         reg::Write(EVP + EVP_COP_FIQ_VECTOR,            BpmpExceptionVector);
 
         /* Disable arbitration for the bpmp. */
-        // reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
+        reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
 
         /* Turn on the SMMU for the BPMP. */
-        // EnableBpmpSmmu();
+        EnableBpmpSmmu();
 
         /* Wait until the flow controller reports that the BPMP is halted. */
         while (!reg::HasValue(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP))) {
@@ -1218,19 +1218,20 @@ namespace ams::secmon {
     }
 
     void SetupPmcAndMcSecure() {
-        const auto target_fw = GetTargetFirmware();
+        // const auto target_fw = GetTargetFirmware();
 
         // if (target_fw >= TargetFirmware_2_0_0) {
-        //     /* Set the PMC secure. */
+        //     /* Set the PMC secure. */ I REFUSE
         //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
         // }
 
-        if (target_fw >= TargetFirmware_4_0_0) {
-            /* Set the MC secure. */
-            reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
-                                                                                             SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
-                                                                                             SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
-        }
+        // if (target_fw >= TargetFirmware_4_0_0) {
+        //     /* Set the MC secure. */ I REFUSE
+        //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
+        //                                                                                      SLAVE_SECURITY_REG_BITS_ENUM(1, MC1, ENABLE),
+        //                                                                                      SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
+        // }
+        return;
     }
 
     void SetupCpuCoreContext() {
