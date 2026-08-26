@@ -164,11 +164,26 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRTM  = FLOOR((10.0 + RL) + (3.502 / tCK_avg)) + FLOOR(7.489 / tCK_avg);
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
+        u32 fullRoundDelay = CEIL((flyByTime + tDQSCK_max) / tCK_avg);
         /* Read data valid: Read command -> data ready to be latched into the registers. */
-        rdv               = RL + 16 + CEIL((flyByTime + tDQSCK_max) / tCK_avg);
+        rdv                = RL + fullRoundDelay + 16;
 
         /* Read command -> data poppable at the pad macros, 14 cycles ahead of rdv. */
         qpop              = rdv - 14;
+
+        constexpr double TrimmerStepPs   = 3.0;
+        constexpr double MaxTrimmerSteps = 96.0;
+
+        double tCkAvgPs       = tCK_avg * 1000.0;
+        double tckDerated     = tCkAvgPs * 0.85;
+        u32 derateStepCount   = MIN(FLOOR(tckDerated / TrimmerStepPs), MaxTrimmerSteps);
+        double deratedNsDelay = (derateStepCount * TrimmerStepPs) / 1000.0;
+        u32 fullTripDerating  = fullRoundDelay - CEIL((flyByTime + tDQSCK_max - deratedNsDelay) / tCK_avg);
+        u32 readEyeStart      = FLOOR((flyByTime + 0.94) / tCK_avg) + RL;
+
+        /* Data valid window, quse aligns with the start of the read eye (probably). */
+        /* DQS needs to be logically and'ed with quse in order to be valid. */
+        quse = readEyeStart + fullTripDerating - 2;
 
         quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
         quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);

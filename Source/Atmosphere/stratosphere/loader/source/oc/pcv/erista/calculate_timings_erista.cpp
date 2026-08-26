@@ -122,11 +122,25 @@ namespace ams::ldr::hoc::pcv::erista {
         tR2P = CEIL((RL * 0.426) - 2.0);
         tR2W = FLOOR(FLOOR((5.0 / tCK_avg) + ((FLOOR(48.0 / WL) - 0.478) * 3.0)) / 1.501) + RL - (C.t6_tRTW * 3) + finetRTW;
 
-        rdv  = RL + 19 + CEIL((flyByTime + tDQSCK_max) / tCK_avg);
-        qpop = rdv - 16;
+        u32 fullRoundDelay = CEIL((flyByTime + tDQSCK_max) / tCK_avg);
+        rdv                = RL + fullRoundDelay + 19;
+        qpop               = rdv - 16;
+
+        constexpr double TrimmerStepPs   = 3.0;
+        constexpr double MaxTrimmerSteps = 96.0;
+
+        double tCkAvgPs       = tCK_avg * 1000.0;
+        double tckDerated     = tCkAvgPs * 0.85;
+        u32 derateStepCount   = MIN(FLOOR(tckDerated / TrimmerStepPs), MaxTrimmerSteps);
+        double deratedNsDelay = (derateStepCount * TrimmerStepPs) / 1000.0;
+        u32 fullTripDerating  = fullRoundDelay - CEIL((flyByTime + tDQSCK_max - deratedNsDelay) / tCK_avg);
+        u32 readEyeStart      = FLOOR((flyByTime + 0.94) / tCK_avg) + RL;
+
+        /* Data valid window, quse aligns with the start of the read eye (probably). */
+        /* DQS needs to be logically and'ed with quse in order to be valid. */
+        quse = readEyeStart + fullTripDerating - 2;
 
         quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
-        quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
         einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
         einput            = quse - CEIL(9.928 / tCK_avg);
         u32 qrst_duration = FLOOR(8.399 - tCK_avg);
