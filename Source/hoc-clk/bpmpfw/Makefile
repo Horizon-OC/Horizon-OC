@@ -28,7 +28,8 @@ CXXFLAGS := $(ARCH) -O2 -g -ffreestanding -nostdlib -fno-exceptions -fno-rtti \
             -fomit-frame-pointer -std=gnu++20 -Wall -Wextra $(CUSTOMDEFINES)
 ASFLAGS  := $(ARCH) -g
 LDFLAGS  := $(ARCH) -nostartfiles -nodefaultlibs -Wl,--nmagic,--gc-sections \
-            -T $(SOURCEDIR)/../bpmpfw.ld -lgcc
+            -T $(SOURCEDIR)/../bpmpfw.ld
+LDLIBS   := -lgcc
 
 BIN_TARGET := $(OUTPUTDIR)/$(TARGET).bin
 
@@ -41,7 +42,7 @@ $(BIN_TARGET): $(BUILDDIR)/$(TARGET).elf
 	$(OBJCOPY) -S -O binary $< $@
 
 $(BUILDDIR)/$(TARGET).elf: $(OBJS)
-	@$(CXX) $(LDFLAGS) $(OBJS) -o $@
+	@$(CXX) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(BUILDDIR)/%.o: $(SOURCEDIR)/%.cpp | $(BUILDDIR)
 	@$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -o $@

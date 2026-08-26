@@ -18,6 +18,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "actmon.hpp"
+#include "bpmp_mmu.hpp"
+#include "freq.hpp"
 #include "libc_platform.hpp"
 #include "regs.hpp"
 #include "sensors.hpp"
@@ -34,6 +37,10 @@ namespace {
 
 void MainLoop(HocClkBpmpSharedInfo &info) {
     for (;;) {
+        if (info.exitRequested) {
+            break;
+        }
+
         const u32 temp1 = MMIO32(SocthermBase + SocthermSensorTemp1);
         const u32 temp2 = MMIO32(SocthermBase + SocthermSensorTemp2);
 
@@ -42,11 +49,23 @@ void MainLoop(HocClkBpmpSharedInfo &info) {
         info.tempMem  = TranslateSocthermTemp(static_cast<u16>(temp2 >> 16));
         info.tempPllx = TranslateSocthermTemp(static_cast<u16>(temp2));
 
-        msleep(500);
+        freq::Update(info);
+        actmon::Update(info);
+
+        msleep(250);
     }
+
+    /* Deinit MMU otherwise sleep will fatal. */
+    bpmpMmu::Disable();
+    info.magic = 0x0;
+
+    for (;;)
+        ;
 }
 
 extern "C" void main() {
+    bpmpMmu::Enable();
+
     InitializeLibc();
 
     printf("[hoc-bpmpfw]: Starting bpmpfw\n");
@@ -54,6 +73,9 @@ extern "C" void main() {
     HocClkBpmpSharedInfo &info = SharedInfo();
     memset(&info, 0, sizeof(info));
     info.status = 0;
+
+    actmon::Init();
+
     info.magic = HOCCLK_BPMP_MAGIC; // written last
 
     /* If the main loop exits then it is a panic or invalid state */

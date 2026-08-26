@@ -16,6 +16,7 @@
  */
 
 #include <atomic>
+#include <cstddef>
 #include <cstring>
 #include <switch.h>
 
@@ -91,7 +92,39 @@ namespace bpmp {
 
         std::atomic_bool s_isAwake = true;
 
+ 
+        /* Must be called to prevent secmon/erpt panic on wake */
+        void RequestBpmpExitAndWait() {
+            if (!IsPatchedExosphere()) {
+                return;
+            }
+
+            const u32 one = 1;
+            Result rc = SmcCopyToIram(WorkRamPhysBase + offsetof(HocClkBpmpSharedInfo, exitRequested), &one, sizeof(one));
+            if (R_FAILED(rc)) {
+                fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: SmcCopyToIram failed: 0x%x", rc);
+                return;
+            }
+
+            constexpr int MaxAttempts = 20;
+            constexpr u64 PollIntervalNs = 20'000'000; // 20ms
+
+            HocClkBpmpSharedInfo info = {};
+            for (int i = 0; i < MaxAttempts; i++) {
+                svcSleepThread(PollIntervalNs);
+
+                rc = SmcCopyFromIram(&info, WorkRamPhysBase, sizeof(info));
+                if (R_SUCCEEDED(rc) && info.magic != HOCCLK_BPMP_MAGIC) {
+                    return;
+                }
+            }
+
+            fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: BPMP timeout (cannot sleep)");
+        }
+
         void RestoreStockState() {
+            RequestBpmpExitAndWait();
+
             SmcReadWriteRegister(EvpPhysBase + EvpCopResetVector,         0xFFFFFFFF, StockBpmpExceptionVector);
             SmcReadWriteRegister(EvpPhysBase + EvpCopUndefVector,         0xFFFFFFFF, StockBpmpExceptionVector);
             SmcReadWriteRegister(EvpPhysBase + EvpCopSwiVector,           0xFFFFFFFF, StockBpmpExceptionVector);

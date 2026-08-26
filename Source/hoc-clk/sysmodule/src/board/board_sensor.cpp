@@ -31,7 +31,6 @@
 #include <max17050.h>
 #include <pwm.h>
 #include <switch.h>
-#include <t210.h>
 #include <tmp451.h>
 
 #include "../file/config.hpp"

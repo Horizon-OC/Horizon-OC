@@ -33,7 +33,15 @@ typedef struct {
     s32 tempGpu;
     s32 tempMem;
     s32 tempPllx;
-    u32 reserved[2];
+    u32 freqCpu;    // kHz
+    u32 freqMem;    // kHz
+    u32 emcLoadAll;
+    u32 emcLoadCpu;
+    u32 emcBwAll;
+    u32 emcBwCpu;
+    u32 emcBwGpu;
+    u32 exitRequested; // Request BPMP-FW to shutdown for sleep mode
+    u32 reserved[1];
 } HocClkBpmpSharedInfo;
 
-static_assert(sizeof(HocClkBpmpSharedInfo) == 0x20);
+static_assert(sizeof(HocClkBpmpSharedInfo) == 0x3C);

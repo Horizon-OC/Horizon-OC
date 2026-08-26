@@ -28,9 +28,9 @@
 #include <i2c.h>
 #include <max17050.h>
 #include <switch.h>
-#include <t210.h>
 #include <tmp451.h>
 
+#include "../bpmp/bpmp.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"
 #include "../file/errors.hpp"
@@ -179,13 +179,13 @@ namespace board {
         u32 hz = 0;
         switch (module) {
             case HocClkModule_CPU:
-                return t210ClkCpuFreq();
+                return bpmp::GetSharedInfo()->freqCpu * 1000;
             case HocClkModule_GPU:
-                return t210ClkGpuFreq();
+                return bpmp::GetSharedInfo()->freqGpu * 1000;
             case HocClkModule_MEM:
                 return config::GetConfigValue(HocClkConfigValue_MemoryFrequencyMeasurementMode) == MemoryFrequencyMeasurementMode_PLL
                            ? pllmb::getRamClockRatePLLMB()
-                           : t210ClkMemFreq();
+                           : bpmp::GetSharedInfo()->freqMem * 1000;
             case HocClkModule_Display:
                 return GetDisplayRate(hz);
             default:

@@ -32,7 +32,6 @@
 #include <pwm.h>
 #include <registers.h>
 #include <switch.h>
-#include <t210.h>
 #include <tmp451.h>
 
 #include "../bpmp/bpmp.hpp"

@@ -28,7 +28,6 @@
 #include <i2c.h>
 #include <max17050.h>
 #include <switch.h>
-#include <t210.h>
 #include <tmp451.h>
 
 #include "../hos/apm_ext.h"

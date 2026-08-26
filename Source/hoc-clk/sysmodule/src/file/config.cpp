@@ -34,7 +34,6 @@
 #include <minIni.h>
 #include <sstream>
 #include <string>
-#include <t210.h>
 #include <tmp451.h>
 #include <unistd.h>
 
