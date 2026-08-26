@@ -19,13 +19,8 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    struct ReplacePatch {
-        u32 freq;
-        u32 rext;
-    };
-
-    extern const ReplacePatch  g_rext_table[];
-    extern const u32           g_rext_table_size;
-    const        ReplacePatch *FindRext(u32 freq);
+    extern const RextPatch  g_rext_table[];
+    extern const u32        g_rext_table_size;
+    const        RextPatch *FindRext(u32 freq);
 
 }

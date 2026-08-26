@@ -18,6 +18,36 @@
 
 namespace ams::ldr::hoc::pcv::erista {
 
+    /* Dumped from bpmp fw mtc table (l4t). */
+    const RextPatch g_rext_table[] = {
+        {1'633'000, 0x17}, {1'728'000, 0x17}, {1'795'200, 0x19},
+        {1'862'400, 0x1A}, {1'894'400, 0x1A}, {1'932'800, 0x1A},
+        {1'958'400, 0x1A}, {1'996'800, 0x1A}, {2'035'200, 0x1A},
+        {2'064'000, 0x19}, {2'099'200, 0x19}, {2'131'200, 0x1A},
+        {2'163'200, 0x1A}, {2'188'800, 0x1A}, {2'227'200, 0x1A},
+        {2'265'600, 0x1B}, {2'291'200, 0x1B}, {2'329'600, 0x1A},
+        {2'361'600, 0x1A},
+    };
+
+    const RextPatch *LookupRext(u32 freq) {
+        for (u32 i = 0; i < std::size(g_rext_table); i++) {
+            if (g_rext_table[i].freq >= freq) {
+                return &g_rext_table[i];
+            }
+        }
+        return nullptr;
+    }
+
+    void GetRext(u32 freq) {
+        if (auto r = LookupRext(freq)) {
+            rext = r->rext;
+            return;
+        }
+
+        /* > 3200 */
+        rext = 0x1E;
+    }
+
     void SwitchLatency(volatile u32 &latency, u32 index, u32 latencyStep) {
         latency += index * latencyStep;
     }
@@ -117,6 +147,7 @@ namespace ams::ldr::hoc::pcv::erista {
         WL = WL_1331;
 
         HandleLatency(freq);
+        GetRext(freq);
         CalculateMrw2();
 
         tR2P = CEIL((RL * 0.426) - 2.0);

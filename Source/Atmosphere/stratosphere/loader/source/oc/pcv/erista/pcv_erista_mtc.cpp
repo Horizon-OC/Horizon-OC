@@ -66,14 +66,6 @@ namespace ams::ldr::hoc::pcv::erista {
             refresh_raw = MIN(refresh_raw, static_cast<u32>(0xFFFF));
         }
 
-        if (table->rate_khz > 3200000) {
-            rext = 30;
-        } else if (table->rate_khz >= 2133001) {
-            rext = 28;
-        } else {
-            rext = 26;
-        }
-
         u32 trefbw = refresh_raw + 0x40;
         trefbw     = MIN(trefbw, static_cast<u32>(0x3FFF));
 

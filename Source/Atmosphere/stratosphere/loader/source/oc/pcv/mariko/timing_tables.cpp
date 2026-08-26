@@ -19,7 +19,7 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    const ReplacePatch g_rext_table[] = {
+    const RextPatch g_rext_table[] = {
         {2'133'000, 0x1A}, {2'166'000, 0x19}, {2'200'000, 0x19},
         {2'233'000, 0x19}, {2'266'000, 0x1A}, {2'300'000, 0x1B},
         {2'333'000, 0x1B}, {2'366'000, 0x1B}, {2'400'000, 0x1B},
@@ -35,7 +35,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     const u32 g_rext_table_size = sizeof(g_rext_table) / sizeof(g_rext_table[0]);
 
-    const ReplacePatch *FindRext(u32 freq) {
+    const RextPatch *FindRext(u32 freq) {
         for (u32 i = 0; i < g_rext_table_size; i++) {
             if (g_rext_table[i].freq >= freq) {
                 return &g_rext_table[i];
