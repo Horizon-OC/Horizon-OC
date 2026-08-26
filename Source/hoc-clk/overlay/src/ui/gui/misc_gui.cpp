@@ -857,13 +857,6 @@ class ExperimentalSettingsSubMenuGui : public MiscGui {
         addConfigButton(HocClkConfigValue_GPUSchedulingMethod, "GPU Scheduling Override Method", ValueRange(0, 0, 1, "", 0),
                         "GPU Scheduling Override Method", &thresholdsDisabled, {}, gpuSchedMethodValues, false);
 
-        std::vector<NamedValue> ramRFMeasurementMethods = {
-            NamedValue("PLL", MemoryFrequencyMeasurementMode_PLL),
-            NamedValue("Actmon", MemoryFrequencyMeasurementMode_Actmon),
-        };
-        addConfigButton(HocClkConfigValue_MemoryFrequencyMeasurementMode, "Memory Frequency Measurement Mode", ValueRange(0, 0, 1, "", 0),
-                        "Memory Frequency Measurement Mode", &thresholdsDisabled, {}, ramRFMeasurementMethods, false);
-
         tsl::elm::CustomDrawer *chargeWarningText = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
             renderer->drawString("\uE150 Overriding the charge current", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
             renderer->drawString("can be dangerous and may cause", false, x + 20, y + 50, 18, tsl::style::color::ColorText);

@@ -23,6 +23,7 @@
 #include "bpmp_mmu.hpp"
 #include "freq.hpp"
 #include "libc_platform.hpp"
+#include "pllmb.hpp"
 #include "regs.hpp"
 #include "sensors.hpp"
 
@@ -55,6 +56,7 @@ void MainLoop(HocClkBpmpSharedInfo &info) {
         freq::Update(info);
         actmon::Update(info);
         aotag::Update(info);
+        info.freqMemPll = static_cast<u32>(pllmb::MeasureRamClockHz() / 1000);
 
         msleep(250);
     }

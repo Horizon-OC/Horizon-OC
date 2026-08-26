@@ -35,6 +35,7 @@ typedef struct {
     s32 tempPllx;
     u32 freqCpu;    // kHz
     u32 freqMem;    // kHz
+    u32 freqMemPll; // kHz
     u32 emcLoadAll;
     u32 emcLoadCpu;
     u32 emcBwAll;
@@ -44,4 +45,4 @@ typedef struct {
     s32 tempAO;
 } HocClkBpmpSharedInfo;
 
-static_assert(sizeof(HocClkBpmpSharedInfo) == 0x3C);
+static_assert(sizeof(HocClkBpmpSharedInfo) == 0x40);

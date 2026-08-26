@@ -37,7 +37,6 @@
 #include "../hos/apm_ext.h"
 #include "../i2c/i2cDrv.h"
 #include "../soc/gm20b.hpp"
-#include "../soc/pllmb.hpp"
 #include "board.hpp"
 #include "board_name.hpp"
 #include <ipc_server.h>
@@ -202,9 +201,7 @@ namespace board {
                 return static_cast<u32>((static_cast<u64>(38400000) * divn) / (divm * divp) / 2);
             }
             case HocClkModule_MEM:
-                return config::GetConfigValue(HocClkConfigValue_MemoryFrequencyMeasurementMode) == MemoryFrequencyMeasurementMode_PLL
-                           ? pllmb::getRamClockRatePLLMB()
-                           : bpmp::GetSharedInfo()->freqMem * 1000;
+                return bpmp::GetSharedInfo()->freqMemPll * 1000;
             case HocClkModule_Display:
                 return GetDisplayRate(hz);
             default:

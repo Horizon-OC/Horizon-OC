@@ -76,15 +76,6 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Default: INI"
             };
 
-        case HocClkConfigValue_MemoryFrequencyMeasurementMode:
-            return {
-                "How the RAM real frequency is measured",
-                "Options:",
-                "- PLL: Measure from PLLMB and PLLM (more accurate)",
-                "- Actmon: Measure from Actmon (less accurate)",
-                "Default: PLL"
-            };
-
         case HocClkConfigValue_BatteryChargeCurrent:
             return {
                 "Overrides the charge current to the battery. Use with caution!",
