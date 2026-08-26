@@ -108,8 +108,10 @@ if [ "$NO_EXO" -eq 0 ]; then
     echo "*** Patching exosphere ***"
     EXO_SRC="Source/Atmosphere-Patches"
     EXO_DEST="build/atmosphere/exosphere/program/source/smc"
+    EXO_PROGRAM_DEST="build/atmosphere/exosphere/program/source"
     LIBEXO_DEST="build/atmosphere/libraries/libexosphere/include/exosphere/secmon"
 
+    cp -v "$EXO_SRC/secmon_setup.cpp"                                  "$EXO_PROGRAM_DEST/"
     cp -v "$EXO_SRC/secmon_define_emc_access_table.inc"               "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_emc_access_table_data.inc"                 "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_define_rtc_pmc_access_table.inc"           "$EXO_DEST/"
