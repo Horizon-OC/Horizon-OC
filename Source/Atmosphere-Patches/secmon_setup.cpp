@@ -754,7 +754,7 @@ namespace ams::secmon {
             hw::InstructionSynchronizationBarrier();
         }
 
-        void SetupGpuCarveout() {
+        [[maybe_unused]] void SetupGpuCarveout() {
             /* Configure carveout 2. */
             reg::Write(MC + MC_SECURITY_CARVEOUT2_BOM,                           static_cast<u32>(MemoryRegionDramGpuCarveout.GetAddress() >> 0));
             reg::Write(MC + MC_SECURITY_CARVEOUT2_BOM_HI,                        static_cast<u32>(MemoryRegionDramGpuCarveout.GetAddress() >> BITSIZEOF(u32)));
@@ -900,7 +900,7 @@ namespace ams::secmon {
             reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH39, REG_BITS_VALUE(0, 27, WarmbootCarveoutConfig));
         }
 
-        void EnableBpmpSmmu() {
+        [[maybe_unused]] void EnableBpmpSmmu() {
             /* Define the ASID contents. */
             constexpr int       BpmpAsid    = 1;
             constexpr uintptr_t BpmpAsidPde = MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
