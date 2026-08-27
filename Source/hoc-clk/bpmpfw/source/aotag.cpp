@@ -16,24 +16,28 @@
  *
  */
 
-#pragma once
-#include "regs.hpp"
-
-#include <hocclk/bpmp.h>
+#include "aotag.hpp"
 
 namespace aotag {
 
-    constexpr u32 PmcBase = 0x7000E400;
-    constexpr u32 PmcTsensorStatus1 = 0x4AC;
+    void Update(HocClkBpmpSharedInfo &info) {
+        const u32 regval = MMIO32(PmcBase + PmcTsensorStatus1);
 
-    constexpr u32 Status1ValidBit = (1u << 31);
-    constexpr u32 Status1AbsShift = 8;
-    constexpr u32 Status1AbsMask  = 0xFF;
-    constexpr u32 Status1FracBit  = (1u << 7);
-    constexpr u32 Status1SignBit  = (1u << 0);
+        if (!(regval & Status1ValidBit)) {
+            info.tempAO = InvalidSentinel;
+            return;
+        }
 
-    constexpr s32 InvalidSentinel = -125;
+        const u32 abs      = (regval >> Status1AbsShift) & Status1AbsMask;
+        const bool frac    = (regval & Status1FracBit) != 0;
+        const bool negative = (regval & Status1SignBit) != 0;
 
-    void Update(HocClkBpmpSharedInfo &info);
+        s32 temp = static_cast<s32>(abs) * 1000 + (frac ? 500 : 0);
+        if (negative) {
+            temp = -temp;
+        }
+
+        info.tempAO = temp;
+    }
 
 } // namespace aotag

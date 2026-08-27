@@ -39,18 +39,23 @@ all: $(BIN_TARGET)
 
 $(BIN_TARGET): $(BUILDDIR)/$(TARGET).elf
 	@mkdir -p $(OUTPUTDIR)
-	$(OBJCOPY) -S -O binary $< $@
+	@echo "bpmpfw.bin"
+	@$(OBJCOPY) -S -O binary $< $@
 
 $(BUILDDIR)/$(TARGET).elf: $(OBJS)
+	@echo "linking $(TARGET).elf"
 	@$(CXX) $(LDFLAGS) $(OBJS) $(LDLIBS) -o $@
 
 $(BUILDDIR)/%.o: $(SOURCEDIR)/%.cpp | $(BUILDDIR)
+	@echo "$(notdir $<)"
 	@$(CXX) $(CXXFLAGS) $(INCLUDE) -c $< -o $@
 
 $(BUILDDIR)/libc/%.o: $(LIBCDIR)/src/%.c | $(BUILDDIR)/libc
+	@echo "$(notdir $<)"
 	@$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
 
 $(BUILDDIR)/%.o: $(SOURCEDIR)/%.s | $(BUILDDIR)
+	@echo "$(notdir $<)"
 	@$(CXX) $(ASFLAGS) $(INCLUDE) -c $< -o $@
 
 $(BUILDDIR):

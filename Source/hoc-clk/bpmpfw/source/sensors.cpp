@@ -15,11 +15,15 @@
  *
  */
 
-#pragma once
-#include "regs.hpp"
+#include "sensors.hpp"
 
-constexpr u32 SocthermBase       = 0x700E2000;
-constexpr u32 SocthermSensorTemp1 = 0x1C8;
-constexpr u32 SocthermSensorTemp2 = 0x1CC;
-
-s32 TranslateSocthermTemp(u16 val);
+s32 TranslateSocthermTemp(u16 val) {
+    s32 t = ((val >> 8) & 0xFF) * 1000;
+    if (val & (1u << 7)) {
+        t += 500;
+    }
+    if (val & (1u << 0)) {
+        t = -t;
+    }
+    return t;
+}

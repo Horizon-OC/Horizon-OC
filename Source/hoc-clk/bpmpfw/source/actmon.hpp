@@ -53,47 +53,12 @@ namespace actmon {
     constexpr u32 DevCountWeight = 0x18;
     constexpr u32 DevAvgCount    = 0x20;
 
-    inline u32 DevReg(ActmonDev dev, u32 off) {
-        return ActmonDevBase + (static_cast<u32>(dev) * ActmonDevSize) + off;
-    }
+    u32 DevReg(ActmonDev dev, u32 off);
 
-    inline void EnableDev(ActmonDev dev, u32 freqKhz, u32 weight) {
-        MMIO32(DevReg(dev, DevInitAvg))     = freqKhz * ActmonPeriodMs / 2;
-        MMIO32(DevReg(dev, DevCountWeight)) = weight;
-        MMIO32(DevReg(dev, DevCtrl))        = ActmonDevCtrlEnb | ActmonDevCtrlEnbPeriodic | ActmonDevCtrlKVal3;
-    }
+    void EnableDev(ActmonDev dev, u32 freqKhz, u32 weight);
 
-    inline void Init() {
-        const u32 emcFreqKhz = static_cast<u32>(freq::MeasurePtoFreqHz(freq::ClkPtoEmc, 1) / 1000);
+    void Init();
 
-        if (!(MMIO32(ActmonBase + ActmonGlbStatus) & ActmonMcallMonAct)) {
-            MMIO32(ActmonBase + ActmonGlbPeriodCtrl) = (ActmonPeriodMs - 1) & 0xFF;
-            EnableDev(DevMcAll, emcFreqKhz, 256 * 4);
-        }
-
-        if (!(MMIO32(ActmonBase + ActmonGlbStatus) & ActmonMccpuMonAct)) {
-            EnableDev(DevMcCpu, emcFreqKhz, 256 * 4);
-        }
-    }
-
-    inline void Update(HocClkBpmpSharedInfo &info) {
-        const u32 emcFreqKhz = info.freqMem;
-        if (emcFreqKhz == 0) {
-            return;
-        }
-
-        const u32 avgAll = MMIO32(DevReg(DevMcAll, DevAvgCount));
-        const u32 avgCpu = MMIO32(DevReg(DevMcCpu, DevAvgCount));
-
-        // Get 1000 -> 100.0.
-        info.emcLoadAll = static_cast<u32>((static_cast<u64>(avgAll) * 10 * 100) / (emcFreqKhz * ActmonPeriodMs));
-        info.emcLoadCpu = static_cast<u32>((static_cast<u64>(avgCpu) * 10 * 100) / (emcFreqKhz * ActmonPeriodMs));
-
-        info.emcBwAll = static_cast<u32>((static_cast<u64>(emcFreqKhz) * 16 * info.emcLoadAll) / 1000000);
-        info.emcBwCpu = static_cast<u32>((static_cast<u64>(emcFreqKhz) * 16 * info.emcLoadCpu) / 1000000);
-
-        // Not 100% accurate but should be enough.
-        info.emcBwGpu = (info.emcBwAll > info.emcBwCpu) ? (info.emcBwAll - info.emcBwCpu) : 0;
-    }
+    void Update(HocClkBpmpSharedInfo &info);
 
 } // namespace actmon
