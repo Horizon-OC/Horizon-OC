@@ -900,7 +900,7 @@ namespace ams::secmon {
             reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH39, REG_BITS_VALUE(0, 27, WarmbootCarveoutConfig));
         }
 
-        void EnableBpmpSmmu() {
+        [[maybe_unused]] void EnableBpmpSmmu() {
             /* Define the ASID contents. */
             constexpr int       BpmpAsid    = 1;
             constexpr uintptr_t BpmpAsidPde = MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
@@ -1197,7 +1197,7 @@ namespace ams::secmon {
         reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
 
         /* Turn on the SMMU for the BPMP. */
-        EnableBpmpSmmu();
+        // EnableBpmpSmmu(); I REFUSE
 
         /* Wait until the flow controller reports that the BPMP is halted. */
         while (!reg::HasValue(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP))) {
