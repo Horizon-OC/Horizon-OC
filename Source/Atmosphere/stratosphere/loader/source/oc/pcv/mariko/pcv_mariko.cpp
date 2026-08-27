@@ -42,8 +42,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
 
     namespace {
-        size_t g_nso_size     = 0;
-        bool   g_payloadReady = false; /* set once Hooks().CopyPayload() has run (see Patch()) */
+        size_t g_nso_size = 0;
     }
 
     [[maybe_unused]] static uintptr_t CaveReserve(size_t count) {
@@ -51,7 +50,13 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     #if HOC_UART_LOG
-    /* Redirect pcv's NvLog() calls to UART */
+    namespace {
+        struct {
+            uintptr_t vsnprintf_addr = 0;
+            uintptr_t nvlog_addr     = 0;
+        } nvLogCache;
+    }
+
     Result NvLogUartRedirect(u32 *ptr) {
         const uintptr_t mapped_nso     = reinterpret_cast<uintptr_t>(nsoStart);
         const size_t    nso_size       = g_nso_size;
@@ -107,6 +112,17 @@ namespace ams::ldr::hoc::pcv::mariko {
             LOGGING("NvLogRedirect: NvLog entry not found (fmt@+%lx)", strAddr - mapped_nso);
             R_THROW(ldr::ResultInvalidNvLogRedirect());
         }
+
+        nvLogCache.vsnprintf_addr = vsnprintf_addr;
+        nvLogCache.nvlog_addr     = nvlog_addr;
+        R_SUCCEED();
+    }
+
+    Result InstallNvLogRedirect() {
+        const uintptr_t mapped_nso     = reinterpret_cast<uintptr_t>(nsoStart);
+        const uintptr_t textEnd        = g_pcv_cave;
+        const uintptr_t vsnprintf_addr = nvLogCache.vsnprintf_addr;
+        const uintptr_t nvlog_addr     = nvLogCache.nvlog_addr;
 
         const uintptr_t helper = CaveReserve(40);
         if (helper == 0) {
@@ -580,7 +596,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result InstallHooks() {
         R_TRY(Hooks().CheckEnabled());
 
-        R_UNLESS(g_payloadReady, ldr::ResultUninitializedPatcher());
+        R_TRY(Hooks().CopyPayload());
 
         auto *data = Hooks().BindData(m_HookPayloadData);
         R_UNLESS(data != nullptr, ldr::ResultHookDataOutOfMemory());
@@ -588,10 +604,14 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_TRY(SharedClkBusInstallHooks(data));
 
 #if HOC_UART_LOG
+        if (nvLogCache.nvlog_addr != 0) {
+            R_DISCARD(InstallNvLogRedirect());
+        }
+
         if (forceVerbosityCache.count != 0 && C.pcvLogVerbosity != 0xff) {
             data->verbosityLevel = C.pcvLogVerbosity;
             for (u32 i = 0; i < forceVerbosityCache.count; ++i) {
-                R_TRY(INSTALL_IMPL_HOOK(forceVerbosityCache.sites[i], ForceVerbosityImpl));
+                R_DISCARD(INSTALL_IMPL_HOOK(forceVerbosityCache.sites[i], ForceVerbosityImpl));
             }
         }
 #endif
@@ -604,8 +624,6 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
         g_nso_size    = nso_size;
-
-        g_payloadReady = R_SUCCEEDED(Hooks().CopyPayload());
 
         MtcGenerateFreqTables();
 
