@@ -1,21 +1,18 @@
-903c903
-<         void EnableBpmpSmmu() {
----
->         [[maybe_unused]] void EnableBpmpSmmu() {
-1200c1200
-<         EnableBpmpSmmu();
----
->         // EnableBpmpSmmu(); I REFUSE
 1221c1221
 <         const auto target_fw = GetTargetFirmware();
 ---
 >         // const auto target_fw = GetTargetFirmware();
-1223,1233c1223,1234
+1223,1226c1223,1226
 <         if (target_fw >= TargetFirmware_2_0_0) {
 <             /* Set the PMC secure. */
 <             reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
 <         }
-< 
+---
+>         // if (target_fw >= TargetFirmware_2_0_0) {
+>         //     /* Set the PMC secure. */ I REFUSE
+>         //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
+>         // }
+1228,1233c1228,1234
 <         if (target_fw >= TargetFirmware_4_0_0) {
 <             /* Set the MC secure. */
 <             reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
@@ -23,11 +20,6 @@
 <                                                                                              SLAVE_SECURITY_REG_BITS_ENUM(1, MCB, ENABLE));
 <         }
 ---
->         // if (target_fw >= TargetFirmware_2_0_0) {
->         //     /* Set the PMC secure. */ I REFUSE
->         //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG0_0, SLAVE_SECURITY_REG_BITS_ENUM(0, PMC, ENABLE));
->         // }
-> 
 >         // if (target_fw >= TargetFirmware_4_0_0) {
 >         //     /* Set the MC secure. */ I REFUSE
 >         //     reg::ReadWrite(APB_MISC + APB_MISC_SECURE_REGS_APB_SLAVE_SECURITY_ENABLE_REG1_0, SLAVE_SECURITY_REG_BITS_ENUM(1, MC0, ENABLE),
