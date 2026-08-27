@@ -34,6 +34,9 @@ namespace ams::ldr::hoc::pcv::mariko {
             uintptr_t originalFnCallback;
             u32 table[BusFreqTableCount][EmcDvfsTableEntryCount]; /* Original bus table size: 32. */
         } busData;
+#if HOC_UART_LOG
+        u32 verbosityLevel;
+#endif
     };
     DECLARE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
 
@@ -84,18 +87,14 @@ namespace ams::ldr::hoc::pcv::mariko {
     constexpr u32 EmcSocLutCountStoreAsm = 0xB9015408; /* str w?,[x0,#0x154] (anchor) */
     constexpr u32 EmcSocFreqStoreAsm = 0xF9000D00;     /* str x?,[x8,#0x18] */
     constexpr u32 EmcSocVoltStoreAsm = 0xB9004900;     /* str w?,[x8,#0x48] (socMinLut[i]) */
-    constexpr u32 EmcSocReadLoadAsm = 0xB9404929;      /* ldr w?,[x9,#0x48] (socMinLut readback) */
+    constexpr u32 EmcSocReadLoadAsm = 0xB9404929;      /* ldr w?,[x9,#0x48] (socMinLut) */
 
     inline bool EmcDvfsCountPatternFn(u32 *ptr) {
-        /* Local context: cbz w?,<skip> ; cmp w?,#0x21 ; b.cs <abort> */
-        return _asm::Ignoring(*ptr, EmcCountCmpAsm, _asm::field::Rd)
-               && _asm::Ignoring(*(ptr + 1), _asm::Encode(_asm::op::BCond, {_asm::field::BCond, _asm::cond::Cs}), _asm::field::Imm19) /* b.cs */
-               && _asm::IsOp(*(ptr - 1), _asm::op::Cbz, _asm::field::Imm19, _asm::field::Rt);                             /* cbz */
+        return _asm::Ignoring(*ptr, EmcCountCmpAsm, _asm::field::Rd);
     }
 
     inline bool EmcSocLutPatternFn(u32 *ptr) {
-        return _asm::Ignoring(*ptr, EmcSocLutPtrStoreAsm, _asm::field::Rt)             /* str x?,[x0,#0x120] */
-               && _asm::Ignoring(*(ptr + 1), EmcSocLutCountStoreAsm, _asm::field::Rt); /* str w?,[x0,#0x154] */
+        return _asm::Ignoring(*ptr, EmcSocLutPtrStoreAsm, _asm::field::Rt); /* str x?,[x0,#0x120] */
     }
 
     /*
@@ -112,10 +111,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     constexpr u32 EmcRateCapCselAsm = 0x1A80B000; /* csel w?,w?,w?,lt */
 
     inline bool EmcRateListPatternFn(u32 *ptr) {
-        return _asm::Ignoring(*ptr, EmcRateCapCmpAsm, _asm::field::Rd, _asm::field::Rn)                            /* cmp w?,#0x20 */
-               && _asm::Ignoring(*(ptr + 1), EmcRateCapCselAsm, _asm::field::Rd, _asm::field::Rn, _asm::field::Rm)       /* csel w?,w?,w?,lt */
-               && (_asm::Get(*ptr, _asm::field::Rn) == _asm::Get(*(ptr + 1), _asm::field::Rn))                           /* min(reg, 0x20) */
-               && _asm::IsOp(*(ptr + 2), _asm::op::Bl, _asm::field::Imm26);                                        /* bl <_asm::Get*DvfsFreqTable> */
+        return _asm::Ignoring(*ptr, EmcRateCapCmpAsm, _asm::field::Rd, _asm::field::Rn);
     }
 
     constexpr u32 EmcRateSessCmpAsm  = 0x710082FF; /* cmp  w?,#0x20 */
@@ -123,7 +119,6 @@ namespace ams::ldr::hoc::pcv::mariko {
     constexpr u32 EmcRateSessCselAsm = 0x1A80B000; /* csel w?,w?,w?,lt (opcode + cond) */
 
     inline bool EmcRateSessFindClamp(u32 *ptr, u32 *out_c, u32 *out_cap, u32 *out_movz_i) {
-        if (!_asm::Ignoring(ptr[0], EmcRateSessCmpAsm, _asm::field::Rd, _asm::field::Rn)) return false;   /* cmp w<c>,#0x20 */
         const u32 c = _asm::Get(ptr[0], _asm::field::Rn);
         for (u32 i = 1; i <= 14; ++i) {
             const u32 w = ptr[i];
@@ -144,22 +139,18 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     inline bool EmcRateSessPatternFn(u32 *ptr) {
-        return EmcRateSessFindClamp(ptr, nullptr, nullptr, nullptr);
+        return _asm::Ignoring(*ptr, EmcRateSessCmpAsm, _asm::field::Rd, _asm::field::Rn);
     }
 
     inline bool BusFreqRelocPatternFn(u32 *ptr) {
-        if (g_pcv_scratch == 0 || g_pcv_cave == 0) {
+        if (g_pcv_cave == 0) {
             return false;
         }
         if (reinterpret_cast<uintptr_t>(ptr + 4) > g_pcv_cave) {   /* the call site lives in .text */
             return false;
         }
-        if (!(_asm::IsOp(ptr[0], _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)  && _asm::Get(ptr[0], _asm::field::Off8)  == 0x10)) return false; /* ldr Xbuf,[Xbus,#0x10] */
-        if (!(_asm::IsOp(ptr[1], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(ptr[1], _asm::field::Imm12) == 0x18)) return false; /* add Xcnt,Xbus,#0x18   */
-        if (!(_asm::IsOp(ptr[2], _asm::op::StrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)  && _asm::Get(ptr[2], _asm::field::Off8)  == 0x50)) return false; /* str Xrail,[Xbus,#0x50]*/
-        if (!_asm::IsOp(ptr[3], _asm::op::Bl, _asm::field::Imm26))                                                                    return false; /* bl GetDvfsRailUnique  */
-        const u32 bus = _asm::Get(ptr[0], _asm::field::Rn);
-        return _asm::Get(ptr[1], _asm::field::Rn) == bus && _asm::Get(ptr[2], _asm::field::Rn) == bus;
+        return _asm::IsOp(*ptr, _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
+               && _asm::Get(*ptr, _asm::field::Off8) == 0x10; /* ldr Xbuf,[Xbus,#0x10] */
     }
 
     inline bool ForceVerbosityPatternFn(u32 *ptr) {
@@ -169,34 +160,30 @@ namespace ams::ldr::hoc::pcv::mariko {
         if (reinterpret_cast<uintptr_t>(ptr + 11) > g_pcv_cave) {   /* .text only */
             return false;
         }
-        if (ptr[0] != 0xA9BE7BFDu || ptr[1] != 0xF9000BF3u || ptr[2] != 0x910003FDu) return false; /* stp/str/mov x29,sp */
-        if (!(_asm::IsOp(ptr[3], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(ptr[3], _asm::field::Rd) == 0  && _asm::Get(ptr[3], _asm::field::Rn) == _asm::reg::Fp)) return false; /* add x0,x29,#imm  */
-        if (!(_asm::IsOp(ptr[4], _asm::op::AddImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) && _asm::Get(ptr[4], _asm::field::Rd) == 19 && _asm::Get(ptr[4], _asm::field::Rn) == _asm::reg::Fp)) return false; /* add x19,x29,#imm */
-        if (_asm::Get(ptr[3], _asm::field::Imm12) != _asm::Get(ptr[4], _asm::field::Imm12) || !_asm::IsOp(ptr[5], _asm::op::Bl, _asm::field::Imm26)) return false;
-        for (u32 j = 6; j <= 10; ++j) {
-            if (ptr[j] == 0x7100001Fu) { /* cmp w0,#0 */
-                return true;
-            }
-        }
-        return false;
+        return _asm::IsFramePushPre(*ptr);
     }
 
-    /* vsnprintf(buf,size,fmt,va_list) prologue */
-    inline constexpr u32 NvLogVsnSig[] = { 0xD10483FFu, 0xA9107BFDu, 0xF9008BFCu, 0x910403FDu, 0xF100003Fu };
+    /*
+        sub  sp,  sp, #imm
+        stp  x29,x30,[sp,#imm]
+        str  x?, [sp,#imm]
+        add  x29,sp, #imm
+        subs xzr, x1, #0
+    */
+    constexpr u32 NvLogSubSpAsm    = 0xD10003FFu; /* sub  sp,sp,#0 */
+    constexpr u32 NvLogStpFpLrAsm  = 0xA9007BFDu; /* stp  x29,x30,[sp,#0] */
+    constexpr u32 NvLogStrSpillAsm = 0xF90003E0u; /* str  x?,[sp,#0] */
+    constexpr u32 NvLogMovFpAsm    = 0x910003FDu; /* add  x29,sp,#0 */
+    constexpr u32 NvLogCmpSizeAsm  = 0xF100003Fu; /* subs xzr,x1,#0 */
 
     inline bool NvLogVsnprintfPatternFn(u32 *ptr) {
         if (HOC_UART_LOG == 0 || g_pcv_cave == 0) {
             return false;
         }
-        if (reinterpret_cast<uintptr_t>(ptr + std::size(NvLogVsnSig)) > g_pcv_cave) {   /* must sit in .text */
+        if (reinterpret_cast<uintptr_t>(ptr + 5) > g_pcv_cave) {   /* must sit in .text */
             return false;
         }
-        for (size_t k = 0; k < std::size(NvLogVsnSig); ++k) {
-            if (ptr[k] != NvLogVsnSig[k]) {
-                return false;
-            }
-        }
-        return true;
+        return _asm::Ignoring(*ptr, NvLogSubSpAsm, _asm::field::Imm12);
     }
 
     void Patch(uintptr_t mapped_nso, size_t nso_size);

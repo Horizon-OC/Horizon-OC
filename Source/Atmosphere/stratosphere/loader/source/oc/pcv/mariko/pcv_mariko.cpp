@@ -42,7 +42,8 @@ namespace ams::ldr::hoc::pcv::mariko {
     DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
 
     namespace {
-        size_t g_nso_size = 0;
+        size_t g_nso_size     = 0;
+        bool   g_payloadReady = false; /* set once Hooks().CopyPayload() has run (see Patch()) */
     }
 
     [[maybe_unused]] static uintptr_t CaveReserve(size_t count) {
@@ -56,6 +57,14 @@ namespace ams::ldr::hoc::pcv::mariko {
         const size_t    nso_size       = g_nso_size;
         const uintptr_t textEnd        = g_pcv_cave; /* .text ends where the cave begins */
         const uintptr_t vsnprintf_addr = reinterpret_cast<uintptr_t>(ptr);
+
+        {
+            using namespace _asm::field;
+            R_UNLESS(_asm::Ignoring(ptr[1], NvLogStpFpLrAsm, PairOff8),  ldr::ResultInvalidNvLogRedirect()); /* stp x29,x30,[sp,#imm] */
+            R_UNLESS(_asm::Ignoring(ptr[2], NvLogStrSpillAsm, Rt, Off8), ldr::ResultInvalidNvLogRedirect()); /* str x?,[sp,#imm]      */
+            R_UNLESS(_asm::Ignoring(ptr[3], NvLogMovFpAsm, Imm12),       ldr::ResultInvalidNvLogRedirect()); /* add x29,sp,#imm       */
+            R_UNLESS(ptr[4] == NvLogCmpSizeAsm,                          ldr::ResultInvalidNvLogRedirect()); /* cmp x1,#0             */
+        }
 
         /* NvLog via the VDD_SOC log */
         static const char Fmt[] = "%s(%s): DVFS request VDD_SOC %d mV\n";
@@ -188,6 +197,15 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     /* Relocate and extend C2/C3Bus to avoid issues (likely buffer overflow) */
     Result BusFreqReloc(u32 *ptr) {
+        using namespace _asm::field;
+
+        const u32 bus = _asm::Get(ptr[0], Rn);
+        R_UNLESS(_asm::IsOp(ptr[1], _asm::op::AddImm64, Rd, Rn, Imm12) && _asm::Get(ptr[1], Imm12) == 0x18 && _asm::Get(ptr[1], Rn) == bus,
+                 ldr::ResultInvalidBusFreqReloc()); /* add Xcnt,Xbus,#0x18 */
+        R_UNLESS(_asm::IsOp(ptr[2], _asm::op::StrImm64, Rt, Rn, Off8) && _asm::Get(ptr[2], Off8) == 0x50 && _asm::Get(ptr[2], Rn) == bus,
+                 ldr::ResultInvalidBusFreqReloc()); /* str Xrail,[Xbus,#0x50] */
+        R_UNLESS(_asm::IsOp(ptr[3], _asm::op::Bl, Imm26), ldr::ResultInvalidBusFreqReloc()); /* bl GetDvfsRailUniqueFreqList */
+
         constexpr u32 PrologueMargin = 140;
         u32 *functionPrologue        = _asm::FindFnPrologue(ptr, PrologueMargin, nsoStart);
         R_UNLESS(functionPrologue != nullptr, ldr::ResultInvalidBusFreqReloc());
@@ -198,12 +216,47 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     #if HOC_UART_LOG
+    namespace {
+        struct {
+            u32 *sites[3] = {};
+            u32  count    = 0;
+        } forceVerbosityCache;
+    }
+
+    HOOK_PAYLOAD_FN u32 ForceVerbosityImpl() {
+        HookPayloadData *data = HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
+        return data->verbosityLevel;
+    }
+
     /* Force GetEffectiveVerbosityLevel to return a non-zero level so all NvLog runs. */
     Result ForceVerbosity(u32 *ptr) {
-        if (C.pcvLogVerbosity != 0xff) {
-            PATCH_OFFSET(&ptr[0], _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, 0}, {_asm::field::Imm16, C.pcvLogVerbosity})); /* movz w0,#level */
-            PATCH_OFFSET(&ptr[1], _asm::RetIns);                                                     /* ret            */
+        using namespace _asm::field;
+
+        R_UNLESS(_asm::IsOp(ptr[1], _asm::op::StrImm64, Rt, Rn, Off8) && _asm::Get(ptr[1], Rn) == _asm::reg::Sp,
+                 ldr::ResultInvalidForceVerbosityPattern()); /* str x?,[sp,#imm] */
+        R_UNLESS(_asm::IsOp(ptr[2], _asm::op::AddImm64, Rd, Rn, Imm12)
+                 && _asm::Get(ptr[2], Rd) == _asm::reg::Fp && _asm::Get(ptr[2], Rn) == _asm::reg::Sp,
+                 ldr::ResultInvalidForceVerbosityPattern()); /* add x29,sp,#imm  */
+        R_UNLESS(_asm::IsOp(ptr[3], _asm::op::AddImm64, Rn, Imm12)
+                 && _asm::Get(ptr[3], Rd) == 0 && _asm::Get(ptr[3], Rn) == _asm::reg::Fp,
+                 ldr::ResultInvalidForceVerbosityPattern()); /* add x0,x29,#imm  */
+        R_UNLESS(_asm::IsOp(ptr[4], _asm::op::AddImm64, Rd, Rn, Imm12) && _asm::Get(ptr[4], Rn) == _asm::reg::Fp,
+                 ldr::ResultInvalidForceVerbosityPattern()); /* add x?,x29,#imm */
+        R_UNLESS(_asm::Get(ptr[3], Imm12) == _asm::Get(ptr[4], Imm12)
+                 && _asm::IsOp(ptr[5], _asm::op::Bl, Imm26),
+                 ldr::ResultInvalidForceVerbosityPattern());
+
+        bool foundCmp = false;
+        for (u32 j = 6; j <= 10; ++j) {
+            if (ptr[j] == 0x7100001Fu) { /* cmp w0,#0 */
+                foundCmp = true;
+                break;
+            }
         }
+        R_UNLESS(foundCmp, ldr::ResultInvalidForceVerbosityPattern());
+
+        R_UNLESS(forceVerbosityCache.count < std::size(forceVerbosityCache.sites), ldr::ResultInvalidForceVerbosityPattern());
+        forceVerbosityCache.sites[forceVerbosityCache.count++] = ptr;
         R_SUCCEED();
     }
     #endif
@@ -213,6 +266,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         constexpr u32 Window = 48;
 
         using namespace _asm::field;
+
+        R_UNLESS(_asm::Ignoring(ptr[1], EmcSocLutCountStoreAsm, Rt), ldr::ResultInvalidEmcSocLut()); /* str w?,[x0,#0x154] */
 
         u32 *freqStore = _asm::ScanAssembly(ptr - Window, Window, EmcSocFreqStoreAsm, Rt); /* str x?,[x8,#0x18] */
         u32 *voltStore = _asm::ScanAssembly(ptr - Window, Window, EmcSocVoltStoreAsm, Rt); /* str w?,[x8,#0x48] */
@@ -253,7 +308,9 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     Result EmcDvfsCountLimit(u32 *ptr) {
-        R_UNLESS(EmcDvfsCountPatternFn(ptr), ldr::ResultInvalidEmcDvfsCount());
+        R_UNLESS(_asm::IsOp(*(ptr - 1), _asm::op::Cbz, _asm::field::Imm19, _asm::field::Rt), ldr::ResultInvalidEmcDvfsCount()); /* cbz w?,<skip> */
+        R_UNLESS(_asm::Ignoring(*(ptr + 1), _asm::Encode(_asm::op::BCond, {_asm::field::BCond, _asm::cond::Cs}), _asm::field::Imm19),
+                 ldr::ResultInvalidEmcDvfsCount()); /* b.cs <abort> */
 
         /* cmp w?,#0x21 -> cmp w?,#EmcDvfsTableEntryCount */
         PATCH_OFFSET(ptr, _asm::Set(*ptr, _asm::field::Imm12, EmcDvfsTableEntryCount));
@@ -261,8 +318,10 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     Result EmcRateListLimit(u32 *ptr) {
-        /* ptr = cmp w?,#0x20 ; ptr[1] = csel w?,w?,w?,lt (w? = min(maxCount, 32)) ; ptr[2] = bl */
-        R_UNLESS(EmcRateListPatternFn(ptr), ldr::ResultInvalidEmcRateList());
+        R_UNLESS(_asm::Ignoring(ptr[1], EmcRateCapCselAsm, _asm::field::Rd, _asm::field::Rn, _asm::field::Rm)
+                 && _asm::Get(ptr[0], _asm::field::Rn) == _asm::Get(ptr[1], _asm::field::Rn),
+                 ldr::ResultInvalidEmcRateList()); /* csel w?,w?,w?,lt, min(reg, 0x20) */
+        R_UNLESS(_asm::IsOp(ptr[2], _asm::op::Bl, _asm::field::Imm26), ldr::ResultInvalidEmcRateList());
 
         /* The csel's Rm holds the 32 cap. */
         const u32 capReg = _asm::Get(ptr[1], _asm::field::Rm);
@@ -521,12 +580,21 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result InstallHooks() {
         R_TRY(Hooks().CheckEnabled());
 
-        R_TRY(Hooks().CopyPayload());
+        R_UNLESS(g_payloadReady, ldr::ResultUninitializedPatcher());
 
         auto *data = Hooks().BindData(m_HookPayloadData);
         R_UNLESS(data != nullptr, ldr::ResultHookDataOutOfMemory());
 
         R_TRY(SharedClkBusInstallHooks(data));
+
+#if HOC_UART_LOG
+        if (forceVerbosityCache.count != 0 && C.pcvLogVerbosity != 0xff) {
+            data->verbosityLevel = C.pcvLogVerbosity;
+            for (u32 i = 0; i < forceVerbosityCache.count; ++i) {
+                R_TRY(INSTALL_IMPL_HOOK(forceVerbosityCache.sites[i], ForceVerbosityImpl));
+            }
+        }
+#endif
 
         R_SUCCEED();
     }
@@ -536,6 +604,8 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
         g_nso_size    = nso_size;
+
+        g_payloadReady = R_SUCCEEDED(Hooks().CopyPayload());
 
         MtcGenerateFreqTables();
 
