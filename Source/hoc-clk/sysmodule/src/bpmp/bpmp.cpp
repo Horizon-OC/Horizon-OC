@@ -53,6 +53,32 @@ namespace bpmp {
         constexpr u32 ActmonGlbPeriodCtrlUsec  = (1u << 8);
         constexpr u32 ActmonCopCtrlStockArmed  = (1u << 31) | (1u << 30) | (1u << 18);
 
+        /* MC SMMU handling for the BPMP. */
+        constexpr u64 McPhysBase = 0x70019000;
+
+        constexpr u32 McSmmuTlbConfig  = 0x014;
+        constexpr u32 McSmmuPtbAsid    = 0x01C;
+        constexpr u32 McSmmuPtbData    = 0x020;
+        constexpr u32 McSmmuTlbFlush   = 0x030;
+        constexpr u32 McSmmuPtcFlush   = 0x034;
+        constexpr u32 McSmmuAvpcAsid   = 0x23C;
+        constexpr u32 McSmmuPpcs1Asid  = 0x298;
+
+        /* Page table is backed by the security engine's MMIO aperture. */
+        constexpr u64 BpmpSmmuPdeBase = 0x70012000;
+        constexpr u32 BpmpSmmuAsid    = 1;
+
+        /* MC_SMMU_PTB_ASID */
+        constexpr u32 SmmuPtbAsidCurrentAsid = BpmpSmmuAsid; /* [0:7] */
+
+        /* MC_SMMU_PTB_DATA */
+        constexpr u32 SmmuPtbDataPdeMask = 0x7FFFFF; /* [0:22] */
+
+        /* MC_SMMU_AVPC_ASID / MC_SMMU_PPCS1_ASID */
+        constexpr u32 SmmuClientSmmuEnableBit = (1u << 31);
+        constexpr u32 SmmuAvpcAsidValue   = (SmmuClientSmmuEnableBit | BpmpSmmuAsid);
+        constexpr u32 SmmuPpcs1AsidValue  = (SmmuClientSmmuEnableBit | BpmpSmmuAsid);
+
         constexpr u32 EvpCopResetVector         = 0x200;
         constexpr u32 EvpCopUndefVector         = 0x204;
         constexpr u32 EvpCopSwiVector           = 0x208;
@@ -122,6 +148,43 @@ namespace bpmp {
             fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: BPMP timeout (cannot sleep)");
         }
 
+        void EnableBpmpSmmu() {
+            /* Point the ASID page table at the security engine aperture. */
+            const u32 pde_base = static_cast<u32>(BpmpSmmuPdeBase / 0x1000);
+
+            /* Select the ASID and configure its page table entry. */
+            SmcReadWriteRegister(McPhysBase + McSmmuPtbAsid, 0xFFFFFFFF, SmmuPtbAsidCurrentAsid);
+            SmcReadWriteRegister(McPhysBase + McSmmuPtbData, 0xFFFFFFFF, pde_base & SmmuPtbDataPdeMask);
+
+            /* Route BPMP (AVPC) and PPCS1 through the SMMU. */
+            SmcReadWriteRegister(McPhysBase + McSmmuAvpcAsid,  0xFFFFFFFF, SmmuAvpcAsidValue);
+            SmcReadWriteRegister(McPhysBase + McSmmuPpcs1Asid, 0xFFFFFFFF, SmmuPpcs1AsidValue);
+
+            /* Flush the page table cache. */
+            SmcReadWriteRegister(McPhysBase + McSmmuPtcFlush, 0xFFFFFFFF, 0);
+            SmcReadWriteRegister(McPhysBase + McSmmuTlbConfig, 0, 0);
+
+            /* Flush the translation lookaside buffer. */
+            SmcReadWriteRegister(McPhysBase + McSmmuTlbFlush, 0xFFFFFFFF, 0);
+            SmcReadWriteRegister(McPhysBase + McSmmuTlbConfig, 0, 0);
+        }
+
+        void DisableBpmpSmmu() {
+            /* Clear the ASID page table. */
+            SmcReadWriteRegister(McPhysBase + McSmmuPtbAsid,  0xFFFFFFFF, SmmuPtbAsidCurrentAsid);
+            SmcReadWriteRegister(McPhysBase + McSmmuPtbData,  0xFFFFFFFF, 0);
+            SmcReadWriteRegister(McPhysBase + McSmmuAvpcAsid,  0xFFFFFFFF, 0);
+            SmcReadWriteRegister(McPhysBase + McSmmuPpcs1Asid, 0xFFFFFFFF, 0);
+
+            /* Flush the page table cache. */
+            SmcReadWriteRegister(McPhysBase + McSmmuPtcFlush, 0xFFFFFFFF, 0);
+            SmcReadWriteRegister(McPhysBase + McSmmuTlbConfig, 0, 0);
+
+            /* Flush the translation lookaside buffer. */
+            SmcReadWriteRegister(McPhysBase + McSmmuTlbFlush, 0xFFFFFFFF, 0);
+            SmcReadWriteRegister(McPhysBase + McSmmuTlbConfig, 0, 0);
+        }
+
         void RestoreStockState() {
             RequestBpmpExitAndWait();
 
@@ -140,6 +203,8 @@ namespace bpmp {
             Mmio(board::actmonVirtAddr, ActmonCopUpperWmark) = 0;
             Mmio(board::actmonVirtAddr, ActmonCopIntrStatus) = Mmio(board::actmonVirtAddr, ActmonCopIntrStatus);
             Mmio(board::actmonVirtAddr, ActmonCopCtrl) = ActmonCopCtrlStockArmed;
+
+            EnableBpmpSmmu();
         }
 
         void PscThreadFunc(void *) {
@@ -193,6 +258,9 @@ namespace bpmp {
 
         fileUtils::LogLine("[bpmp] StartBpmfwExecution: loading %zu bytes at 0x%llx",
                             fw_size, static_cast<unsigned long long>(FwIramPhysBase));
+
+        /* Disable the SMMU so DRAM can be accessed */
+        DisableBpmpSmmu();
 
         /* Set BPMP reset */
         Mmio(board::clkVirtAddr, ClkRstRstDevLSet) = RstDevLCopRstBit;
