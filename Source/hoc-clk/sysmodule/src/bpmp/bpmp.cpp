@@ -125,8 +125,8 @@ namespace bpmp {
                 return;
             }
 
-            const u32 one = 1;
-            Result rc = SmcCopyToIram(WorkRamPhysBase + offsetof(HocClkBpmpSharedInfo, exitRequested), &one, sizeof(one));
+            const u32 cmd = HocClkBpmpCmd_RequestShutdown;
+            Result rc = SmcCopyToIram(WorkRamPhysBase + offsetof(HocClkBpmpSharedInfo, cmd), &cmd, sizeof(cmd));
             if (R_FAILED(rc)) {
                 fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: SmcCopyToIram failed: 0x%x", rc);
                 return;
@@ -184,6 +184,40 @@ namespace bpmp {
             /* Flush the translation lookaside buffer. */
             SmcReadWriteRegister(McPhysBase + McSmmuTlbFlush, 0xFFFFFFFF, 0);
             SmcReadWriteRegister(McPhysBase + McSmmuTlbConfig, 0, 0);
+        }
+
+        bool WaitForBpmpReady(int maxAttempts = 50, u64 pollIntervalNs = 20'000'000) {
+            HocClkBpmpSharedInfo info = {};
+            for (int i = 0; i < maxAttempts; i++) {
+                Result rc = SmcCopyFromIram(&info, WorkRamPhysBase, sizeof(info));
+                if (R_SUCCEEDED(rc) && info.magic == HOCCLK_BPMP_MAGIC) {
+                    return true;
+                }
+                svcSleepThread(pollIntervalNs);
+            }
+            return false;
+        }
+
+        void SendBpmpCommand(HocClkBpmpCmd cmd, u32 arg1 = 0, u32 arg2 = 0, u32 arg3 = 0, u32 arg4 = 0) {
+            if (!WaitForBpmpReady()) {
+                fileUtils::LogLine("[bpmp] SendBpmpCommand: BPMP never signaled ready (cmd=%u)", static_cast<u32>(cmd));
+                return;
+            }
+
+            struct {
+                u32 cmd;
+                u32 cmdArg1;
+                u32 cmdArg2;
+                u32 cmdArg3;
+                u32 cmdArg4;
+            } req = { static_cast<u32>(cmd), arg1, arg2, arg3, arg4 };
+            static_assert(offsetof(HocClkBpmpSharedInfo, cmdArg1) == offsetof(HocClkBpmpSharedInfo, cmd) + 1 * sizeof(u32));
+            static_assert(offsetof(HocClkBpmpSharedInfo, cmdArg4) == offsetof(HocClkBpmpSharedInfo, cmd) + 4 * sizeof(u32));
+
+            const Result rc = SmcCopyToIram(WorkRamPhysBase + offsetof(HocClkBpmpSharedInfo, cmd), &req, sizeof(req));
+            if (R_FAILED(rc)) {
+                fileUtils::LogLine("[bpmp] SendBpmpCommand: SmcCopyToIram failed: 0x%x (cmd=%u)", rc, static_cast<u32>(cmd));
+            }
         }
 
         void RestoreStockState() {
@@ -305,6 +339,8 @@ namespace bpmp {
 
         /* Clear the halt written by bootloader. */
         SmcReadWriteRegister(FlowCtlrPhysBase + FlowCtlrHaltCopEvents, 0xFFFFFFFF, FlowModeNone);
+
+        SendBpmpCommand(HocClkBpmpCmd_SetUartEnabled, fileUtils::IsUartEnabled() ? 1u : 0u);
 
         return 0;
     }

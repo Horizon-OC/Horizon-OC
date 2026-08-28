@@ -33,13 +33,21 @@
     }
 }
 
+bool g_uartLoggingEnabled = true;
+
 void UartPutc(char c) {
+    if (!g_uartLoggingEnabled) {
+        return;
+    }
     while (!(MMIO32(UartBBase + UartLsr) & UartLsrThre))
         ;
     MMIO32(UartBBase + UartThr) = static_cast<u32>(static_cast<u8>(c));
 }
 
 void UartFlush() {
+    if (!g_uartLoggingEnabled) {
+        return;
+    }
     while (!(MMIO32(UartBBase + UartLsr) & UartLsrTmty))
         ;
 }

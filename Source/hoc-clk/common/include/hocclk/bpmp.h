@@ -22,6 +22,12 @@
 
 #define HOCCLK_BPMP_MAGIC 0x42504D50 // 'BPMP'
 
+typedef enum {
+    HocClkBpmpCmd_None            = 0,
+    HocClkBpmpCmd_RequestShutdown = 1, // Request BPMP-FW to shut down for sleep mode.
+    HocClkBpmpCmd_SetUartEnabled  = 2, // cmdArg1: 0/1.
+} HocClkBpmpCmd;
+
 /*
  * Shared with BPMP-FW
  * Any 64 bit data type is not permitted.
@@ -41,8 +47,12 @@ typedef struct {
     u32 emcBwAll;
     u32 emcBwCpu;
     u32 emcBwGpu;
-    u32 exitRequested; // Request BPMP-FW to shutdown for sleep mode
+    u32 cmd;        // HocClkBpmpCmd; 0 = no command pending
+    u32 cmdArg1;
+    u32 cmdArg2;
+    u32 cmdArg3;
+    u32 cmdArg4;
     s32 tempAO;
 } HocClkBpmpSharedInfo;
 
-static_assert(sizeof(HocClkBpmpSharedInfo) == 0x40);
+static_assert(sizeof(HocClkBpmpSharedInfo) == 0x50);

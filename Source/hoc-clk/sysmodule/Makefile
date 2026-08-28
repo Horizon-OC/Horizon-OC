@@ -105,7 +105,7 @@ export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
 
 export APP_JSON := $(TOPDIR)/perms.json
 
-.PHONY: $(BUILD) clean clean-libs clean-build all libs
+.PHONY: $(BUILD) clean clean-libs clean-build all libs sync-bpmpfw
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -116,7 +116,11 @@ libs:
 $(LIBNAMES):
 	@echo $@
 
-$(BUILD): libs
+sync-bpmpfw:
+	@$(MAKE) --no-print-directory -C $(TOPDIR)/../bpmpfw
+	@cp -f $(TOPDIR)/../bpmpfw/out/bpmpfw.bin $(TOPDIR)/data/bpmpfw.bin
+
+$(BUILD): libs sync-bpmpfw
 	@[ -d $@ ] || mkdir -p $@
 	@[ -d $(OUTDIR) ] || mkdir -p $(OUTDIR)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile

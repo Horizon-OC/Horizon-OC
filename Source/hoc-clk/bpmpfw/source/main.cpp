@@ -39,11 +39,35 @@ namespace {
 
 } // namespace
 
+[[noreturn]] void HandleShutdown(HocClkBpmpSharedInfo &info) {
+    /* Deinit MMU otherwise sleep will fatal. */
+    bpmpMmu::Disable();
+    info.magic = 0x0;
+    printf("[hoc-bpmpfw]: Halting...\n");
+    for (;;)
+        ;
+}
+
+void HandleCommand(HocClkBpmpSharedInfo &info) {
+    switch (info.cmd) {
+        case HocClkBpmpCmd_None:
+            break;
+        case HocClkBpmpCmd_RequestShutdown:
+            HandleShutdown(info);
+            break;
+        case HocClkBpmpCmd_SetUartEnabled:
+            g_uartLoggingEnabled = (info.cmdArg1 != 0);
+            info.cmd = HocClkBpmpCmd_None;
+            break;
+        default:
+            info.cmd = HocClkBpmpCmd_None;
+            break;
+    }
+}
+
 void MainLoop(HocClkBpmpSharedInfo &info) {
     for (;;) {
-        if (info.exitRequested) {
-            break;
-        }
+        HandleCommand(info);
 
         const u32 temp1 = MMIO32(SocthermBase + SocthermSensorTemp1);
         const u32 temp2 = MMIO32(SocthermBase + SocthermSensorTemp2);
@@ -60,13 +84,6 @@ void MainLoop(HocClkBpmpSharedInfo &info) {
 
         msleep(250);
     }
-
-    /* Deinit MMU otherwise sleep will fatal. */
-    bpmpMmu::Disable();
-    info.magic = 0x0;
-
-    for (;;)
-        ;
 }
 
 extern "C" void main() {

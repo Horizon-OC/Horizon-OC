@@ -45,6 +45,8 @@ constexpr u32 UartLsr   = 0x14;
 constexpr u32 UartLsrThre = (1u << 5);
 constexpr u32 UartLsrTmty = (1u << 6);
 
+extern bool g_uartLoggingEnabled;
+
 void UartPutc(char c);
 
 void UartFlush();
