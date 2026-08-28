@@ -33,7 +33,7 @@
     }
 }
 
-bool g_uartLoggingEnabled = true;
+bool g_uartLoggingEnabled = false;
 
 void UartPutc(char c) {
     if (!g_uartLoggingEnabled) {
@@ -63,4 +63,15 @@ void UartPutHex32(u32 v) {
     for (int i = 28; i >= 0; i -= 4) {
         UartPutc(digits[(v >> i) & 0xF]);
     }
+}
+
+void UartPutsForce(const char *s) {
+    while (*s) {
+        while (!(MMIO32(UartBBase + UartLsr) & UartLsrThre))
+            ;
+        MMIO32(UartBBase + UartThr) = static_cast<u32>(static_cast<u8>(*s++));
+    }
+
+    while (!(MMIO32(UartBBase + UartLsr) & UartLsrTmty))
+        ;
 }

@@ -43,7 +43,7 @@ namespace {
     /* Deinit MMU otherwise sleep will fatal. */
     bpmpMmu::Disable();
     info.magic = 0x0;
-    printf("[hoc-bpmpfw]: Halting...\n");
+    UartPutsForce("[hoc-bpmpfw]: Halting...\n");
     for (;;)
         ;
 }
@@ -91,7 +91,7 @@ extern "C" void main() {
 
     InitializeLibc();
 
-    printf("[hoc-bpmpfw]: Starting bpmpfw\n");
+    UartPutsForce("[hoc-bpmpfw]: Starting bpmpfw\n");
 
     HocClkBpmpSharedInfo &info = SharedInfo();
     memset(&info, 0, sizeof(info));
@@ -104,7 +104,7 @@ extern "C" void main() {
     /* If the main loop exits then it is a panic or invalid state */
     MainLoop(info);
 
-    printf("[hoc-bpmpfw]: PANIC\n");
+    UartPutsForce("[hoc-bpmpfw]: PANIC\n");
     
     /* Kill execution */    
     _panic_reboot();

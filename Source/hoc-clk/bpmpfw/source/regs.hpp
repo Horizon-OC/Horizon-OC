@@ -54,3 +54,5 @@ void UartFlush();
 void UartPuts(const char *s);
 
 void UartPutHex32(u32 v);
+
+void UartPutsForce(const char *s);
