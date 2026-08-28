@@ -254,8 +254,8 @@ namespace board {
     }
 
     #define MMIO32(addr) (*reinterpret_cast<volatile u32 *>(addr))
-    NX_NORETURN void panic(u32 r, u32 g, u32 b) {
-        SmcReadWriteRegister(0x7000EC40 /* PMC_BASE + APBDEV_PMC_SCRATCH200 */, ~0, ((r & 0xF) << 8) | ((g & 0xF) << 4) | ((b & 0xF) << 0));
+    NX_NORETURN void panic(u32 c) {
+        SmcReadWriteRegister(0x7000EC40 /* PMC_BASE + APBDEV_PMC_SCRATCH200 */, ~0, c);
         
         /* Write timer magic */
         MMIO32(tmrVirtAddr + 0x18C) = 0xC45A;

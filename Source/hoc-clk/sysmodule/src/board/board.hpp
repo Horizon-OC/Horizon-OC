@@ -61,6 +61,6 @@ namespace board {
     bool IsDram8GB();
     void SetDisplayRefreshDockedState(bool docked);
     FuseData *GetFuseData();
-    NX_NORETURN void panic(u32 r, u32 g, u32 b);
+    NX_NORETURN void panic(u32 c);
     
 }  // namespace board

@@ -146,6 +146,7 @@ namespace bpmp {
             }
 
             fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: BPMP timeout (cannot sleep)");
+            board::panic(board::CpuPanic);
         }
 
         void EnableBpmpSmmu() {
