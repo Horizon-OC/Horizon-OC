@@ -48,6 +48,9 @@ namespace board {
     extern HocClkConsoleType gConsoleType;
     extern FuseData fuseData;
     extern u8 speedoBracket;
+    extern const u32 GpuPanic;
+    extern const u32 CpuPanic;
+    extern const u32 RamPanic;
 
     void Initialize();
     void Exit();
@@ -58,5 +61,6 @@ namespace board {
     bool IsDram8GB();
     void SetDisplayRefreshDockedState(bool docked);
     FuseData *GetFuseData();
-
+    NX_NORETURN void panic(u32 r, u32 g, u32 b);
+    
 }  // namespace board

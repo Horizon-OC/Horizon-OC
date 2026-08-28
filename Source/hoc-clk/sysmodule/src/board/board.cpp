@@ -49,10 +49,16 @@
 #include "board_volt.hpp"
 #include <ipc_server.h>
 #include <lockable_mutex.h>
-
+#include "../mapping/mem_map.hpp"
 namespace board {
 
-    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr, gpuVirtAddr;
+    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr, gpuVirtAddr, tmrVirtAddr;
+    consteval inline u32 PackCode(u32 r, u32 g, u32 b) {
+        return ((r & 0xF) << 8) | ((g & 0xF) << 4) | ((b & 0xF) << 0);
+    }
+    const u32 GpuPanic   = PackCode(0xF, 0x7, 0x0);
+    const u32 CpuPanic   = PackCode(0xF, 0x0, 0x0);
+    const u32 RamPanic   = PackCode(0x0, 0xF, 0xF);
 
     HocClkSocType gSocType;
     u8 gDramID;
@@ -160,6 +166,9 @@ namespace board {
         rc = QueryMemoryMapping(&gpuVirtAddr, 0x57000000, 0x1000000);
         ASSERT_RESULT_OK(rc, "QueryMemoryMapping (gpu)");
 
+        rc = QueryMemoryMapping(&tmrVirtAddr, 0x60005000, 0x1000);
+        ASSERT_RESULT_OK(rc, "QueryMemoryMapping (tmr)");
+
         FetchHardwareInfos();
 
         Result nvCheck = 1;
@@ -242,6 +251,30 @@ namespace board {
         batteryInfoExit();
         pmdmntExit();
         nvExit();
+    }
+
+    #define MMIO32(addr) (*reinterpret_cast<volatile u32 *>(addr))
+    NX_NORETURN void panic(u32 r, u32 g, u32 b) {
+        SmcReadWriteRegister(0x7000EC40 /* PMC_BASE + APBDEV_PMC_SCRATCH200 */, ~0, ((r & 0xF) << 8) | ((g & 0xF) << 4) | ((b & 0xF) << 0));
+        
+        /* Write timer magic */
+        MMIO32(tmrVirtAddr + 0x18C) = 0xC45A;
+
+        /* Disable counters */
+        MMIO32(tmrVirtAddr + 0x188) = 0x2;
+
+        /* Start periodic timer */
+        MMIO32(tmrVirtAddr + 0x80) = 0xC0000000;
+
+        /* Set the reboot source to the timer */
+        MMIO32(tmrVirtAddr + 0x180) = 0x8019;
+
+        /* Enable counter */
+        MMIO32(tmrVirtAddr + 0x188) = 0x1;
+
+        /* Hang. */
+        for(;;)
+            ;
     }
 
     HocClkSocType GetSocType() {

@@ -49,6 +49,14 @@
 		}, {
 			"type":	"map",
 			"value":	{
+				"address":	"0x60005000",
+				"is_ro":	false,
+				"size":	"0x00001000",
+				"is_io":	true
+			}
+		}, {
+			"type":	"map",
+			"value":	{
 				"address":	"0x57000000",
 				"is_ro":	false,
 				"size":	"0x01000000",
