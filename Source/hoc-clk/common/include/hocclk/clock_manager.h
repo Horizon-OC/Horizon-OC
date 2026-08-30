@@ -89,7 +89,7 @@ typedef struct {
     HocClkBpmpSharedInfo bpmpInfo;
 
     // Reserved for future use
-    u8 reserved[0x32C];
+    u8 reserved[0x30C];
 } HocClkContext;
 
 typedef struct
@@ -104,4 +104,4 @@ typedef struct
 
 #define HOCCLK_GLOBAL_PROFILE_TID 0xA111111111111111
 
-static_assert(sizeof(HocClkContext) == 0x520);
+static_assert(sizeof(HocClkContext) == 0x500);
