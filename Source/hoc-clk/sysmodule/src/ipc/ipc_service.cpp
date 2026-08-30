@@ -24,7 +24,6 @@
  * --------------------------------------------------------------------------
  */
 
-#include <cstddef>
 #include <cstring>
 #include <i2c.h>
 #include <max17050.h>
@@ -49,8 +48,6 @@ namespace ipcService {
         LockableMutex gThreadMutex;
         IpcServer gServer;
 
-        constexpr size_t gMinContextBufSize = offsetof(HocClkContext, stable) + sizeof(HocClkContext::stable);
-
         Result GetApiVersion(u32 *out_version) {
             *out_version = HOCCLK_IPC_API_VERSION;
             return 0;
@@ -63,9 +60,8 @@ namespace ipcService {
             return 0;
         }
 
-        Result GetCurrentContext(void *out_buf, size_t bufSize) {
-            HocClkContext ctx = clockManager::GetCurrentContext();
-            memcpy(out_buf, &ctx, bufSize < sizeof(ctx) ? bufSize : sizeof(ctx));
+        Result GetCurrentContext(HocClkContext *out_ctx) {
+            *out_ctx = clockManager::GetCurrentContext();
             return 0;
         }
 
@@ -166,8 +162,8 @@ namespace ipcService {
                 case HocClkIpcCmd_GetCurrentContext:
                     if (r->data.size >= sizeof(std::uint64_t) && r->hipc.meta.num_recv_buffers >= 1) {
                         size_t bufSize = hipcGetBufferSize(r->hipc.data.recv_buffers);
-                        if (bufSize >= gMinContextBufSize) {
-                            return GetCurrentContext(hipcGetBufferAddress(r->hipc.data.recv_buffers), bufSize);
+                        if (bufSize >= sizeof(HocClkContext)) {
+                            return GetCurrentContext((HocClkContext *)hipcGetBufferAddress(r->hipc.data.recv_buffers));
                         }
                     }
                     break;
