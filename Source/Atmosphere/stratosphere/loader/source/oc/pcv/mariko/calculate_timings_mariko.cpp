@@ -166,10 +166,10 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         double fullRoundDelay = flyByTime + tDQSCK_max;
         /* Read data valid: Read command -> data ready to be latched into the registers. */
-        rdv                = RL + GET_CYCLE_CEIL(fullRoundDelay) + 16;
+        rdv  = RL + GET_CYCLE_CEIL(fullRoundDelay) + 16;
 
         /* Read command -> data poppable at the pad macros, 14 cycles ahead of rdv. */
-        qpop              = rdv - 14;
+        qpop = rdv - 14;
 
         constexpr double TrimmerStepPs   = 3.0;
         constexpr double MaxTrimmerSteps = 96.0;
@@ -202,7 +202,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* Difference between the two eye edges. */
         quse_width        = quseExtra - tQuse + 4;
 
-        einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
+        einput_duration   = einputLatency + quse_width + 4;
         u32 qrst_duration = FLOOR(8.399 - tCK_avg);
         u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
         qrst              = PACK_U32(qrst_duration, qrstLow);
