@@ -48,8 +48,6 @@ namespace ams::ldr::hoc::pcv::erista {
             TABLE->shadow_regs_ca_train.PARAM   = VALUE; \
             TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
 
-        #define GET_CYCLE_CEIL(PARAM) u32(CEIL(double(PARAM) / tCK_avg))
-
         /* Ram power down       */
         /* B31: DRAM_CLKSTOP_PD */
         /* B30: DRAM_CLKSTOP_SR */

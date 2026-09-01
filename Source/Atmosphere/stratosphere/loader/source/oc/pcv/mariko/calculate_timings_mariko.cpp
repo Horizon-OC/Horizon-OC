@@ -149,7 +149,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 tREFI = lowFreq ? C.low_t8_tREFI : C.t8_tREFI;
         refresh_raw = 0xFFFF;
         if (tREFI != 6) {
-            refresh_raw = CEIL(tREFpb_values[tREFI] / tCK_avg) - 0x40;
+            refresh_raw = GET_CYCLE_CEIL(tREFpb_values[tREFI]) - 0x40;
             refresh_raw = MIN(refresh_raw, static_cast<u32>(0xFFFF));
         }
 
@@ -164,9 +164,9 @@ namespace ams::ldr::hoc::pcv::mariko {
         tRTM  = FLOOR((10.0 + RL) + (3.502 / tCK_avg)) + FLOOR(7.489 / tCK_avg);
         tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
-        u32 fullRoundDelay = CEIL((flyByTime + tDQSCK_max) / tCK_avg);
+        double fullRoundDelay = flyByTime + tDQSCK_max;
         /* Read data valid: Read command -> data ready to be latched into the registers. */
-        rdv                = RL + fullRoundDelay + 16;
+        rdv                = RL + GET_CYCLE_CEIL(fullRoundDelay) + 16;
 
         /* Read command -> data poppable at the pad macros, 14 cycles ahead of rdv. */
         qpop              = rdv - 14;
@@ -174,21 +174,35 @@ namespace ams::ldr::hoc::pcv::mariko {
         constexpr double TrimmerStepPs   = 3.0;
         constexpr double MaxTrimmerSteps = 96.0;
 
-        double tCkAvgPs       = tCK_avg * 1000.0;
-        double tckDerated     = tCkAvgPs * 0.85;
-        u32 derateStepCount   = MIN(FLOOR(tckDerated / TrimmerStepPs), MaxTrimmerSteps);
-        double deratedNsDelay = (derateStepCount * TrimmerStepPs) / 1000.0;
-        u32 fullTripDerating  = fullRoundDelay - CEIL((flyByTime + tDQSCK_max - deratedNsDelay) / tCK_avg);
-        u32 readEyeStart      = FLOOR((flyByTime + 0.94) / tCK_avg) + RL;
+        double tCkAvgPs            = tCK_avg * 1000.0;
+        double tckDerated          = tCkAvgPs * 0.85;
+        u32 derateStepCount        = MIN(FLOOR(tckDerated / TrimmerStepPs), MaxTrimmerSteps);
+        double deratedNsDelay      = (derateStepCount * TrimmerStepPs) / 1000.0;
+        /* readEyeEndDerated, nv call this quseExtra. */
+        u32 quseExtra              = GET_CYCLE_CEIL(fullRoundDelay - deratedNsDelay);
 
+        /* The amount of deration from the perspective of a full round trip. */
+        u32 readEyeEndDerateMargin = GET_CYCLE_CEIL(fullRoundDelay) - quseExtra;
+
+        u32 tQuse                  = FLOOR((flyByTime + 0.94) / tCK_avg);
+        u32 readEyeStart           = tQuse + RL + 1;
+
+        u32 einputMinimal = readEyeStart + readEyeEndDerateMargin - 2;
         /* Data valid window, quse aligns with the start of the read eye (probably). */
         /* DQS needs to be logically and'ed with quse in order to be valid. */
-        quse = readEyeStart + fullTripDerating - 2;
+        /* einputMinimal satisfies this. */
+        quse = einputMinimal;
 
-        quse_width        = CEIL(((4.897 / tCK_avg) - FLOOR(2.538 / tCK_avg)) + 3.782);
-        quse              = FLOOR(RL + ((5.082 / tCK_avg) + FLOOR(2.560 / tCK_avg))) - CEIL(4.820 / tCK_avg);
+        /* input takes time to enable. */
+        u32 einputLatency = GET_CYCLE_CEIL(10.0);
+
+        /* Enable input receiver. */
+        einput = einputMinimal - einputLatency;
+
+        /* Difference between the two eye edges. */
+        quse_width        = quseExtra - tQuse + 4;
+
         einput_duration   = FLOOR(9.936 / tCK_avg) + 5.0 + quse_width;
-        einput            = quse - CEIL(9.928 / tCK_avg);
         u32 qrst_duration = FLOOR(8.399 - tCK_avg);
         u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
         qrst              = PACK_U32(qrst_duration, qrstLow);

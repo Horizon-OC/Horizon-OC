@@ -47,8 +47,6 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         const double tCK_avg = 1000'000.0 / table->rate_khz;
 
-        #define GET_CYCLE_CEIL(PARAM) u32(CEIL(double(PARAM) / tCK_avg))
-
         /* Ram power down       */
         /* B31: DRAM_CLKSTOP_PD */
         /* B30: DRAM_CLKSTOP_SR */
