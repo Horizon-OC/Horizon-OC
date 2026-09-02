@@ -193,7 +193,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* einputMinimal satisfies this. */
         quse = einputMinimal;
 
-        /* input takes time to enable. */
+        /* input receiver takes time to enable. */
         u32 einputLatency = GET_CYCLE_CEIL(10.0);
 
         /* Enable input receiver. */
@@ -202,8 +202,12 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* Difference between the two eye edges. */
         quse_width        = quseExtra - tQuse + 4;
 
+        /* Duration of input receiver being enabled? */
         einput_duration   = einputLatency + quse_width + 4;
-        u32 qrst_duration = FLOOR(8.399 - tCK_avg);
+
+        /* qrst_duration is CEIL(a / tCK_avg + b) */
+        /* a and b were derived through a brute forcer. */
+        u32 qrst_duration = CEIL(1.4 / tCK_avg + 3.5);
         u32 qrstLow       = MAX(static_cast<s32>(einput - qrst_duration - 2), static_cast<s32>(0));
         qrst              = PACK_U32(qrst_duration, qrstLow);
         ibdly             = PACK_U32_NIBBLE_HIGH_BYTE_LOW(1, quse - qrst_duration - 2.0);
