@@ -66,18 +66,19 @@ namespace config {
         std::uint32_t gOverrideFreqs[HocClkModule_EnumMax];
         std::map<std::tuple<std::uint64_t, HocClkProfile, HocClkModule>, std::uint32_t> gProfileMHzMap;
         std::map<std::uint64_t, std::uint8_t> gProfileCountMap;
-        std::set<std::uint64_t> gLoadedTids;
         std::map<std::uint64_t, time_t> gProfileMtimes;
+
+        bool gGlobalLoaded = false;
         std::uint64_t gCurrentGameTid = 0;
         bool gProfilesDirty = false;
         bool gMigrationHappened = false;
         LockableMutex gConfigMutex;
         LockableMutex gOverrideMutex;
 
-        time_t CheckFileMtime(const std::string &path) {
+        time_t CheckFileMtime(const char *path) {
             time_t mtime = 0;
             struct stat st;
-            if (stat(path.c_str(), &st) == 0) {
+            if (stat(path, &st) == 0) {
                 mtime = st.st_mtime;
             }
             return mtime;
@@ -205,8 +206,8 @@ namespace config {
             gLoaded = false;
             gProfileMHzMap.clear();
             gProfileCountMap.clear();
-            gLoadedTids.clear();
             gProfileMtimes.clear();
+            gGlobalLoaded = false;
             gCurrentGameTid = 0;
             gProfilesDirty = false;
             for (unsigned int i = 0; i < HocClkConfigValue_EnumMax; i++) {
@@ -216,7 +217,7 @@ namespace config {
 
         void LoadSettings() {
             fileUtils::LogLine("[cfg] Reading %s", gSettingsPath.c_str());
-            gSettingsMtime = CheckFileMtime(gSettingsPath);
+            gSettingsMtime = CheckFileMtime(gSettingsPath.c_str());
             if (!gSettingsMtime) {
                 fileUtils::LogLine("[cfg] Settings file not found, using defaults");
                 return;
@@ -228,7 +229,7 @@ namespace config {
 
         void LoadKip() {
             fileUtils::LogLine("[cfg] Reading %s", gKipPath.c_str());
-            gKipMtime = CheckFileMtime(gKipPath);
+            gKipMtime = CheckFileMtime(gKipPath.c_str());
             if (!gKipMtime) {
                 fileUtils::LogLine("[cfg] KIP config file not found, using defaults");
                 return;
@@ -238,17 +239,25 @@ namespace config {
             }
         }
 
-        std::string ProfilePathForTid(std::uint64_t tid) {
-            char filename[32];
-            snprintf(filename, sizeof(filename), "%016lX.ini", tid);
-            return gProfilesDir + "/" + filename;
+        // "<profiles-dir>/<16-hex-tid>.ini" + NUL
+        constexpr size_t PROFILE_PATH_MAX = 64;
+
+        void ProfilePathForTid(std::uint64_t tid, char *outPath, size_t outSize) {
+            snprintf(outPath, outSize, "%s/%016lX.ini", gProfilesDir.c_str(), tid);
         }
 
-        void EvictProfile(std::uint64_t tid) {
+        bool IsProfileLoaded(std::uint64_t tid) {
             if (tid == HOCCLK_GLOBAL_PROFILE_TID) {
+                return gGlobalLoaded;
+            }
+            return tid != 0 && tid == gCurrentGameTid;
+        }
+
+        void EvictCurrentGame() {
+            if (gCurrentGameTid == 0) {
                 return;
             }
-
+            const std::uint64_t tid = gCurrentGameTid;
             for (unsigned int profile = 0; profile < HocClkProfile_EnumMax; profile++) {
                 for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
                     gProfileMHzMap.erase(std::make_tuple(tid, (HocClkProfile)profile, (HocClkModule)module));
@@ -256,7 +265,18 @@ namespace config {
             }
             gProfileCountMap.erase(tid);
             gProfileMtimes.erase(tid);
-            gLoadedTids.erase(tid);
+            gCurrentGameTid = 0;
+        }
+
+        void DropGlobalProfile() {
+            for (unsigned int profile = 0; profile < HocClkProfile_EnumMax; profile++) {
+                for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
+                    gProfileMHzMap.erase(std::make_tuple(HOCCLK_GLOBAL_PROFILE_TID, (HocClkProfile)profile, (HocClkModule)module));
+                }
+            }
+            gProfileCountMap.erase(HOCCLK_GLOBAL_PROFILE_TID);
+            gProfileMtimes.erase(HOCCLK_GLOBAL_PROFILE_TID);
+            gGlobalLoaded = false;
         }
 
         void LoadProfileTid(std::uint64_t tid) {
@@ -264,26 +284,29 @@ namespace config {
                 return;
             }
 
-            if (gLoadedTids.count(tid)) {
+            const bool isGlobal = (tid == HOCCLK_GLOBAL_PROFILE_TID);
+            if (IsProfileLoaded(tid)) {
                 return;
             }
 
-            if (tid != HOCCLK_GLOBAL_PROFILE_TID && gCurrentGameTid != 0) {
-                EvictProfile(gCurrentGameTid);
+            if (!isGlobal) {
+                EvictCurrentGame();
             }
 
-            std::string path = ProfilePathForTid(tid);
+            char path[PROFILE_PATH_MAX];
+            ProfilePathForTid(tid, path, sizeof(path));
 
             struct stat st;
-            if (stat(path.c_str(), &st) == 0) {
-                fileUtils::LogLine("[cfg] Loading profile %s", path.c_str());
-                ini_browse(&BrowseProfileIni, (void *)(uintptr_t)tid, path.c_str());
+            if (stat(path, &st) == 0) {
+                fileUtils::LogLine("[cfg] Loading profile %s", path);
+                ini_browse(&BrowseProfileIni, (void *)(uintptr_t)tid, path);
                 gProfileMtimes[tid] = st.st_mtime;
             } else {
                 gProfileMtimes.erase(tid);
             }
-            gLoadedTids.insert(tid);
-            if (tid != HOCCLK_GLOBAL_PROFILE_TID) {
+            if (isGlobal) {
+                gGlobalLoaded = true;
+            } else {
                 gCurrentGameTid = tid;
             }
         }
@@ -498,8 +521,8 @@ namespace config {
         gMigrationHappened = false;
         gProfileMHzMap.clear();
         gProfileCountMap.clear();
-        gLoadedTids.clear();
         gProfileMtimes.clear();
+        gGlobalLoaded = false;
         gCurrentGameTid = 0;
         gProfilesDirty = false;
         gSettingsMtime = 0;
@@ -529,8 +552,8 @@ namespace config {
 
     bool Refresh() {
         std::scoped_lock lock{ gConfigMutex };
-        time_t settingsMtime = CheckFileMtime(gSettingsPath);
-        time_t kipMtime = CheckFileMtime(gKipPath);
+        time_t settingsMtime = CheckFileMtime(gSettingsPath.c_str());
+        time_t kipMtime = CheckFileMtime(gKipPath.c_str());
         if (!gLoaded || gSettingsMtime != settingsMtime || gKipMtime != kipMtime) {
             Load();
             return true;
@@ -540,27 +563,29 @@ namespace config {
             return true;
         }
 
-        std::vector<std::uint64_t> staleTids;
-        for (std::uint64_t tid : gLoadedTids) {
-            time_t mtime = CheckFileMtime(ProfilePathForTid(tid));
-            auto it = gProfileMtimes.find(tid);
+        bool profilesChanged = false;
+        char profilePath[PROFILE_PATH_MAX];
+        if (gGlobalLoaded) {
+            ProfilePathForTid(HOCCLK_GLOBAL_PROFILE_TID, profilePath, sizeof(profilePath));
+            auto it = gProfileMtimes.find(HOCCLK_GLOBAL_PROFILE_TID);
             time_t known = (it != gProfileMtimes.end()) ? it->second : 0;
-            if (mtime != known) {
-                staleTids.push_back(tid);
+            if (CheckFileMtime(profilePath) != known) {
+                fileUtils::LogLine("[cfg] Global profile changed on disk, dropping cache");
+                DropGlobalProfile();
+                profilesChanged = true;
             }
         }
-        for (std::uint64_t tid : staleTids) {
-            fileUtils::LogLine("[cfg] Profile %016lX changed on disk, dropping cache", tid);
-            for (unsigned int profile = 0; profile < HocClkProfile_EnumMax; profile++) {
-                for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
-                    gProfileMHzMap.erase(std::make_tuple(tid, (HocClkProfile)profile, (HocClkModule)module));
-                }
+        if (gCurrentGameTid != 0) {
+            ProfilePathForTid(gCurrentGameTid, profilePath, sizeof(profilePath));
+            auto it = gProfileMtimes.find(gCurrentGameTid);
+            time_t known = (it != gProfileMtimes.end()) ? it->second : 0;
+            if (CheckFileMtime(profilePath) != known) {
+                fileUtils::LogLine("[cfg] Profile %016lX changed on disk, dropping cache", gCurrentGameTid);
+                EvictCurrentGame();
+                profilesChanged = true;
             }
-            gProfileCountMap.erase(tid);
-            gProfileMtimes.erase(tid);
-            gLoadedTids.erase(tid);
         }
-        return !staleTids.empty();
+        return profilesChanged;
     }
 
     bool HasProfilesLoaded() {
@@ -570,7 +595,7 @@ namespace config {
 
     std::uint32_t GetAutoClockHz(std::uint64_t tid, HocClkModule module, HocClkProfile profile, bool returnRaw) {
         std::scoped_lock lock{ gConfigMutex };
-        if (gLoaded && !gLoadedTids.count(tid)) {
+        if (gLoaded && !IsProfileLoaded(tid)) {
             LoadProfileTid(tid);
         }
         switch (profile) {
@@ -608,7 +633,8 @@ namespace config {
 
         mkdir(FILE_PROFILES_DIR, 0777);
 
-        std::string profilePath = ProfilePathForTid(tid);
+        char profilePath[PROFILE_PATH_MAX];
+        ProfilePathForTid(tid, profilePath, sizeof(profilePath));
 
         uint8_t numProfiles = 0;
 
@@ -649,11 +675,11 @@ namespace config {
 
         if (keys.empty()) {
             struct stat st;
-            if (stat(profilePath.c_str(), &st) == 0 && remove(profilePath.c_str()) != 0) {
-                fileUtils::LogLine("[cfg] Failed to remove empty profile %s", profilePath.c_str());
+            if (stat(profilePath, &st) == 0 && remove(profilePath) != 0) {
+                fileUtils::LogLine("[cfg] Failed to remove empty profile %s", profilePath);
                 return false;
             }
-        } else if (!ini_putsection(CONFIG_VAL_SECTION, keyPointers.data(), valuePointers.data(), profilePath.c_str())) {
+        } else if (!ini_putsection(CONFIG_VAL_SECTION, keyPointers.data(), valuePointers.data(), profilePath)) {
             return false;
         }
 
@@ -672,8 +698,12 @@ namespace config {
                     mhz++;
                 }
             }
-            gLoadedTids.insert(tid);
-            if (tid != HOCCLK_GLOBAL_PROFILE_TID) {
+            if (tid == HOCCLK_GLOBAL_PROFILE_TID) {
+                gGlobalLoaded = true;
+            } else {
+                if (tid != gCurrentGameTid) {
+                    EvictCurrentGame();
+                }
                 gCurrentGameTid = tid;
             }
 
@@ -685,7 +715,7 @@ namespace config {
 
     std::uint8_t GetProfileCount(std::uint64_t tid) {
         std::scoped_lock lock{ gConfigMutex };
-        if (tid != 0 && gLoaded && !gLoadedTids.count(tid)) {
+        if (tid != 0 && gLoaded && !IsProfileLoaded(tid)) {
             LoadProfileTid(tid);
         }
         auto it = gProfileCountMap.find(tid);
