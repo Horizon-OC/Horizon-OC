@@ -39,6 +39,11 @@
 #define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
 #define FILE_UART_FLAG_PATH FILE_CONFIG_DIR "/uart.flag"
 #define FILE_LOG_FILE_PATH FILE_CONFIG_DIR "/log.txt"
+#define FILE_SETTINGS_PATH FILE_CONFIG_DIR "/settings.ini"
+#define FILE_KIP_DIR FILE_CONFIG_DIR "/kip"
+#define FILE_KIP_CONFIG_PATH FILE_KIP_DIR "/current.ini"
+#define FILE_PROFILES_DIR FILE_CONFIG_DIR "/profiles"
+#define FILE_LEGACY_CONFIG_PATH FILE_CONFIG_DIR "/config.ini"
 
 namespace fileUtils {
 

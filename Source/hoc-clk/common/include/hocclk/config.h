@@ -555,6 +555,11 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
     }
 }
 
+static inline bool hocclkIsKipConfigValue(HocClkConfigValue val)
+{
+    return val >= KipConfigValue_custRev && val <= KipCrc32;
+}
+
 static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
 {
     switch(val)

@@ -38,7 +38,7 @@
 #include "mgr/clock_manager.hpp"
 
 
-#define INNER_HEAP_SIZE 0x41000
+#define INNER_HEAP_SIZE 0x40000
 
 extern "C" {
 void virtmemSetup(void);

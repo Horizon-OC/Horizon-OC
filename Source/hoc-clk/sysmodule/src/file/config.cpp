@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <i2c.h>
@@ -55,30 +56,37 @@ namespace config {
     namespace {
 
         bool gLoaded = false;
-        std::string gPath;
-        time_t gMtime = 0;
+        std::string gSettingsPath;
+        std::string gKipPath;
+        std::string gProfilesDir;
+        std::string gLegacyPath;
+        time_t gSettingsMtime = 0;
+        time_t gKipMtime = 0;
         std::atomic_bool gEnabled{ false };
         std::uint32_t gOverrideFreqs[HocClkModule_EnumMax];
         std::map<std::tuple<std::uint64_t, HocClkProfile, HocClkModule>, std::uint32_t> gProfileMHzMap;
         std::map<std::uint64_t, std::uint8_t> gProfileCountMap;
+        std::set<std::uint64_t> gLoadedTids;
+        std::map<std::uint64_t, time_t> gProfileMtimes;
+        std::uint64_t gCurrentGameTid = 0;
+        bool gProfilesDirty = false;
+        bool gMigrationHappened = false;
         LockableMutex gConfigMutex;
         LockableMutex gOverrideMutex;
 
-        time_t CheckModificationTime() {
+        time_t CheckFileMtime(const std::string &path) {
             time_t mtime = 0;
             struct stat st;
-            if (stat(gPath.c_str(), &st) == 0) {
+            if (stat(path.c_str(), &st) == 0) {
                 mtime = st.st_mtime;
             }
             return mtime;
         }
 
         std::uint32_t FindClockMHz(std::uint64_t tid, HocClkModule module, HocClkProfile profile) {
-            if (gLoaded) {
-                auto it = gProfileMHzMap.find(std::make_tuple(tid, profile, module));
-                if (it != gProfileMHzMap.end()) {
-                    return it->second;
-                }
+            auto it = gProfileMHzMap.find(std::make_tuple(tid, profile, module));
+            if (it != gProfileMHzMap.end()) {
+                return it->second;
             }
             return 0;
         }
@@ -99,32 +107,58 @@ namespace config {
             return std::max((std::uint32_t)0, mhz * mhzMultiplier);
         }
 
-        int BrowseIniFunc(const char *section, const char *key, const char *value, void *userdata) {
+        int BrowseSettingsIni(const char *section, const char *key, const char *value, void *userdata) {
             (void)userdata;
-            std::uint64_t input;
-            if (!strcmp(section, CONFIG_VAL_SECTION)) {
-                for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
-                    if (!strcmp(key, hocclkFormatConfigValue((HocClkConfigValue)kval, false))) {
-                        input = strtoul(value, NULL, 0);
-                        if (!hocclkValidConfigValue((HocClkConfigValue)kval, input)) {
-                            input = hocclkDefaultConfigValue((HocClkConfigValue)kval);
-                            fileUtils::LogLine("[cfg] Invalid value for key '%s' in section '%s': using default %d", key, section, input);
-                        }
-                        configValues[kval] = input;
-                        return 1;
-                    }
+            if (strcmp(section, CONFIG_VAL_SECTION) != 0) {
+                return 1;
+            }
+
+            for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
+                if (hocclkIsKipConfigValue((HocClkConfigValue)kval)) {
+                    continue;
                 }
+                if (!strcmp(key, hocclkFormatConfigValue((HocClkConfigValue)kval, false))) {
+                    std::uint64_t input = strtoul(value, NULL, 0);
+                    if (!hocclkValidConfigValue((HocClkConfigValue)kval, input)) {
+                        input = hocclkDefaultConfigValue((HocClkConfigValue)kval);
+                        fileUtils::LogLine("[cfg] Invalid value for key '%s': using default %llu", key, input);
+                    }
+                    configValues[kval] = input;
+                    return 1;
+                }
+            }
 
-                fileUtils::LogLine("[cfg] Skipping key '%s' in section '%s': Unrecognized config value", key, section);
+            fileUtils::LogLine("[cfg] Skipping key '%s' in settings: Unrecognized config value", key);
+            return 1;
+        }
+
+        int BrowseKipIni(const char *section, const char *key, const char *value, void *userdata) {
+            (void)userdata;
+            if (strcmp(section, CONFIG_VAL_SECTION) != 0) {
                 return 1;
             }
 
-            std::uint64_t tid = strtoul(section, NULL, 16);
-
-            if (!tid || strlen(section) != 16) {
-                fileUtils::LogLine("[cfg] Skipping key '%s' in section '%s': Invalid TitleID", key, section);
-                return 1;
+            for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
+                if (!hocclkIsKipConfigValue((HocClkConfigValue)kval)) {
+                    continue;
+                }
+                if (!strcmp(key, hocclkFormatConfigValue((HocClkConfigValue)kval, false))) {
+                    std::uint64_t input = strtoul(value, NULL, 0);
+                    if (!hocclkValidConfigValue((HocClkConfigValue)kval, input)) {
+                        input = hocclkDefaultConfigValue((HocClkConfigValue)kval);
+                        fileUtils::LogLine("[cfg] Invalid value for key '%s': using default %llu", key, input);
+                    }
+                    configValues[kval] = input;
+                    return 1;
+                }
             }
+
+            fileUtils::LogLine("[cfg] Skipping key '%s' in kip: Unrecognized config value", key);
+            return 1;
+        }
+
+        int BrowseProfileIni(const char *section, const char *key, const char *value, void *userdata) {
+            std::uint64_t tid = (std::uint64_t)(uintptr_t)userdata;
 
             HocClkProfile parsedProfile = HocClkProfile_EnumMax;
             HocClkModule parsedModule = HocClkModule_EnumMax;
@@ -148,13 +182,11 @@ namespace config {
             }
 
             if (parsedModule == HocClkModule_EnumMax || parsedProfile == HocClkProfile_EnumMax) {
-                fileUtils::LogLine("[cfg] Skipping key '%s' in section '%s': Unrecognized key", key, section);
                 return 1;
             }
 
             std::uint32_t mhz = strtoul(value, NULL, 10);
             if (!mhz) {
-                fileUtils::LogLine("[cfg] Skipping key '%s' in section '%s': Invalid value", key, section);
                 return 1;
             }
 
@@ -173,33 +205,305 @@ namespace config {
             gLoaded = false;
             gProfileMHzMap.clear();
             gProfileCountMap.clear();
+            gLoadedTids.clear();
+            gProfileMtimes.clear();
+            gCurrentGameTid = 0;
+            gProfilesDirty = false;
             for (unsigned int i = 0; i < HocClkConfigValue_EnumMax; i++) {
                 configValues[i] = hocclkDefaultConfigValue((HocClkConfigValue)i);
             }
         }
 
-        void Load() {
-            fileUtils::LogLine("[cfg] Reading %s", gPath.c_str());
+        void LoadSettings() {
+            fileUtils::LogLine("[cfg] Reading %s", gSettingsPath.c_str());
+            gSettingsMtime = CheckFileMtime(gSettingsPath);
+            if (!gSettingsMtime) {
+                fileUtils::LogLine("[cfg] Settings file not found, using defaults");
+                return;
+            }
+            if (!ini_browse(&BrowseSettingsIni, nullptr, gSettingsPath.c_str())) {
+                fileUtils::LogLine("[cfg] Error loading settings file");
+            }
+        }
 
-            Close();
-            gMtime = CheckModificationTime();
-            if (!gMtime) {
-                fileUtils::LogLine("[cfg] Error finding file");
-            } else if (!ini_browse(&BrowseIniFunc, nullptr, gPath.c_str())) {
-                fileUtils::LogLine("[cfg] Error loading file");
+        void LoadKip() {
+            fileUtils::LogLine("[cfg] Reading %s", gKipPath.c_str());
+            gKipMtime = CheckFileMtime(gKipPath);
+            if (!gKipMtime) {
+                fileUtils::LogLine("[cfg] KIP config file not found, using defaults");
+                return;
+            }
+            if (!ini_browse(&BrowseKipIni, nullptr, gKipPath.c_str())) {
+                fileUtils::LogLine("[cfg] Error loading KIP config file");
+            }
+        }
+
+        std::string ProfilePathForTid(std::uint64_t tid) {
+            char filename[32];
+            snprintf(filename, sizeof(filename), "%016lX.ini", tid);
+            return gProfilesDir + "/" + filename;
+        }
+
+        void EvictProfile(std::uint64_t tid) {
+            if (tid == HOCCLK_GLOBAL_PROFILE_TID) {
+                return;
             }
 
+            for (unsigned int profile = 0; profile < HocClkProfile_EnumMax; profile++) {
+                for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
+                    gProfileMHzMap.erase(std::make_tuple(tid, (HocClkProfile)profile, (HocClkModule)module));
+                }
+            }
+            gProfileCountMap.erase(tid);
+            gProfileMtimes.erase(tid);
+            gLoadedTids.erase(tid);
+        }
+
+        void LoadProfileTid(std::uint64_t tid) {
+            if (tid == 0) {
+                return;
+            }
+
+            if (gLoadedTids.count(tid)) {
+                return;
+            }
+
+            if (tid != HOCCLK_GLOBAL_PROFILE_TID && gCurrentGameTid != 0) {
+                EvictProfile(gCurrentGameTid);
+            }
+
+            std::string path = ProfilePathForTid(tid);
+
+            struct stat st;
+            if (stat(path.c_str(), &st) == 0) {
+                fileUtils::LogLine("[cfg] Loading profile %s", path.c_str());
+                ini_browse(&BrowseProfileIni, (void *)(uintptr_t)tid, path.c_str());
+                gProfileMtimes[tid] = st.st_mtime;
+            } else {
+                gProfileMtimes.erase(tid);
+            }
+            gLoadedTids.insert(tid);
+            if (tid != HOCCLK_GLOBAL_PROFILE_TID) {
+                gCurrentGameTid = tid;
+            }
+        }
+
+        void Load() {
+            gLoaded = false;
+            for (unsigned int i = 0; i < HocClkConfigValue_EnumMax; i++) {
+                configValues[i] = hocclkDefaultConfigValue((HocClkConfigValue)i);
+            }
+            LoadSettings();
+            LoadKip();
             gLoaded = true;
+        }
+
+        struct MigrationData {
+            std::vector<std::pair<std::string, std::string>> settingsKeys;
+            std::vector<std::pair<std::string, std::string>> kipKeys;
+            std::vector<std::pair<std::uint64_t, std::pair<std::string, std::string>>> profileEntries;
+        };
+
+        int MigrationBrowseFunc(const char *section, const char *key, const char *value, void *userdata) {
+            MigrationData *data = static_cast<MigrationData *>(userdata);
+
+            if (!strcmp(section, CONFIG_VAL_SECTION)) {
+                for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
+                    if (!strcmp(key, hocclkFormatConfigValue((HocClkConfigValue)kval, false))) {
+                        if (hocclkIsKipConfigValue((HocClkConfigValue)kval)) {
+                            data->kipKeys.push_back({key, value});
+                            return 1;
+                        }
+                        data->settingsKeys.push_back({key, value});
+                        return 1;
+                    }
+                }
+                fileUtils::LogLine("[cfg]   Skipping unrecognized key '%s'", key);
+            } else {
+                std::uint64_t tid = strtoul(section, NULL, 16);
+                if (tid && strlen(section) == 16) {
+                    data->profileEntries.push_back({tid, {key, value}});
+                }
+            }
+            return 1;
+        }
+
+        void MigrateLegacyConfig() {
+            struct stat st;
+            if (stat(gLegacyPath.c_str(), &st) != 0) {
+                return;
+            }
+
+            fileUtils::LogLine("[cfg] Migrating legacy config.ini");
+            fileUtils::LogLine("[cfg] Legacy path: %s", gLegacyPath.c_str());
+            fileUtils::LogLine("[cfg] Settings path: %s", gSettingsPath.c_str());
+            fileUtils::LogLine("[cfg] Profiles dir: %s", gProfilesDir.c_str());
+
+            MigrationData data;
+            fileUtils::LogLine("[cfg] Parsing legacy config.ini...");
+            ini_browse(&MigrationBrowseFunc, &data, gLegacyPath.c_str());
+            fileUtils::LogLine("[cfg] Found %zu settings keys, %zu KIP keys, %zu profile entries",
+                               data.settingsKeys.size(), data.kipKeys.size(), data.profileEntries.size());
+
+            if (!data.settingsKeys.empty()) {
+                fileUtils::LogLine("[cfg] Creating kip directory: %s", FILE_KIP_DIR);
+                mkdir(FILE_KIP_DIR, 0777);
+                fileUtils::LogLine("[cfg] Writing %zu settings to %s", data.settingsKeys.size(), gSettingsPath.c_str());
+
+                std::vector<std::string> sKeys;
+                std::vector<std::string> sVals;
+                sKeys.reserve(data.settingsKeys.size());
+                sVals.reserve(data.settingsKeys.size());
+                for (const auto &entry : data.settingsKeys) {
+                    fileUtils::LogLine("[cfg]   %s = %s", entry.first.c_str(), entry.second.c_str());
+                    sKeys.push_back(entry.first);
+                    sVals.push_back(entry.second);
+                }
+
+                std::vector<const char *> keyPtrs;
+                std::vector<const char *> valPtrs;
+                keyPtrs.reserve(sKeys.size() + 1);
+                valPtrs.reserve(sVals.size() + 1);
+                for (size_t i = 0; i < sKeys.size(); i++) {
+                    keyPtrs.push_back(sKeys[i].c_str());
+                    valPtrs.push_back(sVals[i].c_str());
+                }
+                keyPtrs.push_back(NULL);
+                valPtrs.push_back(NULL);
+
+                if (!ini_putsection(CONFIG_VAL_SECTION, keyPtrs.data(), valPtrs.data(), gSettingsPath.c_str())) {
+                    fileUtils::LogLine("[cfg] FAILED to write settings section");
+                } else {
+                    fileUtils::LogLine("[cfg] Settings migration done");
+                }
+            } else {
+                fileUtils::LogLine("[cfg] No settings keys to migrate");
+            }
+
+            if (!data.kipKeys.empty()) {
+                fileUtils::LogLine("[cfg] Writing %zu KIP keys to %s", data.kipKeys.size(), gKipPath.c_str());
+
+                std::vector<std::string> kKeys;
+                std::vector<std::string> kVals;
+                kKeys.reserve(data.kipKeys.size());
+                kVals.reserve(data.kipKeys.size());
+                for (const auto &entry : data.kipKeys) {
+                    fileUtils::LogLine("[cfg]   %s = %s", entry.first.c_str(), entry.second.c_str());
+                    kKeys.push_back(entry.first);
+                    kVals.push_back(entry.second);
+                }
+
+                std::vector<const char *> kKeyPtrs;
+                std::vector<const char *> kValPtrs;
+                kKeyPtrs.reserve(kKeys.size() + 1);
+                kValPtrs.reserve(kVals.size() + 1);
+                for (size_t i = 0; i < kKeys.size(); i++) {
+                    kKeyPtrs.push_back(kKeys[i].c_str());
+                    kValPtrs.push_back(kVals[i].c_str());
+                }
+                kKeyPtrs.push_back(NULL);
+                kValPtrs.push_back(NULL);
+
+                if (!ini_putsection(CONFIG_VAL_SECTION, kKeyPtrs.data(), kValPtrs.data(), gKipPath.c_str())) {
+                    fileUtils::LogLine("[cfg] FAILED to write KIP section");
+                } else {
+                    fileUtils::LogLine("[cfg] KIP migration done");
+                }
+
+                for (const auto &entry : data.kipKeys) {
+                    for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
+                        if (!hocclkIsKipConfigValue((HocClkConfigValue)kval)) {
+                            continue;
+                        }
+                        if (!strcmp(entry.first.c_str(), hocclkFormatConfigValue((HocClkConfigValue)kval, false))) {
+                            std::uint64_t input = strtoul(entry.second.c_str(), NULL, 0);
+                            if (hocclkValidConfigValue((HocClkConfigValue)kval, input)) {
+                                configValues[kval] = input;
+                            }
+                            break;
+                        }
+                    }
+                }
+            } else {
+                fileUtils::LogLine("[cfg] No KIP keys to migrate");
+            }
+
+            fileUtils::LogLine("[cfg] Creating profiles directory: %s", FILE_PROFILES_DIR);
+            mkdir(FILE_PROFILES_DIR, 0777);
+
+            std::map<std::uint64_t, std::vector<std::pair<std::string, std::string>>> profileBuckets;
+            for (const auto &entry : data.profileEntries) {
+                profileBuckets[entry.first].push_back(entry.second);
+            }
+
+            fileUtils::LogLine("[cfg] Writing %zu profiles (%zu TIDs)", data.profileEntries.size(), profileBuckets.size());
+            for (const auto &bucket : profileBuckets) {
+                char filename[32];
+                snprintf(filename, sizeof(filename), "%016lX.ini", bucket.first);
+                std::string profilePath = gProfilesDir + "/" + filename;
+
+                fileUtils::LogLine("[cfg]   TID=%016lX %zu keys -> %s", bucket.first, bucket.second.size(), profilePath.c_str());
+
+                std::vector<std::string> pKeys;
+                std::vector<std::string> pVals;
+                pKeys.reserve(bucket.second.size());
+                pVals.reserve(bucket.second.size());
+                for (const auto &kv : bucket.second) {
+                    fileUtils::LogLine("[cfg]     %s = %s", kv.first.c_str(), kv.second.c_str());
+                    pKeys.push_back(kv.first);
+                    pVals.push_back(kv.second);
+                }
+
+                std::vector<const char *> keyPtrs;
+                std::vector<const char *> valPtrs;
+                keyPtrs.reserve(pKeys.size() + 1);
+                valPtrs.reserve(pVals.size() + 1);
+                for (size_t i = 0; i < pKeys.size(); i++) {
+                    keyPtrs.push_back(pKeys[i].c_str());
+                    valPtrs.push_back(pVals[i].c_str());
+                }
+                keyPtrs.push_back(NULL);
+                valPtrs.push_back(NULL);
+
+                if (!ini_putsection(CONFIG_VAL_SECTION, keyPtrs.data(), valPtrs.data(), profilePath.c_str())) {
+                    fileUtils::LogLine("[cfg]   FAILED to write profile for TID %016lX", bucket.first);
+                }
+            }
+            fileUtils::LogLine("[cfg] Profiles migration done");
+
+            fileUtils::LogLine("[cfg] Renaming legacy config to config.ini.migrated");
+            if (rename(gLegacyPath.c_str(), (gLegacyPath + ".migrated").c_str()) != 0) {
+                fileUtils::LogLine("[cfg] WARNING: Failed to rename legacy config file");
+            }
+            gMigrationHappened = true;
+            fileUtils::LogLine("[cfg] Migration complete");
         }
 
     }  // namespace
 
+    bool IsProfileDirty() {
+        return gProfilesDirty;
+    }
+
+    void SetProfileDirty(bool dirty) {
+        gProfilesDirty = dirty;
+    }
+
     void Initialize() {
-        gPath = FILE_CONFIG_DIR "/config.ini";
+        gSettingsPath = FILE_SETTINGS_PATH;
+        gKipPath = FILE_KIP_CONFIG_PATH;
+        gProfilesDir = FILE_PROFILES_DIR;
+        gLegacyPath = FILE_LEGACY_CONFIG_PATH;
         gLoaded = false;
+        gMigrationHappened = false;
         gProfileMHzMap.clear();
         gProfileCountMap.clear();
-        gMtime = 0;
+        gLoadedTids.clear();
+        gProfileMtimes.clear();
+        gCurrentGameTid = 0;
+        gProfilesDirty = false;
+        gSettingsMtime = 0;
+        gKipMtime = 0;
         gEnabled = false;
         for (unsigned int i = 0; i < HocClkModule_EnumMax; i++) {
             gOverrideFreqs[i] = 0;
@@ -207,6 +511,15 @@ namespace config {
         for (unsigned int i = 0; i < HocClkConfigValue_EnumMax; i++) {
             configValues[i] = hocclkDefaultConfigValue((HocClkConfigValue)i);
         }
+
+        mkdir(FILE_CONFIG_DIR, 0777);
+        mkdir(FILE_KIP_DIR, 0777);
+        mkdir(FILE_PROFILES_DIR, 0777);
+
+        MigrateLegacyConfig();
+
+        gLoaded = true;
+        LoadProfileTid(HOCCLK_GLOBAL_PROFILE_TID);
     }
 
     void Exit() {
@@ -216,11 +529,38 @@ namespace config {
 
     bool Refresh() {
         std::scoped_lock lock{ gConfigMutex };
-        if (!gLoaded || gMtime != CheckModificationTime()) {
+        time_t settingsMtime = CheckFileMtime(gSettingsPath);
+        time_t kipMtime = CheckFileMtime(gKipPath);
+        if (!gLoaded || gSettingsMtime != settingsMtime || gKipMtime != kipMtime) {
             Load();
             return true;
         }
-        return false;
+        if (IsProfileDirty()) {
+            SetProfileDirty(false);
+            return true;
+        }
+
+        std::vector<std::uint64_t> staleTids;
+        for (std::uint64_t tid : gLoadedTids) {
+            time_t mtime = CheckFileMtime(ProfilePathForTid(tid));
+            auto it = gProfileMtimes.find(tid);
+            time_t known = (it != gProfileMtimes.end()) ? it->second : 0;
+            if (mtime != known) {
+                staleTids.push_back(tid);
+            }
+        }
+        for (std::uint64_t tid : staleTids) {
+            fileUtils::LogLine("[cfg] Profile %016lX changed on disk, dropping cache", tid);
+            for (unsigned int profile = 0; profile < HocClkProfile_EnumMax; profile++) {
+                for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
+                    gProfileMHzMap.erase(std::make_tuple(tid, (HocClkProfile)profile, (HocClkModule)module));
+                }
+            }
+            gProfileCountMap.erase(tid);
+            gProfileMtimes.erase(tid);
+            gLoadedTids.erase(tid);
+        }
+        return !staleTids.empty();
     }
 
     bool HasProfilesLoaded() {
@@ -230,6 +570,9 @@ namespace config {
 
     std::uint32_t GetAutoClockHz(std::uint64_t tid, HocClkModule module, HocClkProfile profile, bool returnRaw) {
         std::scoped_lock lock{ gConfigMutex };
+        if (gLoaded && !gLoadedTids.count(tid)) {
+            LoadProfileTid(tid);
+        }
         switch (profile) {
             case HocClkProfile_Handheld:
                 return FindClockHzFromProfiles(tid, module, { HocClkProfile_Handheld }, returnRaw ? 1 : 1000000);
@@ -252,6 +595,7 @@ namespace config {
 
     void GetProfiles(std::uint64_t tid, HocClkTitleProfileList *out_profiles) {
         std::scoped_lock lock{ gConfigMutex };
+        LoadProfileTid(tid);
         for (unsigned int profile = 0; profile < HocClkProfile_EnumMax; profile++) {
             for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
                 out_profiles->mhzMap[profile][module] = FindClockMHz(tid, (HocClkModule)module, (HocClkProfile)profile);
@@ -261,10 +605,12 @@ namespace config {
 
     bool SetProfiles(std::uint64_t tid, HocClkTitleProfileList *profiles, bool immediate) {
         std::scoped_lock lock{ gConfigMutex };
-        uint8_t numProfiles = 0;
 
-        char section[17] = { 0 };
-        snprintf(section, sizeof(section), "%016lX", tid);
+        mkdir(FILE_PROFILES_DIR, 0777);
+
+        std::string profilePath = ProfilePathForTid(tid);
+
+        uint8_t numProfiles = 0;
 
         std::vector<std::string> keys;
         std::vector<std::string> values;
@@ -301,9 +647,17 @@ namespace config {
         keyPointers.push_back(NULL);
         valuePointers.push_back(NULL);
 
-        if (!ini_putsection(section, keyPointers.data(), valuePointers.data(), gPath.c_str())) {
+        if (keys.empty()) {
+            struct stat st;
+            if (stat(profilePath.c_str(), &st) == 0 && remove(profilePath.c_str()) != 0) {
+                fileUtils::LogLine("[cfg] Failed to remove empty profile %s", profilePath.c_str());
+                return false;
+            }
+        } else if (!ini_putsection(CONFIG_VAL_SECTION, keyPointers.data(), valuePointers.data(), profilePath.c_str())) {
             return false;
         }
+
+        gProfileMtimes[tid] = CheckFileMtime(profilePath);
 
         if (immediate) {
             mhz = &profiles->mhz[0];
@@ -318,12 +672,22 @@ namespace config {
                     mhz++;
                 }
             }
+            gLoadedTids.insert(tid);
+            if (tid != HOCCLK_GLOBAL_PROFILE_TID) {
+                gCurrentGameTid = tid;
+            }
+
+            SetProfileDirty(true);
         }
 
         return true;
     }
 
     std::uint8_t GetProfileCount(std::uint64_t tid) {
+        std::scoped_lock lock{ gConfigMutex };
+        if (tid != 0 && gLoaded && !gLoadedTids.count(tid)) {
+            LoadProfileTid(tid);
+        }
         auto it = gProfileCountMap.find(tid);
         if (it == gProfileCountMap.end()) {
             return 0;
@@ -337,6 +701,10 @@ namespace config {
 
     bool Enabled() {
         return gEnabled;
+    }
+
+    bool MigrationHappened() {
+        return gMigrationHappened;
     }
 
     void SetOverrideHz(HocClkModule module, std::uint32_t hz) {
@@ -372,31 +740,60 @@ namespace config {
     bool SetConfigValues(HocClkConfigValueList *configValues, bool immediate) {
         std::scoped_lock lock{ gConfigMutex };
 
-        std::vector<const char *> iniKeys;
-        std::vector<std::string> iniValues;
-        iniKeys.reserve(HocClkConfigValue_EnumMax + 1);
-        iniValues.reserve(HocClkConfigValue_EnumMax);
+        std::vector<std::string> settingsKeys;
+        std::vector<std::string> settingsValues;
+        std::vector<std::string> kipKeys;
+        std::vector<std::string> kipValues;
 
         for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
             if (!hocclkValidConfigValue((HocClkConfigValue)kval, configValues->values[kval]) ||
                 configValues->values[kval] == hocclkDefaultConfigValue((HocClkConfigValue)kval)) {
                 continue;
             }
-            iniValues.push_back(std::to_string(configValues->values[kval]));
-            iniKeys.push_back(hocclkFormatConfigValue((HocClkConfigValue)kval, false));
+            std::string key = hocclkFormatConfigValue((HocClkConfigValue)kval, false);
+            std::string value = std::to_string(configValues->values[kval]);
+
+            if (hocclkIsKipConfigValue((HocClkConfigValue)kval)) {
+                kipKeys.push_back(key);
+                kipValues.push_back(value);
+            } else {
+                settingsKeys.push_back(key);
+                settingsValues.push_back(value);
+            }
         }
 
-        iniKeys.push_back(NULL);
+        bool success = true;
 
-        std::vector<const char *> valuePointers;
-        valuePointers.reserve(iniValues.size() + 1);
-        for (const auto &val : iniValues) {
-            valuePointers.push_back(val.c_str());
+        if (!settingsKeys.empty()) {
+            std::vector<const char *> sKeyPtrs;
+            std::vector<const char *> sValPtrs;
+            sKeyPtrs.reserve(settingsKeys.size() + 1);
+            sValPtrs.reserve(settingsValues.size() + 1);
+            for (size_t i = 0; i < settingsKeys.size(); i++) {
+                sKeyPtrs.push_back(settingsKeys[i].c_str());
+                sValPtrs.push_back(settingsValues[i].c_str());
+            }
+            sKeyPtrs.push_back(NULL);
+            sValPtrs.push_back(NULL);
+            if (!ini_putsection(CONFIG_VAL_SECTION, sKeyPtrs.data(), sValPtrs.data(), gSettingsPath.c_str())) {
+                success = false;
+            }
         }
-        valuePointers.push_back(NULL);
 
-        if (!ini_putsection(CONFIG_VAL_SECTION, iniKeys.data(), valuePointers.data(), gPath.c_str())) {
-            return false;
+        if (!kipKeys.empty()) {
+            std::vector<const char *> kKeyPtrs;
+            std::vector<const char *> kValPtrs;
+            kKeyPtrs.reserve(kipKeys.size() + 1);
+            kValPtrs.reserve(kipValues.size() + 1);
+            for (size_t i = 0; i < kipKeys.size(); i++) {
+                kKeyPtrs.push_back(kipKeys[i].c_str());
+                kValPtrs.push_back(kipValues[i].c_str());
+            }
+            kKeyPtrs.push_back(NULL);
+            kValPtrs.push_back(NULL);
+            if (!ini_putsection(CONFIG_VAL_SECTION, kKeyPtrs.data(), kValPtrs.data(), gKipPath.c_str())) {
+                success = false;
+            }
         }
 
         if (immediate) {
@@ -407,9 +804,10 @@ namespace config {
                     config::configValues[kval] = hocclkDefaultConfigValue((HocClkConfigValue)kval);
                 }
             }
+            SetProfileDirty(true);
         }
 
-        return true;
+        return success;
     }
 
     bool ResetConfigValue(HocClkConfigValue kval) {
@@ -438,13 +836,16 @@ namespace config {
         }
         valuePointers.push_back(NULL);
 
-        if (!ini_putsection(CONFIG_VAL_SECTION, iniKeys.data(), valuePointers.data(), gPath.c_str())) {
+        const char *targetPath = hocclkIsKipConfigValue(kval) ? gKipPath.c_str() : gSettingsPath.c_str();
+
+        if (!ini_putsection(CONFIG_VAL_SECTION, iniKeys.data(), valuePointers.data(), targetPath)) {
             fileUtils::LogLine("[cfg] Failed to reset config value %u in INI", kval);
             return false;
         }
 
         configValues[kval] = defaultValue;
         fileUtils::LogLine("[cfg] Reset config value %u to default: %llu", kval, defaultValue);
+        SetProfileDirty(true);
 
         return true;
     }
@@ -473,12 +874,15 @@ namespace config {
         valuePointers.push_back(iniValues[0].c_str());
         valuePointers.push_back(NULL);
 
-        if (!ini_putsection(CONFIG_VAL_SECTION, iniKeys.data(), valuePointers.data(), gPath.c_str())) {
+        const char *targetPath = hocclkIsKipConfigValue(kval) ? gKipPath.c_str() : gSettingsPath.c_str();
+
+        if (!ini_putsection(CONFIG_VAL_SECTION, iniKeys.data(), valuePointers.data(), targetPath)) {
             return false;
         }
 
         if (immediate) {
             configValues[kval] = value;
+            SetProfileDirty(true);
         }
 
         return true;
@@ -486,6 +890,7 @@ namespace config {
 
     void DeleteKey(const char *section, const char *key) {
         std::scoped_lock lock{ gConfigMutex };
-        ini_puts(section, key, NULL, gPath.c_str());
+        ini_puts(section, key, NULL, gSettingsPath.c_str());
+        ini_puts(section, key, NULL, gKipPath.c_str());
     }
 }  // namespace config
