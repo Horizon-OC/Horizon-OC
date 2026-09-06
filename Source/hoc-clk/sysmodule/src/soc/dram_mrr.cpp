@@ -375,17 +375,7 @@ namespace soc::mrr {
         if (!ReadMrxSet(&vendor, &rev0, &rev1, &density, &topo))
             return fuseId;
 
-        DramMfg mfg;
-        switch (vendor.chip0.rank0_ch0)
-        {
-            case MFG_Samsung:
-            case MFG_SKHynix:
-            case MFG_Micron:
-                mfg = static_cast<DramMfg>(vendor.chip0.rank0_ch0);
-                break;
-            default:
-                return fuseId;
-        }
+        DramMfg mfg = static_cast<DramMfg>(vendor.chip0.rank0_ch0);
 
         u32 densityMb = 0;
         if (!DecodeDensityMb(density.chip0.rank0_ch0, &densityMb))
