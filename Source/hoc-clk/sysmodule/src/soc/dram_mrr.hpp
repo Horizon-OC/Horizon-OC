@@ -42,6 +42,7 @@ namespace soc::mrr {
         DRAM_NME,
         DRAM_NEE,
         DRAM_NEE_8GB,
+        DRAM_X267,
         DRAM_COUNT,
     } RealDramModule;
 

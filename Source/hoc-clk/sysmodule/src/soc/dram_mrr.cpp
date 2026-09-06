@@ -76,19 +76,20 @@ namespace soc::mrr {
         /* Mariko */
         /* Samsung */
         { .soc = HocClkSocType_Mariko, .mfg = MFG_Samsung, .major = 6, .minor = 0x10, .density = 1, .densityCount = 2 }, /* AM-MGCJ (6.10, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_Samsung, .major = 7, .minor = 0,  .density = 1, .densityCount = 2 }, /* AA-MGCL (7.00, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_Samsung, .major = 8, .minor = 0,  .density = 1, .densityCount = 2 }, /* AB-MGCL (8.00, 4GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_Samsung, .major = 7, .minor = 0,    .density = 1, .densityCount = 2 }, /* AA-MGCL (7.00, 4GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_Samsung, .major = 8, .minor = 0,    .density = 1, .densityCount = 2 }, /* AB-MGCL (8.00, 4GB) */
 
         /* Micron */
         { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 4, .minor = 0x10, .density = 1, .densityCount = 2 }, /* WT:E (4.10, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 5, .minor = 0,  .density = 1, .densityCount = 2 }, /* WT:F (5.00, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 7, .minor = 0,  .density = 1, .densityCount = 2 }, /* WT:B (7.00, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 7, .minor = 0,  .density = 1, .densityCount = 4 }, /* WT:B (7.00, 8GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 5, .minor = 0,    .density = 1, .densityCount = 2 }, /* WT:F (5.00, 4GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 7, .minor = 0,    .density = 1, .densityCount = 2 }, /* WT:B (7.00, 4GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_Micron, .major = 7, .minor = 0,    .density = 1, .densityCount = 4 }, /* WT:B (7.00, 8GB) */
 
         /* SK Hynix */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 4, .minor = 0, .density = 1, .densityCount = 2 }, /* NME (4.00, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 6, .minor = 0, .density = 1, .densityCount = 2 }, /* NEE (6.00, 4GB) */
-        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 6, .minor = 0, .density = 1, .densityCount = 4 }, /* NEE (6.00, 8GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 4, .minor = 0,  .density = 1, .densityCount = 2 }, /* NME (4.00, 4GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 6, .minor = 0,  .density = 1, .densityCount = 2 }, /* NEE (6.00, 4GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 6, .minor = 0,  .density = 1, .densityCount = 4 }, /* NEE (6.00, 8GB) */
+        { .soc = HocClkSocType_Mariko, .mfg = MFG_SKHynix, .major = 8, .minor = 0,  .density = 1, .densityCount = 2 }, /* x267 (8.00, 4GB) */
     };
 
     /* Ported from hekate */
@@ -334,6 +335,11 @@ namespace soc::mrr {
                 if (console == HocClkConsoleType_Hoag) return 3;
                 if (console == HocClkConsoleType_Aula) return 5;
                 return fuseFallback;
+            case DRAM_X267:
+                if (console == HocClkConsoleType_Iowa) return 29;
+                if (console == HocClkConsoleType_Hoag) return 30;
+                if (console == HocClkConsoleType_Aula) return 31;
+                return fuseFallback;
             default:
                 return fuseFallback;
         }
@@ -373,7 +379,7 @@ namespace soc::mrr {
         RealDramModule mod = DRAM_COUNT;
         if (!MatchModule(soc, mfg, rev0.chip0.rank0_ch0, rev1.chip0.rank0_ch0,
                          densityMb, topo.ranks * topo.channels, &mod))
-            return fuseId; /* TODO: Find hynix x267 config */
+            return fuseId;
 
         return FuseIdForModule(mod, board::GetConsoleType(), fuseId);
     }
