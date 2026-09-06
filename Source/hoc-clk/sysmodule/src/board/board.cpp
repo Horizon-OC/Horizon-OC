@@ -50,6 +50,7 @@
 #include <ipc_server.h>
 #include <lockable_mutex.h>
 #include "../mapping/mem_map.hpp"
+#include "../soc/dram_mrr.hpp"
 namespace board {
 
     u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr, gpuVirtAddr, tmrVirtAddr;
@@ -286,6 +287,10 @@ namespace board {
     }
 
     u8 GetDramID() {
+        return soc::mrr::IdentifyDramId();
+    }
+
+    u8 GetFuseDramId() {
         return gDramID;
     }
 

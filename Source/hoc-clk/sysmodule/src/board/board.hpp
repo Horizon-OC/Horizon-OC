@@ -56,6 +56,7 @@ namespace board {
     void Exit();
     HocClkSocType GetSocType();
     HocClkConsoleType GetConsoleType();
+    u8 GetFuseDramId();
     u8 GetDramID();
     u8 GetGpuSpeedoBracket();
     bool IsDram8GB();

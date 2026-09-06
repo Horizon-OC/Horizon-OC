@@ -114,6 +114,8 @@ if [ "$NO_EXO" -eq 0 ]; then
     cp -v "$EXO_SRC/secmon_setup.cpp"                                  "$EXO_PROGRAM_DEST/"
     cp -v "$EXO_SRC/secmon_define_emc_access_table.inc"               "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_emc_access_table_data.inc"                 "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_define_emc01_access_table.inc"             "$EXO_DEST/"
+    cp -v "$EXO_SRC/secmon_emc01_access_table_data.inc"               "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_define_rtc_pmc_access_table.inc"           "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_rtc_pmc_access_table_data.inc"             "$EXO_DEST/"
     cp -v "$EXO_SRC/secmon_define_flow_controller_access_table.inc"   "$EXO_DEST/"
