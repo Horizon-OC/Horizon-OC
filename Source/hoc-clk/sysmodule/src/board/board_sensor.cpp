@@ -59,6 +59,7 @@ namespace board {
                 return 0; /* stock exosphere */
 
             /* TODO: verify this table manually*/
+            /* Higher tREFI multiplier = slower refresh and vice versa */
             switch (mr4 & 0x7)
             {
                 case 0x0: return 0;      /* below operating range */
