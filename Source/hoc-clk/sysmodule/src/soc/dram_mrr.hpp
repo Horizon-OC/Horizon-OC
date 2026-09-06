@@ -99,9 +99,7 @@ namespace soc::mrr {
     emc_mr_data_t sdram_read_mrx(emc_mr_t mrx);
     bool IsMrrAvailable();
 
-    /* Fuse-style DRAM ID (hekate numbering, as in board::GetDramID):
-       derived from MRR when the patched exosphere grants EMC access,
-       otherwise falls back to the fuse ODM4 ID. MRR-detected 8GB WT:B/NEE
-       (no dedicated fuse numbering) alias to Aula AA-MGCL 8GB (28). */
+    bool ReadRamMr4(u8 *mr4);
+
     u8 IdentifyDramId();
 }

@@ -41,6 +41,7 @@ tsl::elm::ListItem* ramBWItemGpu = NULL;
 tsl::elm::ListItem* ramBWItemMax = NULL;
 tsl::elm::ListItem* bqtempitem = NULL;
 tsl::elm::ListItem* aotagTempItem = NULL;
+tsl::elm::ListItem* dramTempItem = NULL;
 tsl::elm::ListItem* cTypeItem = NULL;
 tsl::elm::ListItem* creditsItem = NULL;
 tsl::elm::ListItem* bpmpStatusItem = NULL;
@@ -95,6 +96,10 @@ void AboutGui::listUI()
     bqtempitem =
         new tsl::elm::ListItem("BQ24193 Temp:");
     this->listElement->addItem(bqtempitem);
+
+    dramTempItem =
+        new tsl::elm::ListItem("DRAM Temp:");
+    this->listElement->addItem(dramTempItem);
 
     this->listElement->addItem(
         new tsl::elm::CategoryHeader("RAM Bandwidth")
@@ -274,6 +279,10 @@ void AboutGui::refresh()
     }
 
     bqtempitem->setValue(strings[10]);
+
+    millis = context->temps[HocClkThermalSensor_DRAM];
+    sprintf(strings[12], "%u.%u °C", millis / 1000U, (millis % 1000U) / 100U);
+    dramTempItem->setValue(strings[12]);
 
     cTypeItem->setValue(hocClkFormatConsoleType(this->context->consoleType, true));
     bpmpStatusItem->setValue(this->context->bpmpInfo.magic == HOCCLK_BPMP_MAGIC ? "Enabled" : "Halted");

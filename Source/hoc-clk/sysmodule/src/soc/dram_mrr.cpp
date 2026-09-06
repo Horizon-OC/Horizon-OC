@@ -251,6 +251,21 @@ namespace soc::mrr {
         return data;
     }
 
+    bool ReadRamMr4(u8 *mr4) {
+        EmcTopology topo = {};
+        if (!QueryTopology(&topo))
+            return false;
+
+        ClearMrrLeftovers();
+
+        emc_mr_data_t data = {};
+        if (!ReadMrxRank(MR4_TEMP, topo.ranks > 1, topo.channels > 1, &data))
+            return false;
+
+        *mr4 = data.chip0.rank0_ch0;
+        return true;
+    }
+
     /* MR8 density field (bits 5:2) to MB */
     static bool DecodeDensityMb(u8 mr8, u32 *mb) {
         switch ((mr8 & 0x3C) >> 2)

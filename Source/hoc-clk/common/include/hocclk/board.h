@@ -95,6 +95,7 @@ typedef enum
     HocClkThermalSensor_PLLX, // PLLX temperature in millicelcius
     HocClkThermalSensor_AO, // AOTAG
     HocClkThermalSensor_BQ24193, // BQ24193 temperature. Refer to BQ24193Temp for returned values
+    HocClkThermalSensor_DRAM, // DRAM die temperature from LPDDR4(X) MR4. Use in combination with PCB and AO to get accurate reading
     HocClkThermalSensor_EnumMax
 } HocClkThermalSensor;
 
@@ -292,6 +293,8 @@ static inline const char* hocclkFormatThermalSensor(HocClkThermalSensor thermSen
             return pretty ? "AO" : "ao";
         case HocClkThermalSensor_BQ24193:
             return pretty ? "BQ24193" : "bq24193";
+        case HocClkThermalSensor_DRAM:
+            return pretty ? "DRAM" : "dram";
         default:
             return "unknown";
     }

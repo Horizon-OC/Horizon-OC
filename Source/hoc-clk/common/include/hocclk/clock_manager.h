@@ -89,7 +89,7 @@ typedef struct {
     HocClkBpmpSharedInfo bpmpInfo;
 
     // Reserved for future use
-    u8 reserved[0x30C];
+    u8 reserved[0x308];
 } HocClkContext;
 
 typedef struct
