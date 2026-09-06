@@ -187,11 +187,6 @@ namespace ams::ldr::hoc::pcv {
     };
     static_assert(sizeof(SharedClkBus) == 0x58);
 
-    struct RextPatch {
-        u32 freq;
-        u32 rext;
-    };
-
     constexpr u32 CpuClkOSLimit = 1785'000;
     constexpr u32 GpuClkOsLimit = 921'600;
     constexpr u32 EmcClkOSLimit = 1600'000;

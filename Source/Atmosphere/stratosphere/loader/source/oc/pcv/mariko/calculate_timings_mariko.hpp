@@ -21,4 +21,3 @@ namespace ams::ldr::hoc::pcv::mariko {
     void CalculateTimings(double tCK_avg, u32 freq);
 
 }
-

@@ -47,14 +47,14 @@ enum ReadLatency: u32 {
     RL_2133 = 40,
     RL_1866 = 36,
     RL_1600 = 32,
-    RL_1331 = 28,
+    RL_1333 = 28,
 };
 
 enum WriteLatency: u32 {
     WL_2133 = 18,
     WL_1866 = 16,
     WL_1600 = 14,
-    WL_1331 = 12,
+    WL_1333 = 12,
 };
 
 using CustomizeCpuDvfsTable = pcv::cvb_entry_t[pcv::DvfsTableEntryLimit];

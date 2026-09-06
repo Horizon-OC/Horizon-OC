@@ -1308,7 +1308,10 @@ class RamSubmenuGui : public MiscGui {
                 NamedValue("3300 MHz", 3300000, "±1760 speedo"),
                 NamedValue("3333 MHz", 3333000, "±1780 speedo"),
                 NamedValue("3366 MHz", 3366000, "±1800 speedo"),
-                NamedValue("3400 MHz", 3400000, "±1820 speedo")
+                NamedValue("3400 MHz", 3400000, "±1820 speedo"),
+                NamedValue("3433 MHz", 3433000, "±???? speedo"),
+                NamedValue("3466 MHz", 3466000, "±???? speedo"),
+                NamedValue("3500 MHz", 3500000, "±???? speedo"),
             };
         }
 
@@ -1532,6 +1535,9 @@ class RamTimingsSubmenuGui : public MiscGui {
             NamedValue("3333 MHz", 3333000, "±1780 speedo"),
             NamedValue("3366 MHz", 3366000, "±1800 speedo"),
             NamedValue("3400 MHz", 3400000, "±1820 speedo"),
+            NamedValue("3433 MHz", 3433000, "±???? speedo"),
+            NamedValue("3466 MHz", 3466000, "±???? speedo"),
+            NamedValue("3500 MHz", 3500000, "±???? speedo"),
         };
         RamDisplayUnit unit = (RamDisplayUnit)this->configList->values[HocClkConfigValue_RamDisplayUnit];
 
@@ -2294,8 +2300,10 @@ class RamLatenciesSubmenuGui : public MiscGui {
             this->listElement->addItem(graph);
         }
 
+        const int readTierCount = IsMariko() ? 4 : 3;
+
         this->listElement->addItem(new CompactCategoryHeader("Read Latency"));
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < readTierCount; i++)
             addLatencyRow(kTierLabels[i], i, kLatencyRKeys);
 
         this->listElement->addItem(new CompactCategoryHeader("Write Latency"));
@@ -2436,6 +2444,9 @@ class CpuSubmenuGui : public MiscGui {
                 NamedValue("3333 MHz", 3333000, "±1780 speedo"),
                 NamedValue("3366 MHz", 3366000, "±1800 speedo"),
                 NamedValue("3400 MHz", 3400000, "±1820 speedo"),
+                NamedValue("3433 MHz", 3433000, "±???? speedo"),
+                NamedValue("3466 MHz", 3466000, "±???? speedo"),
+                NamedValue("3500 MHz", 3500000, "±???? speedo"),
             };
             addConfigToggle(HocClkConfigValue_AutoRAMCPUOverclock, "Auto CPU RAM OC");
             addConfigButton(HocClkConfigValue_AutoRamCpuCpuOCFreq, "Auto CPU RAM OC CPU clock", ValueRange(0, 0, 1, "", 1), "CPU Clock",

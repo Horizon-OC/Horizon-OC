@@ -15,12 +15,20 @@
  */
 
 #pragma once
-#include <stratosphere.hpp>
 
-namespace ams::ldr::hoc::pcv::mariko {
+namespace ams::ldr::hoc::pcv {
 
-    extern const RextPatch  g_rext_table[];
-    extern const u32        g_rext_table_size;
-    const        RextPatch *FindRext(u32 freq);
+    struct RextPatch {
+        u32 freq;
+        u32 rext;
+    };
+
+    void HandleLatency(u32 freq);
+    u32 GetRlFrequency();
+    u32 GetWlFrequency();
+    u32 GetWdqsOn();
+    u32 CalculateNWr();
+    u32 CalculateNTRTP();
+    u8 CalculateMrw2();
 
 }

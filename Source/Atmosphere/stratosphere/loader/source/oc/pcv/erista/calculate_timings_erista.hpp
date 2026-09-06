@@ -18,6 +18,7 @@
 
 namespace ams::ldr::hoc::pcv::erista {
 
+    u8 GetNWrIndex();
     void CalculateTimings(double tCK_avg, u32 freq);
 
 }

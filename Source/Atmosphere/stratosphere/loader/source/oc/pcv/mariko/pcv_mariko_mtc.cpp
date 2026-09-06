@@ -57,12 +57,11 @@ namespace ams::ldr::hoc::pcv::mariko {
             WRITE_PARAM_ALL_REG(table, emc_cfg, 0xF3200000);
         }
 
+        CalculateTimings(tCK_avg, table->rate_khz);
+
         u32 trefbw = refresh_raw + 0x40;
         trefbw     = MIN(trefbw, static_cast<u32>(0x3FFF));
-
         const u32 dyn_self_ref_control = (static_cast<u32>(7605.0 / tCK_avg) + 260) | (table->burst_regs.emc_dyn_self_ref_control & 0xffff0000);
-
-        CalculateTimings(tCK_avg, table->rate_khz);
 
         WRITE_PARAM_ALL_REG(table, emc_rd_rcd, GET_CYCLE_CEIL(tRCD));
         WRITE_PARAM_ALL_REG(table, emc_wr_rcd, GET_CYCLE_CEIL(tRCD));

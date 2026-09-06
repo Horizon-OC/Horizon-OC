@@ -46,6 +46,7 @@ namespace ams::ldr::hoc::pcv::erista {
         #define WRITE_PARAM_ALL_REG(TABLE, PARAM, VALUE) \
             TABLE->burst_regs.PARAM = VALUE;             \
             TABLE->shadow_regs_ca_train.PARAM   = VALUE; \
+            TABLE->shadow_regs_quse_train.PARAM = VALUE; \
             TABLE->shadow_regs_rdwr_train.PARAM = VALUE;
 
         /* Ram power down       */
@@ -109,28 +110,28 @@ namespace ams::ldr::hoc::pcv::erista {
 
         /* Accept imperfection or prepare for suffering. */
         // #if defined(AMS_BUILD_FOR_AUDITING) || defined(AMS_BUILD_FOR_DEBUGGING)
-        // WRITE_PARAM_ALL_REG(table, emc_einput, einput);
-        // WRITE_PARAM_ALL_REG(table, emc_einput_duration, einput_duration);
-        // WRITE_PARAM_ALL_REG(table, emc_obdly, obdly);
+        WRITE_PARAM_ALL_REG(table, emc_einput, einput);
+        WRITE_PARAM_ALL_REG(table, emc_einput_duration, einput_duration);
+        WRITE_PARAM_ALL_REG(table, emc_obdly, obdly);
         WRITE_PARAM_ALL_REG(table, emc_ibdly, ibdly);
         WRITE_PARAM_ALL_REG(table, emc_wdv_mask, wdv);
-        // WRITE_PARAM_ALL_REG(table, emc_quse_width, quse_width);
-        // WRITE_PARAM_ALL_REG(table, emc_quse, quse);
+        WRITE_PARAM_ALL_REG(table, emc_quse_width, quse_width);
+        WRITE_PARAM_ALL_REG(table, emc_quse, quse);
         WRITE_PARAM_ALL_REG(table, emc_wdv, wdv);
         WRITE_PARAM_ALL_REG(table, emc_wsv, wsv);
         WRITE_PARAM_ALL_REG(table, emc_wev, wev);
-        // WRITE_PARAM_ALL_REG(table, emc_qrst, qrst);
-        // WRITE_PARAM_ALL_REG(table, emc_tr_qrst, qrst);
-        // WRITE_PARAM_ALL_REG(table, emc_qsafe, qsafe);
-        // WRITE_PARAM_ALL_REG(table, emc_tr_qsafe, qsafe);
-        // WRITE_PARAM_ALL_REG(table, emc_tr_qpop, qpop);
-        // WRITE_PARAM_ALL_REG(table, emc_qpop, qpop);
-        // WRITE_PARAM_ALL_REG(table, emc_rdv, rdv);
-        // WRITE_PARAM_ALL_REG(table, emc_tr_rdv_mask, rdv + 2);
-        // WRITE_PARAM_ALL_REG(table, emc_rdv_early, rdv - 2);
-        // WRITE_PARAM_ALL_REG(table, emc_rdv_early_mask, rdv);
-        // WRITE_PARAM_ALL_REG(table, emc_rdv_mask, rdv + 2);
-        // WRITE_PARAM_ALL_REG(table, emc_tr_rdv, rdv);
+        WRITE_PARAM_ALL_REG(table, emc_qrst, qrst);
+        WRITE_PARAM_ALL_REG(table, emc_tr_qrst, qrst);
+        WRITE_PARAM_ALL_REG(table, emc_qsafe, qsafe);
+        WRITE_PARAM_ALL_REG(table, emc_tr_qsafe, qsafe);
+        WRITE_PARAM_ALL_REG(table, emc_tr_qpop, qpop);
+        WRITE_PARAM_ALL_REG(table, emc_qpop, qpop);
+        WRITE_PARAM_ALL_REG(table, emc_rdv, rdv);
+        WRITE_PARAM_ALL_REG(table, emc_tr_rdv_mask, rdv + 2);
+        WRITE_PARAM_ALL_REG(table, emc_rdv_early, rdv - 2);
+        WRITE_PARAM_ALL_REG(table, emc_rdv_early_mask, rdv);
+        WRITE_PARAM_ALL_REG(table, emc_rdv_mask, rdv + 2);
+        WRITE_PARAM_ALL_REG(table, emc_tr_rdv, rdv);
         table->emc_mrw2 = (table->emc_mrw2 & ~0xFFu) | static_cast<u32>(mrw2);
         table->dram_timings.rl = RL;
         // #endif
@@ -223,8 +224,7 @@ namespace ams::ldr::hoc::pcv::erista {
         const u32 tRFCabStock     = tRFC_values[0] * 2;
         table->dram_timings.t_rfc = tRFCabStock;
 
-        table->emc_mrw2        = (table->emc_mrw2 & ~0xFFu) | static_cast<u32>(mrw2);
-        table->emc_mrw         = (table->emc_mrw  & ~0x70u) | 0x40; /* nWR */
+        table->emc_mrw         = (table->emc_mrw  & ~0x70u) | (GetNWrIndex() << 4);
         table->emc_cfg_2       = 0x11083D;
         table->min_volt        = std::clamp(900 + (C.emcDvbShift * 25), 900, 1050);
     }

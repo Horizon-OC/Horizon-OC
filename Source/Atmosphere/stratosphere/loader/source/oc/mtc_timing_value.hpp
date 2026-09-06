@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2023 hanai3Bi
  *
- * Copyright (c) 2025 Lightos_
+ * Copyright (c) Lightos_
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,7 @@
 
 #include "oc_common.hpp"
 
-namespace ams::ldr::hoc {
+namespace ams::ldr::hoc::pcv {
     #define MAX(A, B) std::max(A, B)
     #define MIN(A, B) std::min(A, B)
     #define CEIL(A)   std::ceil(A)
@@ -31,6 +31,7 @@ namespace ams::ldr::hoc {
     #define PACK_U32_NIBBLE_HIGH_BYTE_LOW(high, low) ((static_cast<u32>(high & 0xF) << 28) | (static_cast<u32>(low) & 0xFF))
 
     #define GET_CYCLE_CEIL(PARAM) u32(CEIL(double(PARAM) / tCK_avg))
+    #define GET_CYCLE_FLOOR(PARAM) u32(FLOOR(double(PARAM) / tCK_avg))
 
     /* Burst latency, not to be confused with base latency (tWRL). */
     const u32 BL = 16;
@@ -40,6 +41,9 @@ namespace ams::ldr::hoc {
 
     /* DQS output access time from CK_t/CK_c. */
     const double tDQSCK_max = 3.5;
+
+    /* Turn-around time RDQS to WDQS for WDQS control case. */
+    const double tDQSTA = 0.25;
 
     /* Write preamble. (tCK) */
     const u32 tWPRE = 2;
@@ -59,12 +63,22 @@ namespace ams::ldr::hoc {
     /* DQ-to-DQS offset(max) (ns) */
     const double tDQS2DQ_max = 0.8;
 
+    /* Internal READ to PRECHARGE command delay */
+    const double tRTP = 7.5;
+
     /* Write recovery time. */
     const u32 tWR = 18;
 
-    const double roundTripDelay = 0.5; /* ns. */
+    /* Write-to-Read delay. */
+    const u32 tWTRStock = 10;
 
-    namespace pcv::erista {
+    /* Round trace routing delay(?) Guessed based on tK1 (ns) */
+    const double roundTripDelay = 0.5;
+
+    inline u32 RL;
+    inline u32 WL;
+
+    namespace erista {
         const std::array<u32,       8> tRCD_values    = { 18, 17, 16, 15, 14, 13, 12, 11 };
         const std::array<u32,       8> tRP_values     = { 18, 17, 16, 15, 14, 13, 12, 11 };
         const std::array<u32,      10> tRAS_values    = { 42, 36, 34, 32, 30, 28, 26, 24, 22, 20 };
@@ -87,9 +101,6 @@ namespace ams::ldr::hoc {
         const double tXSR  = static_cast<double>(tRFCab + 7.5);
         const u32 tFAW     = static_cast<u32>(tRRD * 4.0);
         const double tRPab = tRPpb + 3;
-
-        inline u32 RL;
-        inline u32 WL;
 
         inline u32 tR2P;
         inline u32 tR2W;
@@ -124,13 +135,15 @@ namespace ams::ldr::hoc {
         inline u8 mrw2;
 
         namespace {
-            double chipDelay = 1.165; /* Guessed. */
+            /* Delay of entering soc? Guessed based on tK1. (ns) */
+            double chipDelay = 1.655;
         }
 
+        /* Soc->dram->soc delay(?) */
         const double flyByTime = chipDelay + roundTripDelay;
     }
 
-    namespace pcv::mariko {
+    namespace mariko {
         const std::array<u32,       8> tRCD_values    = { 18, 17, 16, 15, 14, 13, 12, 11 };
         const std::array<u32,       8> tRP_values     = { 18, 17, 16, 15, 14, 13, 12, 11 };
         const std::array<u32,      10> tRAS_values    = { 42, 36, 34, 32, 30, 28, 26, 24, 22, 20 };
@@ -152,9 +165,6 @@ namespace ams::ldr::hoc {
         inline double tRPab;
 
         inline u32 refresh_raw;
-
-        inline u32 RL;
-        inline u32 WL;
 
         inline u32 tR2P;
         inline u32 tR2W;
@@ -188,15 +198,16 @@ namespace ams::ldr::hoc {
 
         inline u32 tCLKSTOP;
 
-        inline u32 pdex2mrr;
+        inline double pdex2mrr;
 
         inline u8 mrw2;
 
-        /* TODO: Add comments (lazy) */
         namespace {
-            const double chipDelay = 1.109; /* ns. */
+            /* Delay of entering soc? Guessed based on tK1. (ns) */
+            const double chipDelay = 1.109;
         }
 
+        /* Soc->dram->soc delay(?) */
         const double flyByTime = chipDelay + roundTripDelay;
     }
 
