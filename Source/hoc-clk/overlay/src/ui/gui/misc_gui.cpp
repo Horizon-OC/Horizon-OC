@@ -1007,6 +1007,13 @@ class GovernorSettingsSubMenuGui : public MiscGui {
 
         addConfigButton(HocClkConfigValue_CpuGovernorMinimumFreq, "CPU Governor Minimum Frequency", ValueRange(0, 0, 1, "", 0),
                         "CPU Governor Minimum Frequency", &thresholdsDisabled, {}, GovernorMinHz, false);
+
+        addConfigButton(HocClkConfigValue_GovernorPollRateMs, "Governor Poll Rate", ValueRange(1, 50, 1, " ms", 1),
+                        "Governor Poll Rate", &thresholdsDisabled, {}, {}, false);
+        addConfigButton(HocClkConfigValue_GovernorDownHoldTicks, "Governor Down Hold", ValueRange(0, 100, 1, " ticks", 1),
+                        "Governor Down Hold", &thresholdsDisabled, {}, {}, false);
+        addConfigButton(HocClkConfigValue_GovernorStepUtil, "Governor Step Divisor", ValueRange(100, 1500, 25, "", 1),
+                        "Governor Step Divisor", &thresholdsDisabled, {}, {}, false);
     }
 };
 
@@ -1471,7 +1478,7 @@ class RamTimingsSubmenuGui : public MiscGui {
         addConfigTrackbar(KipConfigValue_t1_tRCD, "t1 tRCD", ValueRange(0, 7, 1));
         addConfigTrackbar(KipConfigValue_t2_tRP, "t2 tRP", ValueRange(0, 7, 1));
         addConfigTrackbar(KipConfigValue_t3_tRAS, "t3 tRAS", ValueRange(0, 9, 1));
-        addConfigTrackbar(KipConfigValue_t4_tRRD, "t4 tRRD", ValueRange(0, 6, 1));
+        addConfigTrackbar(KipConfigValue_t4_tRRD, "t4 tRRD", ValueRange(0, IsErista() ? 7u : 6u , 1));
         addConfigTrackbar(KipConfigValue_t5_tRFC, "t5 tRFC", ValueRange(0, IsErista() ? 5u : 10u, 1));
         addConfigTrackbar(KipConfigValue_t6_tRTW, "t6 tRTW", ValueRange(0, 9, 1));
         addConfigTrackbar(KipConfigValue_t7_tWTR, "t7 tWTR", ValueRange(0, 9, 1));

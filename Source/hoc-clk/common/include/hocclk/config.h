@@ -62,6 +62,9 @@ typedef enum {
 
     HocClkConfigValue_RAMVoltDisplayMode,
     HocClkConfigValue_CpuGovernorMinimumFreq,
+    HocClkConfigValue_GovernorPollRateMs,
+    HocClkConfigValue_GovernorDownHoldTicks,
+    HocClkConfigValue_GovernorStepUtil,
     HocClkConfigValue_DisplayVoltage,
 
     HocClkConfigValue_MemoryFrequencyMeasurementMode,
@@ -305,6 +308,12 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
             return pretty ? "RAM Voltage / Usage Display Mode" : "ram_volt_usage_display_mode";
         case HocClkConfigValue_CpuGovernorMinimumFreq:
             return pretty ? "CPU Governor Minimum Frequency" : "cpu_gov_min_freq";
+        case HocClkConfigValue_GovernorPollRateMs:
+            return pretty ? "Governor Poll Rate" : "gov_poll_rate_ms";
+        case HocClkConfigValue_GovernorDownHoldTicks:
+            return pretty ? "Governor Down Hold" : "gov_down_hold_ticks";
+        case HocClkConfigValue_GovernorStepUtil:
+            return pretty ? "Governor Step Divisor" : "gov_step_util";
 
         case HocClkConfigValue_DisplayVoltage:
             return pretty ? "Display Voltage" : "display_voltage";
@@ -603,6 +612,12 @@ static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
             return 70ULL;
         case HocClkConfigValue_CpuGovernorMinimumFreq:
             return 612000000ULL; // 612MHz
+        case HocClkConfigValue_GovernorPollRateMs:
+            return 5ULL; // 5ms
+        case HocClkConfigValue_GovernorDownHoldTicks:
+            return 10ULL; // 10 ticks (50ms at 5ms poll)
+        case HocClkConfigValue_GovernorStepUtil:
+            return 900ULL; // max freq at 90% load
         case HocClkConfigValue_MaxDisplayClockH:
             return 60ULL;
         case HocClkConfigValue_DisplayVoltage:
@@ -794,6 +809,15 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
             return true;
         case HocClkConfigValue_BatteryChargeCurrent:
             return ((input >= 1024) && (input <= 3072)) || !input;
+
+        case HocClkConfigValue_GovernorPollRateMs:
+            return ((input >= 1) && (input <= 50));
+
+        case HocClkConfigValue_GovernorDownHoldTicks:
+            return (input <= 100);
+
+        case HocClkConfigValue_GovernorStepUtil:
+            return ((input >= 100) && (input <= 1500));
 
         case HocClkConfigValue_InputCurrentLimit:
             return ((input >= 100) && (input <= 3000)) || !input;

@@ -21,9 +21,27 @@
 
 namespace governor {
 
-#define POLL_NS 5'000'000   // 5 ms  – governor poll rate
-#define DOWN_HOLD_TICKS 10  // 50 ms – how long to in POLL_NS to hold while ramping down
-#define STEP_UTIL 900       // multiplier for step calculations
+#define DOWN_HOLD_TICKS_DEFAULT 10 // 50 ms at 5ms poll – how long to hold while ramping down
+#define STEP_UTIL_DEFAULT 900      // multiplier for step calculations (max freq at 90% load)
+
+    u64 GovernorPollNs() {
+        u64 ms = config::GetConfigValue(HocClkConfigValue_GovernorPollRateMs);
+        if (ms < 1 || ms > 50)
+            ms = 5;
+        return ms * 1'000'000ULL;
+    }
+
+    u32 GovernorDownHoldTicks() {
+        u64 ticks = config::GetConfigValue(HocClkConfigValue_GovernorDownHoldTicks);
+        return (ticks <= 100) ? (u32)ticks : DOWN_HOLD_TICKS_DEFAULT;
+    }
+
+    u32 GovernorStepUtil() {
+        u64 step = config::GetConfigValue(HocClkConfigValue_GovernorStepUtil);
+        if (step < 100 || step > 1500)
+            step = STEP_UTIL_DEFAULT;
+        return (u32)step;
+    }
 
     bool isGpuGovernorEnabled = false;
     bool isCpuGovernorEnabled = false;
@@ -82,7 +100,7 @@ namespace governor {
     }
 
     u32 SchedutilTargetHz(u32 util, u32 tableMaxHz) {
-        u64 hz = (u64)tableMaxHz * util / STEP_UTIL;
+        u64 hz = (u64)tableMaxHz * util / GovernorStepUtil();
         return (u32)(std::min(hz, static_cast<u64>(tableMaxHz)));
     }
 
@@ -115,13 +133,14 @@ namespace governor {
         u8 vrrFocusTick = 0;
 
         for (;;) {
+            const u64 pollNs = GovernorPollNs();
 
             if (!clockManager::gRunning) {
                 cpuDownHoldRemaining = 0;
                 cpuLastHz = 0;
                 gpuDownHoldRemaining = 0;
                 gpuLastHz = 0;
-                svcSleepThread(POLL_NS);
+                svcSleepThread(pollNs);
                 continue;
             }
 
@@ -156,7 +175,7 @@ namespace governor {
                     if (!goingDown)
                         cpuDownHoldRemaining = 0;
                     else if (cpuDownHoldRemaining == 0)
-                        cpuDownHoldRemaining = DOWN_HOLD_TICKS;
+                        cpuDownHoldRemaining = GovernorDownHoldTicks();
 
                     if (cpuDownHoldRemaining > 0)
                         cpuDownHoldRemaining--;
@@ -212,7 +231,7 @@ namespace governor {
                 if (!goingDown)
                     gpuDownHoldRemaining = 0;
                 else if (gpuDownHoldRemaining == 0)
-                    gpuDownHoldRemaining = DOWN_HOLD_TICKS;
+                    gpuDownHoldRemaining = GovernorDownHoldTicks();
 
                 if (gpuDownHoldRemaining > 0)
                     gpuDownHoldRemaining--;
@@ -290,7 +309,7 @@ namespace governor {
                 }
             }
 
-            svcSleepThread(POLL_NS);
+            svcSleepThread(pollNs);
         }
     }
 

@@ -107,6 +107,26 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Default: 612MHz"
             };
 
+        case HocClkConfigValue_GovernorPollRateMs:
+            return {
+                "How often the CPU/GPU governor runs its loop.",
+                "Default: 5ms"
+            };
+
+        case HocClkConfigValue_GovernorDownHoldTicks:
+            return {
+                "How many governor ticks to hold the current frequency",
+                "before ramping down. 0 disables holding",
+                "Default: 10 ticks"
+            };
+
+        case HocClkConfigValue_GovernorStepUtil:
+            return {
+                "Load divisor mapping utilization to frequency.",
+                "Lower ramps up faster, above 1000 caps the top end",
+                "Default: 900"
+            };
+
         case HocClkConfigValue_OverwriteRefreshRate:
             return {
                 "Controls the availability of display refresh rate features.",

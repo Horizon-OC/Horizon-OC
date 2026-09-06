@@ -134,8 +134,9 @@ namespace board {
             HandleCpuUv();
         }
         if (useGm20b) {
-            gm20b::setClock(hz / 1000);
-            currentInjectedHz = hz;
+            if (gm20b::setClock(hz / 1000)) {
+                currentInjectedHz = hz;
+            }
         }
     }
 
@@ -153,7 +154,11 @@ namespace board {
         }
 
         if (module == HocClkModule_GPU && currentInjectedHz != 0) {
-            return currentInjectedHz;
+            if (GetRealHz(HocClkModule_GPU) != currentInjectedHz) {
+                currentInjectedHz = 0;
+            } else {
+                return currentInjectedHz;
+            }
         }
 
         if (HOSSVC_HAS_CLKRST) {
