@@ -60,7 +60,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     static const u32 cpuVoltThermalData[] = { 620, 1120, 20000, 620, 1120, 70000, 950, 1132, 0, 950, 1227, 0 };
 
-    static const u32 allowedCpuMaxFrequencies[] = { 1'963'500, 2'091'000, 2'193'000, 2'295'000, 2'397'000, 2'499'000, 2'601'000, 2'703'000, };
+    static const u32 allowedCpuMaxFrequencies[] = { 1'963'500, 2'091'000, 2'193'000, 2'295'000, 2'397'000, 2'499'000, 2'601'000, 2'703'000, 2'805'000 };
 
     constexpr cvb_entry_t GpuCvbTableDefault[] = {
         // GPUB01_NA_CVB_TABLE

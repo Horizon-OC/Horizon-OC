@@ -148,11 +148,11 @@ namespace ams::ldr::hoc::pcv {
 
         Validator validators[] = {
             { C.eristaCpuBoostClock, 1020'000, 2397'000, panic::Cpu, true },
-            { C.marikoCpuBoostClock, 1020'000, 2703'000, panic::Cpu, true },
+            { C.marikoCpuBoostClock, 1020'000, 2805'000, panic::Cpu, true },
             { C.eristaCpuMaxVolt,        1000,     1260, panic::Cpu,      },
-            { C.marikoCpuMaxVolt,        1000,     1200, panic::Cpu,      },
+            { C.marikoCpuMaxVolt,        1000,     1235, panic::Cpu,      },
             { eristaCpuDvfsMaxFreq,  1785'000, 2397'000, panic::Cpu,      },
-            { marikoCpuDvfsMaxFreq,  1785'000, 2703'000, panic::Cpu,      },
+            { marikoCpuDvfsMaxFreq,  1785'000, 2805'000, panic::Cpu,      },
             { C.commonEmcMemVolt,     912'500, 1350'000, panic::Emc,      }, /* Official vmax for the RAMs is 1400-1500mV */
             { C.eristaEmcMaxClock,   1600'000, 2600'000, panic::Emc,      },
             { C.marikoEmcMaxClock,   1600'000, 3500'000, panic::Emc,      },
