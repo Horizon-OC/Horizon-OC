@@ -54,6 +54,7 @@ namespace board {
     HocClkSocType GetSocType();
     HocClkConsoleType GetConsoleType();
     u8 GetDramID();
+    u8 GetFuseDramId();
     u8 GetGpuSpeedoBracket();
     bool IsDram8GB();
     void SetDisplayRefreshDockedState(bool docked);

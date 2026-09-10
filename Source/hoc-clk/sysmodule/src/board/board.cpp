@@ -49,6 +49,7 @@
 #include "board_volt.hpp"
 #include <ipc_server.h>
 #include <lockable_mutex.h>
+#include "../soc/dram_mrr.hpp"
 
 namespace board {
 
@@ -238,6 +239,10 @@ namespace board {
     }
 
     u8 GetDramID() {
+        return soc::mrr::IdentifyDramId();
+    }
+
+    u8 GetFuseDramId() {
         return gDramID;
     }
 
