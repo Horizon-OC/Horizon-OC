@@ -45,6 +45,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         size_t g_nso_size = 0;
     }
 
+    /* Todo: Remove this bs. */
     [[maybe_unused]] static uintptr_t CaveReserve(size_t count) {
         return reinterpret_cast<uintptr_t>(Hooks().Reserve(count));
     }
@@ -620,10 +621,8 @@ namespace ams::ldr::hoc::pcv::mariko {
     }
 
     void Patch(uintptr_t mapped_nso, size_t nso_size) {
-        nsoStart = reinterpret_cast<u32 *>(mapped_nso);
-
-        g_pcv_scratch = mapped_nso + nso_size - HocPcvScratchSize;
-        g_nso_size    = nso_size;
+        nsoStart   = reinterpret_cast<u32 *>(mapped_nso);
+        g_nso_size = nso_size;
 
         MtcGenerateFreqTables();
 
