@@ -99,16 +99,23 @@ namespace ams::secmon::smc {
         #include "secmon_define_pmc_access_table.inc"
         #include "secmon_define_mc_access_table.inc"
         #include "secmon_define_emc_access_table.inc"
+        #include "secmon_define_emc01_access_table.inc"
+        #include "secmon_define_flow_controller_access_table.inc"
+        #include "secmon_define_exception_vectors_access_table.inc"
         #include "secmon_define_rtc_pmc_access_table.inc"
         #include "secmon_define_mc01_access_table.inc"
 
         constexpr const AccessTableEntry AccessTables[] = {
-            { PmcAccessTable::ReducedAccessTable.data(),    MemoryRegionVirtualDevicePmc.GetAddress(),                                          PmcAccessTable::Address,                                                             PmcAccessTable::Size,    },
-            { McAccessTable::ReducedAccessTable.data(),     MemoryRegionVirtualDeviceMemoryController.GetAddress(),                             McAccessTable::Address,                                                              McAccessTable::Size,     },
-            { EmcAccessTable::ReducedAccessTable.data(),    MemoryRegionVirtualDeviceExternalMemoryController.GetAddress(),                     EmcAccessTable::Address,                                                             EmcAccessTable::Size,    },
-            { RtcPmcAccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDeviceRtcPmc.GetAddress(),                                       RtcPmcAccessTable::Address,                                                          RtcPmcAccessTable::Size, },
-            { Mc01AccessTable::ReducedAccessTable.data(),   Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController0.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController0.GetAddress(), Mc01AccessTable::Size,   },
-            { Mc01AccessTable::ReducedAccessTable.data(),   Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController1.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController1.GetAddress(), Mc01AccessTable::Size,   },
+            { PmcAccessTable::ReducedAccessTable.data(),              MemoryRegionVirtualDevicePmc.GetAddress(),                                          PmcAccessTable::Address,                                                             PmcAccessTable::Size,              },
+            { McAccessTable::ReducedAccessTable.data(),               MemoryRegionVirtualDeviceMemoryController.GetAddress(),                             McAccessTable::Address,                                                              McAccessTable::Size,               },
+            { EmcAccessTable::ReducedAccessTable.data(),              MemoryRegionVirtualDeviceExternalMemoryController.GetAddress(),                     EmcAccessTable::Address,                                                             EmcAccessTable::Size,              },
+            { Emc01AccessTable::ReducedAccessTable.data(),            Emc01AccessTable::Address + MemoryRegionVirtualDeviceExternalMemoryController0.GetAddress(), Emc01AccessTable::Address + MemoryRegionPhysicalDeviceExternalMemoryController0.GetAddress(), Emc01AccessTable::Size, },
+            { Emc01AccessTable::ReducedAccessTable.data(),            Emc01AccessTable::Address + MemoryRegionVirtualDeviceExternalMemoryController1.GetAddress(), Emc01AccessTable::Address + MemoryRegionPhysicalDeviceExternalMemoryController1.GetAddress(), Emc01AccessTable::Size, },
+            { FlowControllerAccessTable::ReducedAccessTable.data(),   MemoryRegionVirtualDeviceFlowController.GetAddress(),                               FlowControllerAccessTable::Address,                                                  FlowControllerAccessTable::Size,   },
+            { ExceptionVectorsAccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDeviceExceptionVectors.GetAddress(),                             ExceptionVectorsAccessTable::Address,                                                ExceptionVectorsAccessTable::Size, },
+            { RtcPmcAccessTable::ReducedAccessTable.data(),           MemoryRegionVirtualDeviceRtcPmc.GetAddress(),                                       RtcPmcAccessTable::Address,                                                          RtcPmcAccessTable::Size,           },
+            { Mc01AccessTable::ReducedAccessTable.data(),             Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController0.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController0.GetAddress(), Mc01AccessTable::Size,             },
+            { Mc01AccessTable::ReducedAccessTable.data(),             Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController1.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController1.GetAddress(), Mc01AccessTable::Size,             },
         };
 
         constexpr bool IsAccessAllowed(const AccessTableEntry &entry, uintptr_t address) {
@@ -170,12 +177,12 @@ namespace ams::secmon::smc {
             /* This is "probably" to fuck with hackers who got access to the SMC and are trying to get control of the */
             /* BPMP to exploit jamais vu, deja vu, or other related DMA/wake-from-sleep vulnerabilities. */
             constexpr uintptr_t MC = MemoryRegionPhysicalDeviceMemoryController.GetAddress();
-            SMC_R_UNLESS((address == (MC + MC_SMMU_AVPC_ASID) || address == (MC + MC_SMMU_PPCS1_ASID)), InvalidArgument);
+            // SMC_R_UNLESS((address == (MC + MC_SMMU_AVPC_ASID) || address == (MC + MC_SMMU_PPCS1_ASID)), InvalidArgument);
 
-            /* For backwards compatibility, we'll allow access to these devices on 1.0.0. */
-            if (GetTargetFirmware() < TargetFirmware_2_0_0) {
+            // /* For backwards compatibility, we'll allow access to these devices on 1.0.0. */
+            // if (GetTargetFirmware() < TargetFirmware_2_0_0) {
                 virtual_address = MemoryRegionVirtualDeviceMemoryController.GetAddress() + (address - MC);
-            }
+            // }
         }
 
         /* Perform the read or write, if we should. */

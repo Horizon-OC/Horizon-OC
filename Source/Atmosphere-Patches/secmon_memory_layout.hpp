@@ -151,7 +151,9 @@ namespace ams::secmon {
         HANDLER(ExceptionVectors,                               I2c1, UINT64_C(0x6000F000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
         HANDLER(MemoryController0,                  ExceptionVectors, UINT64_C(0x7001C000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
         HANDLER(MemoryController1,                 MemoryController0, UINT64_C(0x7001D000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
-        HANDLER(Sdmmc,                             MemoryController1, UINT64_C(0x700B0000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+        HANDLER(ExternalMemoryController0,       MemoryController1, UINT64_C(0x7001E000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+        HANDLER(ExternalMemoryController1, ExternalMemoryController0, UINT64_C(0x7001F000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
+        HANDLER(Sdmmc,                   ExternalMemoryController1, UINT64_C(0x700B0000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
         HANDLER(Disp1,                                         Sdmmc, UINT64_C(0x54200000), UINT64_C(0x3000), true, ## __VA_ARGS__) \
         HANDLER(Dsi,                                           Disp1, UINT64_C(0x54300000), UINT64_C(0x1000), true, ## __VA_ARGS__) \
         HANDLER(MipiCal,                                         Dsi, UINT64_C(0x700E3000), UINT64_C(0x1000), true, ## __VA_ARGS__) \

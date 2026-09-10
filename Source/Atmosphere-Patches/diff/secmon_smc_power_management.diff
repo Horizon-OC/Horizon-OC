@@ -1,0 +1,9 @@
+160c160
+<             /* Validate that the bpmp is appropriately halted. */
+---
+>             /* Horizon-OC: Halt BPMP here as hoc-clk may be running it, and if it's running there will be a panic. */
+161a162,165
+>             reg::Write(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
+>                                                                FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, jtag, ENABLED, DISABLED));
+> 
+>             /* Validate that the bpmp is appropriately halted. */
