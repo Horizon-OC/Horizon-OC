@@ -20,8 +20,8 @@
 
 #pragma once
 
-#define CUST_REV 6
-#define KIP_VERSION 251
+#define CUST_REV 7
+#define KIP_VERSION 260
 
 #include "oc_common.hpp"
 #include "pcv/pcv_common.hpp"
