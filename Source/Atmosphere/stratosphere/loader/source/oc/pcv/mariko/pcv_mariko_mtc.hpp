@@ -26,6 +26,22 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
+    extern u32 *nsoStart;
+
+    struct DvbEntry {
+        u64 freq;
+        u32 volt[4] = {};
+    };
+
+    constexpr DvbEntry EmcDvbTableDefault[] = {
+        {  204000, { 637, 637, 637, } },
+        {  408000, { 637, 637, 637, } },
+        {  800000, { 637, 637, 637, } },
+        { 1065600, { 637, 637, 637, } },
+        { 1331200, { 650, 637, 637, } },
+        { 1600000, { 675, 650, 637, } },
+    };
+
     constexpr u32 EmcListDefault[]   = { 204000, 1331200, 1600000, };
     constexpr u32 EmcListSizeDefault = std::size(EmcListDefault);
     constexpr u32 EmcListEndDefault  = EmcListSizeDefault - 1;
@@ -185,5 +201,6 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result MemFreqDvbTable(u32 *ptr);
     Result MemFreqMax(u32 *ptr);
     Result MemMtcTableAsm(u32 *ptr);
+    Result EmcVddqVolt(u32 *ptr);
 
 }

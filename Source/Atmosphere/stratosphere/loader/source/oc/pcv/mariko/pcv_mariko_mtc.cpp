@@ -673,4 +673,56 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_SUCCEED();
     }
 
+    Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
+        struct {
+            u8 reg;
+            u8 val;
+        } __attribute__((packed)) cmd;
+
+        I2cSession _session;
+        R_TRY(i2cOpenSession(&_session, dev));
+
+        cmd.reg    = reg;
+        cmd.val    = val;
+        Result res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+        i2csessionClose(&_session);
+
+        return res;
+    }
+
+    Result EmcVddqVolt(u32 *ptr) {
+        regulator *entry = reinterpret_cast<regulator *>(reinterpret_cast<u8 *>(ptr) - offsetof(regulator, type_2_3.default_uv));
+
+        constexpr u32 uv_step = 5'000;
+        constexpr u32 uv_min  = 250'000;
+
+        auto validator = [entry]() {
+            R_UNLESS(entry->id               == 2,       ldr::ResultInvalidRegulatorEntry());
+            R_UNLESS(entry->type             == 3,       ldr::ResultInvalidRegulatorEntry());
+            R_UNLESS(entry->type_2_3.step_uv == uv_step, ldr::ResultInvalidRegulatorEntry());
+            R_UNLESS(entry->type_2_3.min_uv  == uv_min,  ldr::ResultInvalidRegulatorEntry());
+            R_SUCCEED();
+        };
+
+        R_TRY(validator());
+
+        u32 emc_uv = C.marikoEmcVddqVolt;
+
+        if (!emc_uv) {
+            R_SKIP();
+        }
+
+        if (emc_uv % uv_step) {
+            emc_uv = (emc_uv + uv_step - 1) / uv_step * uv_step; // rounding
+        }
+
+        PATCH_OFFSET(ptr, emc_uv);
+
+        i2cInitialize();
+        Result resultI2C = I2cSet_U8(I2cDevice_Max77812_2, 0x25, (emc_uv - uv_min) / uv_step);
+        i2cExit();
+
+        return resultI2C;
+    }
+
 }
