@@ -8,7 +8,6 @@
  */
 
 #include <math.h>
-#include <pthread.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,110 +23,174 @@
 #define ALIGN_PADDING 0x100000
 #define CACHE_LINE_SIZE 128
 
-struct f_data {
-    void (*func)(int64_t *, int64_t *, int);
-    int64_t *arg1;
-    int64_t *arg2;
-    int arg3;
-};
+#define BW_MAX_THREADS 4
 
-static pthread_cond_t p_ready, p_start;
-static pthread_mutex_t p_lock;
-static pthread_t *p_worker = NULL;
-static struct f_data *worker_data = NULL;
-static int p_worker_not_ready, p_workers_ready;
+typedef void (*bench_kernel_fn)(int64_t *dst, int64_t *src, long size);
 
-static void *thread_func(void *data) {
-    struct f_data *d = data;
-    pthread_mutex_lock(&p_lock);
-    p_worker_not_ready--;
-    if (!p_worker_not_ready)
-        pthread_cond_signal(&p_ready);
-    while (p_workers_ready != 1)
-        pthread_cond_wait(&p_start, &p_lock);
-    pthread_mutex_unlock(&p_lock);
-    (d->func)(d->arg1, d->arg2, d->arg3);
-    pthread_exit(NULL);
-}
+struct bw_pool;
 
-static void parallel_run(void) {
-    pthread_mutex_lock(&p_lock);
-    p_workers_ready = 1;
-    pthread_mutex_unlock(&p_lock);
-    pthread_cond_broadcast(&p_start);
-}
+typedef struct {
+    Thread thread;
+    Semaphore start;
+    struct bw_pool *pool;
+    bench_kernel_fn func;
+    int64_t *dst;
+    int64_t *src;
+    long size;
+    int core;
+    bool created;
+} bw_worker_t;
 
-static void parallel_init(int threads) {
-    pthread_attr_t attr;
-    pthread_cond_init(&p_ready, NULL);
-    pthread_cond_init(&p_start, NULL);
-    pthread_mutex_init(&p_lock, NULL);
-    p_worker_not_ready = threads;
-    p_workers_ready = 0;
-    pthread_attr_init(&attr);
-    if (!p_worker || !worker_data) {
-        p_worker = malloc(threads * sizeof(pthread_t));
-        worker_data = malloc(threads * sizeof(struct f_data));
+typedef struct bw_pool {
+    bw_worker_t workers[BW_MAX_THREADS];
+    Semaphore done;
+    int threads;
+    bool ok;
+} bw_pool_t;
+
+static void bw_worker_entry(void *arg) {
+    bw_worker_t *w = (bw_worker_t *)arg;
+    bw_pool_t *p = w->pool;
+    /* Best-effort pin to own core. */
+    svcSetThreadCoreMask(CUR_THREAD_HANDLE, w->core, (u64)1 << w->core);
+    for (;;) {
+        semaphoreWait(&w->start);
+        bench_kernel_fn f = w->func;
+        if (!f)
+            break;
+        f(w->dst, w->src, w->size);
+        semaphoreSignal(&p->done);
     }
+}
+
+static bool bw_pool_init(bw_pool_t *p, int threads) {
+    memset(p, 0, sizeof(*p));
+    if (threads > BW_MAX_THREADS)
+        threads = BW_MAX_THREADS;
+    p->threads = threads;
+    semaphoreInit(&p->done, 0);
+    s32 prio = 0x2C;
+    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+    for (int i = 0; i < threads; i++) {
+        bw_worker_t *w = &p->workers[i];
+        w->core = i;
+        w->func = NULL;
+        w->pool = p;
+        semaphoreInit(&w->start, 0);
+        if (R_FAILED(threadCreate(&w->thread, bw_worker_entry, w, NULL, 0x8000, prio, i)))
+            return false;
+        w->created = true;
+        if (R_FAILED(threadStart(&w->thread)))
+            return false;
+    }
+    p->ok = true;
+    return true;
+}
+
+static void bw_pool_free(bw_pool_t *p) {
+    for (int i = 0; i < p->threads; i++) {
+        bw_worker_t *w = &p->workers[i];
+        if (w->created) {
+            w->func = NULL; /* shutdown */
+            semaphoreSignal(&w->start);
+        }
+    }
+    for (int i = 0; i < p->threads; i++) {
+        bw_worker_t *w = &p->workers[i];
+        if (w->created) {
+            threadWaitForExit(&w->thread);
+            threadClose(&w->thread);
+            w->created = false;
+        }
+    }
+    p->ok = false;
+}
+
+static double bw_run_once(bw_pool_t *p, bench_kernel_fn f, int64_t *dstbuf, int64_t *srcbuf, long size) {
+    int threads = p->threads;
+    for (int i = 0; i < threads; i++) {
+        bw_worker_t *w = &p->workers[i];
+        w->func = f;
+        w->dst = dstbuf + (size * i) / (long)sizeof(int64_t);
+        w->src = srcbuf + (size * i) / (long)sizeof(int64_t);
+        w->size = size;
+    }
+    uint64_t t0 = armGetSystemTick();
     for (int i = 0; i < threads; i++)
-        pthread_create(p_worker + i, &attr, thread_func, worker_data + i);
-    pthread_mutex_lock(&p_lock);
-    while (p_worker_not_ready != 0)
-        pthread_cond_wait(&p_ready, &p_lock);
-    pthread_mutex_unlock(&p_lock);
+        semaphoreSignal(&p->workers[i].start);
+    for (int i = 0; i < threads; i++)
+        semaphoreWait(&p->done);
+    uint64_t t1 = armGetSystemTick();
+    return (double)armTicksToNs(t1 - t0) / 1000000000.0;
 }
 
-static void aligned_block_copy(int64_t *__restrict dst_, int64_t *__restrict src, int size) {
-    volatile int64_t *dst = dst_;
-    int64_t t1, t2, t3, t4;
-    while ((size -= 64) >= 0) {
-        t1 = *src++;
-        t2 = *src++;
-        t3 = *src++;
-        t4 = *src++;
-        *dst++ = t1;
-        *dst++ = t2;
-        *dst++ = t3;
-        *dst++ = t4;
-        t1 = *src++;
-        t2 = *src++;
-        t3 = *src++;
-        t4 = *src++;
-        *dst++ = t1;
-        *dst++ = t2;
-        *dst++ = t3;
-        *dst++ = t4;
-    }
-}
+#define BW_GPR_CLOBBERS \
+    "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17", "x18"
 
-static void aligned_block_fetch(int64_t *__restrict dst, int64_t *__restrict src_, int size) {
-    volatile int64_t *src = src_;
-    (void)dst;
-    while ((size -= 64) >= 0) {
-        *src++;
-        *src++;
-        *src++;
-        *src++;
-        *src++;
-        *src++;
-        *src++;
-        *src++;
-    }
+static void aligned_block_copy(int64_t *dst, int64_t *src, long size) {
+    __asm__ __volatile__(
+        "1:\n"
+        "ldp x3, x4,   [%[s], #0x00]\n"
+        "ldp x5, x6,   [%[s], #0x10]\n"
+        "ldp x7, x8,   [%[s], #0x20]\n"
+        "ldp x9, x10,  [%[s], #0x30]\n"
+        "ldp x11, x12, [%[s], #0x40]\n"
+        "ldp x13, x14, [%[s], #0x50]\n"
+        "ldp x15, x16, [%[s], #0x60]\n"
+        "ldp x17, x18, [%[s], #0x70]\n"
+        "add %[s], %[s], #0x80\n"
+        "stp x3, x4,   [%[d], #0x00]\n"
+        "stp x5, x6,   [%[d], #0x10]\n"
+        "stp x7, x8,   [%[d], #0x20]\n"
+        "stp x9, x10,  [%[d], #0x30]\n"
+        "stp x11, x12, [%[d], #0x40]\n"
+        "stp x13, x14, [%[d], #0x50]\n"
+        "stp x15, x16, [%[d], #0x60]\n"
+        "stp x17, x18, [%[d], #0x70]\n"
+        "add %[d], %[d], #0x80\n"
+        "subs %[n], %[n], #0x80\n"
+        "b.gt 1b\n"
+        : [s] "+r"(src), [d] "+r"(dst), [n] "+r"(size)
+        :
+        : BW_GPR_CLOBBERS, "cc", "memory");
 }
-
-static void aligned_block_fill(int64_t *__restrict dst_, int64_t *__restrict src, int size) {
-    volatile int64_t *dst = dst_;
-    int64_t data = *src;
-    while ((size -= 64) >= 0) {
-        *dst++ = data;
-        *dst++ = data;
-        *dst++ = data;
-        *dst++ = data;
-        *dst++ = data;
-        *dst++ = data;
-        *dst++ = data;
-        *dst++ = data;
-    }
+static void aligned_block_fetch(int64_t *dst, int64_t *src, long size) {
+    (void)src;
+    __asm__ __volatile__(
+        "1:\n"
+        "ldp x3, x4,   [%[p], #0x00]\n"
+        "ldp x5, x6,   [%[p], #0x10]\n"
+        "ldp x7, x8,   [%[p], #0x20]\n"
+        "ldp x9, x10,  [%[p], #0x30]\n"
+        "ldp x11, x12, [%[p], #0x40]\n"
+        "ldp x13, x14, [%[p], #0x50]\n"
+        "ldp x15, x16, [%[p], #0x60]\n"
+        "ldp x17, x18, [%[p], #0x70]\n"
+        "add %[p], %[p], #0x80\n"
+        "subs %[n], %[n], #0x80\n"
+        "b.gt 1b\n"
+        : [p] "+r"(dst), [n] "+r"(size)
+        :
+        : BW_GPR_CLOBBERS, "cc", "memory");
+}
+static void aligned_block_fill(int64_t *dst, int64_t *src, long size) {
+    (void)src;
+    __asm__ __volatile__(
+        "1:\n"
+        "stp x3, x4,   [%[d], #0x00]\n"
+        "stp x5, x6,   [%[d], #0x10]\n"
+        "stp x7, x8,   [%[d], #0x20]\n"
+        "stp x9, x10,  [%[d], #0x30]\n"
+        "stp x11, x12, [%[d], #0x40]\n"
+        "stp x13, x14, [%[d], #0x50]\n"
+        "stp x15, x16, [%[d], #0x60]\n"
+        "stp x17, x18, [%[d], #0x70]\n"
+        "add %[d], %[d], #0x80\n"
+        "subs %[n], %[n], #0x80\n"
+        "b.gt 1b\n"
+        : [d] "+r"(dst), [n] "+r"(size)
+        :
+        : BW_GPR_CLOBBERS, "cc", "memory");
 }
 
 static double gettime(void) {
@@ -136,9 +199,12 @@ static double gettime(void) {
     return (double)((int64_t)tv.tv_sec * 1000000 + tv.tv_usec) / 1000000.;
 }
 
-static double bandwidth_bench_helper(int threads, int64_t *dstbuf, int64_t *srcbuf, int size, void (*f)(int64_t *, int64_t *, int)) {
+static double bandwidth_bench_helper(bw_pool_t *pool, int threads, int64_t *dstbuf, int64_t *srcbuf, long size, bench_kernel_fn f) {
     int i, loopcount, innerloopcount, n;
-    double t, t1, t2, speed, maxspeed, s, s0, s1, s2;
+    double t, speed, maxspeed, s, s0, s1, s2;
+
+    if (!pool || !pool->ok)
+        return 0.;
 
     s = s0 = s1 = s2 = 0.;
     maxspeed = 0.;
@@ -148,21 +214,8 @@ static double bandwidth_bench_helper(int threads, int64_t *dstbuf, int64_t *srcb
         t = 0.;
         do {
             loopcount += innerloopcount;
-            for (i = 0; i < innerloopcount; i++) {
-                parallel_init(threads);
-                for (int pt = 0; pt < threads; pt++) {
-                    (worker_data + pt)->func = f;
-                    (worker_data + pt)->arg1 = dstbuf + size * pt / sizeof(int64_t);
-                    (worker_data + pt)->arg2 = srcbuf + size * pt / sizeof(int64_t);
-                    (worker_data + pt)->arg3 = size;
-                }
-                t1 = gettime();
-                parallel_run();
-                for (int pt = 0; pt < threads; pt++)
-                    pthread_join(p_worker[pt], NULL);
-                t2 = gettime();
-                t += t2 - t1;
-            }
+            for (i = 0; i < innerloopcount; i++)
+                t += bw_run_once(pool, f, dstbuf, srcbuf, size);
             innerloopcount *= 2;
         } while (t < 0.5);
 
@@ -306,13 +359,16 @@ void bench_run_full(bench_results_t *out, bench_progress_fn progress, void *user
 
     int64_t *srcbuf, *dstbuf;
     void *poolbuf = alloc_nonaliased_buffers((void **)&srcbuf, size * threads, (void **)&dstbuf, size * threads, NULL, 0);
+    bw_pool_t bw;
+    bw_pool_init(&bw, threads);
 
     STEP("CPU copy", 0.40f);
-    out->cpu_copy = bandwidth_bench_helper(threads, dstbuf, srcbuf, size, aligned_block_copy);
+    out->cpu_copy = bandwidth_bench_helper(&bw, threads, dstbuf, srcbuf, size, aligned_block_copy);
     STEP("CPU read", 0.55f);
-    out->cpu_read = bandwidth_bench_helper(threads, dstbuf, srcbuf, size, aligned_block_fetch);
+    out->cpu_read = bandwidth_bench_helper(&bw, threads, dstbuf, srcbuf, size, aligned_block_fetch);
     STEP("CPU write", 0.70f);
-    out->cpu_write = bandwidth_bench_helper(threads, dstbuf, srcbuf, size, aligned_block_fill);
+    out->cpu_write = bandwidth_bench_helper(&bw, threads, dstbuf, srcbuf, size, aligned_block_fill);
+    bw_pool_free(&bw);
     free(poolbuf);
 
     STEP("Latency", 0.85f);
@@ -325,9 +381,10 @@ void bench_run_full(bench_results_t *out, bench_progress_fn progress, void *user
 struct bench_ctx {
     int phase;
     bool is_4gb;
-    void *pool;
+    void *buf;
     int64_t *src;
     int64_t *dst;
+    bw_pool_t bw;
 };
 
 bench_ctx *bench_begin(void) {
@@ -335,7 +392,8 @@ bench_ctx *bench_begin(void) {
     if (!c)
         return NULL;
     c->is_4gb = (appletGetAppletType() == AppletType_Application);
-    c->pool = alloc_nonaliased_buffers((void **)&c->src, SIZE * 3, (void **)&c->dst, SIZE * 3, NULL, 0);
+    c->buf = alloc_nonaliased_buffers((void **)&c->src, SIZE * 3, (void **)&c->dst, SIZE * 3, NULL, 0);
+    bw_pool_init(&c->bw, 3);
     return c;
 }
 
@@ -349,24 +407,25 @@ bool bench_step(bench_ctx *c, bench_results_t *out, const char **label, float *f
             *frac = 0.25f;
             break;
         case 1:
-            out->cpu_copy = bandwidth_bench_helper(threads, c->dst, c->src, size, aligned_block_copy);
+            out->cpu_copy = bandwidth_bench_helper(&c->bw, threads, c->dst, c->src, size, aligned_block_copy);
             *label = "CPU copy";
             *frac = 0.45f;
             break;
         case 2:
-            out->cpu_read = bandwidth_bench_helper(threads, c->dst, c->src, size, aligned_block_fetch);
+            out->cpu_read = bandwidth_bench_helper(&c->bw, threads, c->dst, c->src, size, aligned_block_fetch);
             *label = "CPU read";
             *frac = 0.60f;
             break;
         case 3:
-            out->cpu_write = bandwidth_bench_helper(threads, c->dst, c->src, size, aligned_block_fill);
+            out->cpu_write = bandwidth_bench_helper(&c->bw, threads, c->dst, c->src, size, aligned_block_fill);
             *label = "CPU write";
             *frac = 0.75f;
             break;
         case 4:
-            if (c->pool) {
-                free(c->pool);
-                c->pool = NULL;
+            bw_pool_free(&c->bw);
+            if (c->buf) {
+                free(c->buf);
+                c->buf = NULL;
             }
             latency_bench(&out->l2_ns, &out->ram_ns);
             *label = "Latency";
@@ -384,7 +443,8 @@ bool bench_step(bench_ctx *c, bench_results_t *out, const char **label, float *f
 void bench_end(bench_ctx *c) {
     if (!c)
         return;
-    if (c->pool)
-        free(c->pool);
+    bw_pool_free(&c->bw);
+    if (c->buf)
+        free(c->buf);
     free(c);
 }
