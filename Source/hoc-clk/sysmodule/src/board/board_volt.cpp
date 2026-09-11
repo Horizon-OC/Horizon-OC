@@ -283,7 +283,7 @@ namespace board {
 
     bool ValidateHandle(Handle handle) {
         if (handle == INVALID_HANDLE) {
-            fileUtils::LogLine("Invalid handle!");
+            file::utils::LogLine("Invalid handle!");
             return false;
         }
 
@@ -319,7 +319,7 @@ namespace board {
 
                 if (R_FAILED(resultProcessMemory) || !address) {
                     svcCloseHandle(handle);
-                    fileUtils::LogLine("[dvfs] Failed to get process data. %u", R_DESCRIPTION(resultProcessMemory));
+                    file::utils::LogLine("[dvfs] Failed to get process data. %u", R_DESCRIPTION(resultProcessMemory));
                     handle = INVALID_HANDLE;
                     return;
                 }
@@ -359,11 +359,11 @@ namespace board {
 
                 // Print info AFTER we exit the handle to avoid hangs
                 for (int i = 0; i < (int)std::size(cpuVoltTable); ++i) {
-                    fileUtils::LogLine("[dvfs] cpu volt %d: %u mV", i, cpuVoltTable[i]);
+                    file::utils::LogLine("[dvfs] cpu volt %d: %u mV", i, cpuVoltTable[i]);
                 }
 
                 for (int i = 0; i < (int)std::size(voltData.voltTableStock); ++i) {
-                    fileUtils::LogLine("[dvfs] gpu volt %d: %u mV", i, voltData.voltTableStock[0][i]);
+                    file::utils::LogLine("[dvfs] gpu volt %d: %u mV", i, voltData.voltTableStock[0][i]);
                 }
                 return;
             }
@@ -412,7 +412,7 @@ namespace board {
 
         ASSERT_RESULT_OK(WriteGpuVoltTable(table), "WriteGpuVoltTable");
         voltData.ramVmin = vmin;
-        fileUtils::LogLine("[dvfs] voltage set to %u mV", vmin);
+        file::utils::LogLine("[dvfs] voltage set to %u mV", vmin);
     }
 
     u32 GetGpuFreqIndex(u32 hz) {

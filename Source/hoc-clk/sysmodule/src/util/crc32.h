@@ -18,7 +18,7 @@
 #pragma once
 #include <stdint.h>
 #include <stdio.h>
-namespace crc32 {
-    uint32_t crc32(const uint8_t *data, size_t length);
-    uint32_t checksum_file(const char *filename);
-}  // namespace crc32
+namespace util {
+    uint32_t Crc32(const uint8_t *data, size_t length);
+    uint32_t ChecksumFile(const char *filename);
+}  // namespace util

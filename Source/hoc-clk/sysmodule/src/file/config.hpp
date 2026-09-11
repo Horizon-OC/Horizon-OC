@@ -33,7 +33,7 @@
 
 #define CONFIG_VAL_SECTION "values"
 
-namespace config {
+namespace file::config {
 
     void Initialize();
     void Exit();
@@ -65,4 +65,4 @@ namespace config {
 
     extern uint64_t configValues[HocClkConfigValue_EnumMax];
 
-}  // namespace config
+}  // namespace file::config

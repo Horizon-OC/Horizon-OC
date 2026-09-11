@@ -23,7 +23,7 @@
 #include "../i2c/i2cDrv.h"
 
 
-namespace bq24193 {
+namespace tsensor {
 #define BQ24193_I2C_ADDR 0x6B
 
 // REG 0 masks.
@@ -126,5 +126,5 @@ namespace bq24193 {
         BQ24193_Temp_Cold = 5,
         BQ24193_Temp_Hot = 6,
     };
-    u8 getBQTemp();
-}  // namespace bq24193
+    u8 GetBqTemp();
+}  // namespace tsensor

@@ -206,7 +206,7 @@ namespace tsensor {
         SetBit(CFG_TAG_EN_POS, &r);
         ClearBit(CFG_DISABLE_CLK_POS, &r);
         WritePmcReg(r, PMC_AOTAG_CFG);
-        fileUtils::LogLine("[aotag] Init complete!");
+        file::utils::LogLine("[aotag] Init complete!");
         wasInit = true;
     }
 

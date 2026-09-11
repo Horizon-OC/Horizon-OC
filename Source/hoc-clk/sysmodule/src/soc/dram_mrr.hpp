@@ -18,7 +18,7 @@
  */
 #include <hocclk.h>
 
-namespace soc::mrr {
+namespace soc {
     typedef enum RealDramModule {
         /* Erista */
         DRAM_HBMGCH = 0,

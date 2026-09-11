@@ -17,8 +17,8 @@
 
 #include <crc32.h>
 
-namespace crc32 {
-    uint32_t crc32(const uint8_t *data, size_t length) {
+namespace util {
+    uint32_t Crc32(const uint8_t *data, size_t length) {
         uint32_t crc = 0xFFFFFFFF;
 
         for (size_t i = 0; i < length; i++) {
@@ -30,7 +30,7 @@ namespace crc32 {
         return ~crc;
     }
 
-    uint32_t checksum_file(const char *filename) {
+    uint32_t ChecksumFile(const char *filename) {
         FILE *file = fopen(filename, "rb");
         if (!file) {
             perror("[crc32] Error opening file");
@@ -53,4 +53,4 @@ namespace crc32 {
         fclose(file);
         return ~crc;
     }
-}  // namespace crc32
+}  // namespace util

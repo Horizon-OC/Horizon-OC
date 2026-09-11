@@ -29,7 +29,7 @@
 #include <stdexcept>
 #include <switch.h>
 
-#define ERROR_THROW(format, ...) errors::ThrowException(format "\n  in %s:%u", ##__VA_ARGS__, __FILE__, __LINE__)
+#define ERROR_THROW(format, ...) file::utils::ThrowException(format "\n  in %s:%u", ##__VA_ARGS__, __FILE__, __LINE__)
 #define ERROR_RESULT_THROW(rc, format, ...) ERROR_THROW(format "\n  RC: [0x%x] %04d-%04d", ##__VA_ARGS__, rc, R_MODULE(rc), R_DESCRIPTION(rc))
 #define ASSERT_RESULT_OK(rc, format, ...)                                   \
     if (R_FAILED(rc)) {                                                     \
@@ -40,7 +40,7 @@
         ERROR_THROW("No such %s: %u", #n, v); \
     }
 
-namespace errors {
+namespace file::utils {
 
     void ThrowException(const char *format, ...);
 

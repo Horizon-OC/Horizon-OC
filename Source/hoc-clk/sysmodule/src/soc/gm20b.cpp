@@ -21,7 +21,7 @@
 #include "gm20b.hpp"
 
 
-namespace gm20b {
+namespace soc {
     u64 gpu_base = 0;
 #define GPU_PA 0x57000000
 #define GPU_SIZE 0x1000000
@@ -123,7 +123,7 @@ namespace gm20b {
         return success;
     }
 
-    bool setClock(u32 khz) {
+    bool SetClock(u32 khz) {
         if (!gpu_base)
             QueryMemoryMapping(&gpu_base, GPU_PA, GPU_SIZE);
 
@@ -146,4 +146,4 @@ namespace gm20b {
 
         return _gpu_pllg_slide(new_divn);
     }
-}  // namespace gm20b
+}  // namespace soc

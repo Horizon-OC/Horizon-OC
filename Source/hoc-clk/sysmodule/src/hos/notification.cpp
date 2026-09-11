@@ -18,8 +18,8 @@
 #include "lang.hpp"
 #include "notification.h"
 
-namespace notification {
-    void writeNotification(const std::string &message) {
+namespace hos {
+    void WriteNotification(const std::string &message) {
         static const char *flagPath = "sdmc:/config/ultrahand/flags/NOTIFICATIONS.flag";
 
         FILE *flagFile = fopen(flagPath, "r");
@@ -28,7 +28,7 @@ namespace notification {
         }
         fclose(flagFile);
 
-        const std::string translated = lang::Translate(message);
+        const std::string translated = Translate(message);
 
         std::string filename = "hoc-" + std::to_string(std::time(nullptr)) + ".notify";
         std::string fullPath = "sdmc:/config/ultrahand/notifications/" + filename;
@@ -42,4 +42,4 @@ namespace notification {
             fclose(file);
         }
     }
-}  // namespace notification
+}  // namespace hos

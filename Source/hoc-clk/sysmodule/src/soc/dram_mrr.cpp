@@ -24,7 +24,7 @@
 #include <switch.h>
 #include <unistd.h>
 
-namespace soc::mrr {
+namespace soc {
     constexpr u64 EmcPhysBase  = 0x7001B000;
     constexpr u64 Emc0PhysBase = 0x7001E000;
     constexpr u64 Emc1PhysBase = 0x7001F000;

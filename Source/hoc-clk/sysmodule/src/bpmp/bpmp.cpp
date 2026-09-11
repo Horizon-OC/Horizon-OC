@@ -128,7 +128,7 @@ namespace bpmp {
             const u32 cmd = HocClkBpmpCmd_RequestShutdown;
             Result rc = SmcCopyToIram(WorkRamPhysBase + offsetof(HocClkBpmpSharedInfo, cmd), &cmd, sizeof(cmd));
             if (R_FAILED(rc)) {
-                fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: SmcCopyToIram failed: 0x%x", rc);
+                file::utils::LogLine("[bpmp] RequestBpmpExitAndWait: SmcCopyToIram failed: 0x%x", rc);
                 return;
             }
 
@@ -145,8 +145,8 @@ namespace bpmp {
                 }
             }
 
-            fileUtils::LogLine("[bpmp] RequestBpmpExitAndWait: BPMP timeout (cannot sleep)");
-            board::panic(board::CpuPanic);
+            file::utils::LogLine("[bpmp] RequestBpmpExitAndWait: BPMP timeout (cannot sleep)");
+            board::Panic(board::CpuPanic);
         }
 
         void EnableBpmpSmmu() {
@@ -200,7 +200,7 @@ namespace bpmp {
 
         void SendBpmpCommand(HocClkBpmpCmd cmd, u32 arg1 = 0, u32 arg2 = 0, u32 arg3 = 0, u32 arg4 = 0) {
             if (!WaitForBpmpReady()) {
-                fileUtils::LogLine("[bpmp] SendBpmpCommand: BPMP never signaled ready (cmd=%u)", static_cast<u32>(cmd));
+                file::utils::LogLine("[bpmp] SendBpmpCommand: BPMP never signaled ready (cmd=%u)", static_cast<u32>(cmd));
                 return;
             }
 
@@ -216,7 +216,7 @@ namespace bpmp {
 
             const Result rc = SmcCopyToIram(WorkRamPhysBase + offsetof(HocClkBpmpSharedInfo, cmd), &req, sizeof(req));
             if (R_FAILED(rc)) {
-                fileUtils::LogLine("[bpmp] SendBpmpCommand: SmcCopyToIram failed: 0x%x (cmd=%u)", rc, static_cast<u32>(cmd));
+                file::utils::LogLine("[bpmp] SendBpmpCommand: SmcCopyToIram failed: 0x%x (cmd=%u)", rc, static_cast<u32>(cmd));
             }
         }
 
@@ -261,7 +261,7 @@ namespace bpmp {
 
                         Result wrc = StartBpmfwExecution();
                         if (R_FAILED(wrc)) {
-                            fileUtils::LogLine("[bpmp] restart after wake failed: 0x%x", wrc);
+                            file::utils::LogLine("[bpmp] restart after wake failed: 0x%x", wrc);
                         }
 
                         s_isAwake = true;
@@ -279,19 +279,19 @@ namespace bpmp {
 
     Result StartBpmfwExecution() {
         if (!IsPatchedExosphere()) {
-            fileUtils::LogLine("[bpmp] Cannot start without patched exosphere");
+            file::utils::LogLine("[bpmp] Cannot start without patched exosphere");
             return (Result)1;
         }
 
         const size_t fw_size = bpmpfw_bin_size;
         if (fw_size == 0 || fw_size > FwStagingSize) {
-            fileUtils::LogLine("[bpmp] StartBpmfwExecution: bpmpfw of %zu bytes is invalid (should not happen)!", fw_size);
+            file::utils::LogLine("[bpmp] StartBpmfwExecution: bpmpfw of %zu bytes is invalid (should not happen)!", fw_size);
             return (Result)1;
         }
 
         std::memcpy(s_fwStageBuf, bpmpfw_bin, fw_size);
 
-        fileUtils::LogLine("[bpmp] StartBpmfwExecution: loading %zu bytes at 0x%llx",
+        file::utils::LogLine("[bpmp] StartBpmfwExecution: loading %zu bytes at 0x%llx",
                             fw_size, static_cast<unsigned long long>(FwIramPhysBase));
 
         /* Disable the SMMU so DRAM can be accessed */
@@ -329,7 +329,7 @@ namespace bpmp {
 
             Result copy_rc = SmcCopyToIram(FwIramPhysBase + ofs, s_fwStageBuf + ofs, static_cast<u32>(chunk));
             if (R_FAILED(copy_rc)) {
-                fileUtils::LogLine("[bpmp] SmcCopyToIram failed at +0x%zx: 0x%x", ofs, copy_rc);
+                file::utils::LogLine("[bpmp] SmcCopyToIram failed at +0x%zx: 0x%x", ofs, copy_rc);
                 return copy_rc;
             }
         }
@@ -340,26 +340,26 @@ namespace bpmp {
         /* Clear the halt written by bootloader. */
         SmcReadWriteRegister(FlowCtlrPhysBase + FlowCtlrHaltCopEvents, 0xFFFFFFFF, FlowModeNone);
 
-        SendBpmpCommand(HocClkBpmpCmd_SetUartEnabled, fileUtils::IsUartEnabled() ? 1u : 0u);
+        SendBpmpCommand(HocClkBpmpCmd_SetUartEnabled, file::utils::IsUartEnabled() ? 1u : 0u);
 
         return 0;
     }
 
     void StartSleepMonitorThread() {
         if (!IsPatchedExosphere()) {
-            fileUtils::LogLine("[bpmp] Cant start BPMP without exosphere patch");
+            file::utils::LogLine("[bpmp] Cant start BPMP without exosphere patch");
             return;
         }
 
         Result rc = pscmInitialize();
         if (R_FAILED(rc)) {
-            fileUtils::LogLine("[bpmp] pscmInitialize failed: 0x%x", rc);
+            file::utils::LogLine("[bpmp] pscmInitialize failed: 0x%x", rc);
             return;
         }
 
         rc = pscmGetPmModule(&s_pscModule, PscModuleId, pscDependencies, sizeof(pscDependencies) / sizeof(u32), true);
         if (R_FAILED(rc)) {
-            fileUtils::LogLine("[bpmp] pscmGetPmModule failed: 0x%x", rc);
+            file::utils::LogLine("[bpmp] pscmGetPmModule failed: 0x%x", rc);
             pscmExit();
             return;
         }
@@ -367,7 +367,7 @@ namespace bpmp {
 
         rc = threadCreate(&s_pscThread, PscThreadFunc, nullptr, NULL, 0x1000, 0x10, 3);
         if (R_FAILED(rc)) {
-            fileUtils::LogLine("[bpmp] failed to create psc thread: 0x%x", rc);
+            file::utils::LogLine("[bpmp] failed to create psc thread: 0x%x", rc);
             return;
         }
         threadStart(&s_pscThread);

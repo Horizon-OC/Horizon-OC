@@ -18,6 +18,6 @@
 #pragma once
 #include "../board/board.hpp"
 
-namespace AulaDisplay {
+namespace display {
     void SetDisplayColorMode(AulaColorMode mode);
 }

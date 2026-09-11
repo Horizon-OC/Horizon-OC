@@ -19,6 +19,6 @@
 #pragma once
 #include <../board/board.hpp>
 
-namespace gm20b {
-    bool setClock(u32 khz);
+namespace soc {
+    bool SetClock(u32 khz);
 }

@@ -192,7 +192,7 @@ namespace board {
 
         Result bpmpfwRc = bpmp::StartBpmfwExecution();
         if (R_FAILED(bpmpfwRc)) {
-            fileUtils::LogLine("[bpmp] StartBpmfwExecution failed: 0x%x", bpmpfwRc);
+            file::utils::LogLine("[bpmp] StartBpmfwExecution failed: 0x%x", bpmpfwRc);
         }
         bpmp::StartSleepMonitorThread();
 
@@ -255,7 +255,7 @@ namespace board {
     }
 
     #define MMIO32(addr) (*reinterpret_cast<volatile u32 *>(addr))
-    NX_NORETURN void panic(u32 c) {
+    NX_NORETURN void Panic(u32 c) {
         SmcReadWriteRegister(0x7000EC40 /* PMC_BASE + APBDEV_PMC_SCRATCH200 */, ~0, c);
         
         /* Write timer magic */
@@ -287,7 +287,7 @@ namespace board {
     }
 
     u8 GetDramID() {
-        return soc::mrr::IdentifyDramId();
+        return soc::IdentifyDramId();
     }
 
     u8 GetFuseDramId() {
@@ -301,7 +301,7 @@ namespace board {
         svcCallSecureMonitor(&args);
 
         if (args.X[1] == (MC_REGISTER_BASE + MC_EMEM_CFG_0)) {  // if param 1 is identical read failed
-            notification::writeNotification("Horizon OC\nSecmon read failed!\n This may be a hardware issue!");
+            hos::WriteNotification("Horizon OC\nSecmon read failed!\n This may be a hardware issue!");
             return false;
         }
 

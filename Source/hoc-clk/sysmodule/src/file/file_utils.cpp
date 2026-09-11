@@ -35,7 +35,7 @@
 
 extern "C" void __libnx_init_time(void);
 
-namespace fileUtils {
+namespace file::utils {
 
     namespace {
 
@@ -234,4 +234,4 @@ namespace fileUtils {
         fsExit();
     }
 
-}  // namespace fileUtils
+}  // namespace file::utils

@@ -491,7 +491,7 @@ namespace tsensor {
 
         StartSensors();
 
-        fileUtils::LogLine("[Soctherm] Finished init.");
+        file::utils::LogLine("[Soctherm] Finished init.");
     }
 
 }  // namespace tsensor

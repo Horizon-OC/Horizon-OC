@@ -31,7 +31,7 @@
 
 #include "../util/lockable_mutex.h"
 
-namespace clockManager {
+namespace mgr {
 
     struct FreqTable {
         std::uint32_t count;
@@ -68,4 +68,4 @@ namespace clockManager {
 
     void Tick();
     void WaitForNextTick();
-}  // namespace clockManager
+}  // namespace mgr

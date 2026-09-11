@@ -22,11 +22,9 @@
 
 // I *think* HOS changes this in some ways, so look into it more
 
-namespace AulaDisplay {
+namespace display {
 #define MMIO_REG32(base, off) *(vu32 *)((base) + (off))
 #define DSI(off) MMIO_REG32(board::dsiVirtAddr, (off) << 2u)
-#define DSI_WR_DATA 0xA
-#define DSI_TRIGGER 0x13
 
     void _display_dsi_send_cmd(u8 cmd, u32 param, u32 wait) {
         DSI(DSI_WR_DATA) = (param << 8) | cmd;
@@ -43,4 +41,4 @@ namespace AulaDisplay {
         _display_dsi_send_cmd(MIPI_DSI_DCS_SHORT_WRITE_PARAM, MIPI_DCS_PRIV_SM_SET_COLOR_MODE | (mode << 8), 0);
     }
 
-}  // namespace AulaDisplay
+}  // namespace display

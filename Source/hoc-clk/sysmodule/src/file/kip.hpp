@@ -28,7 +28,7 @@
 #include "file_utils.hpp"
 
 
-namespace kip {
+namespace file::kip {
     extern bool kipAvailable;
 
     typedef struct {
@@ -825,4 +825,4 @@ namespace kip {
     void MigrateKipData(u32 custRev, u32 version);
     void SetKipData();
     void GetKipData();
-}  // namespace kip
+}  // namespace file::kip

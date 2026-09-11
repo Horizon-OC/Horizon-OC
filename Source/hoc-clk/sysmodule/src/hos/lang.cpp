@@ -24,7 +24,7 @@
 
 #include "../file/file_utils.hpp"
 
-namespace lang {
+namespace hos {
     namespace {
 
         constexpr const char *UltrahandConfigPath = "sdmc:/config/ultrahand/config.ini";
@@ -138,4 +138,4 @@ namespace lang {
         return text;
     }
 
-}  // namespace lang
+}  // namespace hos

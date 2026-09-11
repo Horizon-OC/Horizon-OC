@@ -30,13 +30,13 @@
 #include "errors.hpp"
 #include "file_utils.hpp"
 
-namespace errors {
+namespace file::utils {
     void ThrowException(const char *format, ...) {
         va_list args;
         va_start(args, format);
-        fileUtils::LogLine(format, args);
+        LogLine(format, args);
         va_end(args);
         diagAbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
         // throw std::runtime_error(msg);
     }
-}  // namespace errors
+}  // namespace file::utils

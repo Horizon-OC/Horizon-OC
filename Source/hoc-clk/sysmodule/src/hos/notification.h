@@ -20,6 +20,6 @@
 #include <cstdio>
 #include <ctime>
 #include <string>
-namespace notification {
-    void writeNotification(const std::string &message);
+namespace hos {
+    void WriteNotification(const std::string &message);
 }

@@ -21,7 +21,7 @@
 #include "process_management.hpp"
 #include <sys/stat.h>
 
-namespace integrations {
+namespace hos {
 
     namespace {
 
@@ -98,7 +98,7 @@ namespace integrations {
         if (!gSharedMemoryUsed)
             return 254;
 
-        u64 tid = processManagement::GetCurrentApplicationId();
+        u64 tid = GetCurrentApplicationId();
         if (tid == 0)
             return 254;
 
@@ -119,7 +119,7 @@ namespace integrations {
         if (!gSharedMemoryUsed)
             return 0;
 
-        u64 tid = processManagement::GetCurrentApplicationId();
+        u64 tid = GetCurrentApplicationId();
         if (tid == 0)
             return 0;
 
@@ -151,4 +151,4 @@ namespace integrations {
         return 0;
     }
 
-}  // namespace integrations
+}  // namespace hos

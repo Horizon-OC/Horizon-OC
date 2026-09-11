@@ -61,44 +61,44 @@ namespace ipcService {
         }
 
         Result GetCurrentContext(HocClkContext *out_ctx) {
-            *out_ctx = clockManager::GetCurrentContext();
+            *out_ctx = mgr::GetCurrentContext();
             return 0;
         }
 
         Result ExitHandler() {
-            clockManager::SetRunning(false);
+            mgr::SetRunning(false);
             return 0;
         }
 
         Result GetProfileCount(std::uint64_t *tid, std::uint8_t *out_count) {
-            if (!config::HasProfilesLoaded()) {
+            if (!file::config::HasProfilesLoaded()) {
                 return HOCCLK_ERROR(ConfigNotLoaded);
             }
-            *out_count = config::GetProfileCount(*tid);
+            *out_count = file::config::GetProfileCount(*tid);
             return 0;
         }
 
         Result GetProfiles(std::uint64_t *tid, HocClkTitleProfileList *out_profiles) {
-            if (!config::HasProfilesLoaded()) {
+            if (!file::config::HasProfilesLoaded()) {
                 return HOCCLK_ERROR(ConfigNotLoaded);
             }
-            config::GetProfiles(*tid, out_profiles);
+            file::config::GetProfiles(*tid, out_profiles);
             return 0;
         }
 
         Result SetProfiles(HocClkIpc_SetProfiles_Args *args) {
-            if (!config::HasProfilesLoaded()) {
+            if (!file::config::HasProfilesLoaded()) {
                 return HOCCLK_ERROR(ConfigNotLoaded);
             }
             HocClkTitleProfileList profiles = args->profiles;
-            if (!config::SetProfiles(args->tid, &profiles, true)) {
+            if (!file::config::SetProfiles(args->tid, &profiles, true)) {
                 return HOCCLK_ERROR(ConfigSaveFailed);
             }
             return 0;
         }
 
         Result SetEnabled(std::uint8_t *enabled) {
-            config::SetEnabled(*enabled);
+            file::config::SetEnabled(*enabled);
             return 0;
         }
 
@@ -106,24 +106,24 @@ namespace ipcService {
             if (!HOCCLK_ENUM_VALID(HocClkModule, args->module)) {
                 return HOCCLK_ERROR(Generic);
             }
-            config::SetOverrideHz(args->module, args->hz);
+            file::config::SetOverrideHz(args->module, args->hz);
             return 0;
         }
 
         Result GetConfigValuesHandler(HocClkConfigValueList *out_configValues) {
-            if (!config::HasProfilesLoaded()) {
+            if (!file::config::HasProfilesLoaded()) {
                 return HOCCLK_ERROR(ConfigNotLoaded);
             }
-            config::GetConfigValues(out_configValues);
+            file::config::GetConfigValues(out_configValues);
             return 0;
         }
 
         Result SetConfigValuesHandler(HocClkConfigValueList *configValues) {
-            if (!config::HasProfilesLoaded()) {
+            if (!file::config::HasProfilesLoaded()) {
                 return HOCCLK_ERROR(ConfigNotLoaded);
             }
             HocClkConfigValueList copy = *configValues;
-            if (!config::SetConfigValues(&copy, true)) {
+            if (!file::config::SetConfigValues(&copy, true)) {
                 return HOCCLK_ERROR(ConfigSaveFailed);
             }
             return 0;
@@ -136,12 +136,12 @@ namespace ipcService {
             if (args->maxCount != size / sizeof(*out_list)) {
                 return HOCCLK_ERROR(Generic);
             }
-            clockManager::GetFreqList(args->module, out_list, args->maxCount, out_count);
+            mgr::GetFreqList(args->module, out_list, args->maxCount, out_count);
             return 0;
         }
 
         Result RequestGpuVoltage(HocClkIpc_RequestGpuVoltage_Args *args) {
-            clockManager::ApplyGpuFreqVoltRequest(args->voltage, args->hz);
+            mgr::ApplyGpuFreqVoltRequest(args->voltage, args->hz);
             return 0;
         }
 
@@ -235,7 +235,7 @@ namespace ipcService {
 
                 case HocClkIpcCmd_SetKipData:
                     if (r->data.size >= 0) {
-                        kip::SetKipData();
+                        file::kip::SetKipData();
                         return 0;
                     }
                     break;
@@ -260,7 +260,7 @@ namespace ipcService {
                         return;
                     }
                     if (rc != KERNELRESULT(ConnectionClosed)) {
-                        fileUtils::LogLine("[ipc] ipcServerProcess: [0x%x] %04d-%04d", rc, R_MODULE(rc), R_DESCRIPTION(rc));
+                        file::utils::LogLine("[ipc] ipcServerProcess: [0x%x] %04d-%04d", rc, R_MODULE(rc), R_DESCRIPTION(rc));
                     }
                 }
             }

@@ -27,12 +27,12 @@
 #pragma once
 #include <switch.h>
 
-namespace processManagement {
+namespace hos {
 
-    void Initialize();
+    void InitializeProcessManagement();
     void WaitForQLaunch();
     u64 GetCurrentApplicationId();
-    Result isApplicationOutOfFocus(bool *outOfFocus);
-    void Exit();
+    Result IsApplicationOutOfFocus(bool *outOfFocus);
+    void ExitProcessManagement();
 
-}  // namespace processManagement
+}  // namespace hos

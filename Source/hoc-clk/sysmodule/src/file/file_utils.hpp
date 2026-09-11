@@ -45,7 +45,7 @@
 #define FILE_PROFILES_DIR FILE_CONFIG_DIR "/profiles"
 #define FILE_LEGACY_CONFIG_PATH FILE_CONFIG_DIR "/config.ini"
 
-namespace fileUtils {
+namespace file::utils {
 
     void Exit();
     Result Initialize();
@@ -56,4 +56,4 @@ namespace fileUtils {
     void LogLine(const char *format, ...);
     void WriteContextToCsv(const HocClkContext *context);
 
-}  // namespace fileUtils
+}  // namespace file::utils

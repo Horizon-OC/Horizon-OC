@@ -49,7 +49,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-namespace config {
+namespace file::config {
 
     uint64_t configValues[HocClkConfigValue_EnumMax];
 
@@ -122,14 +122,14 @@ namespace config {
                     std::uint64_t input = strtoul(value, NULL, 0);
                     if (!hocclkValidConfigValue((HocClkConfigValue)kval, input)) {
                         input = hocclkDefaultConfigValue((HocClkConfigValue)kval);
-                        fileUtils::LogLine("[cfg] Invalid value for key '%s': using default %llu", key, input);
+                        file::utils::LogLine("[cfg] Invalid value for key '%s': using default %llu", key, input);
                     }
                     configValues[kval] = input;
                     return 1;
                 }
             }
 
-            fileUtils::LogLine("[cfg] Skipping key '%s' in settings: Unrecognized config value", key);
+            file::utils::LogLine("[cfg] Skipping key '%s' in settings: Unrecognized config value", key);
             return 1;
         }
 
@@ -147,14 +147,14 @@ namespace config {
                     std::uint64_t input = strtoul(value, NULL, 0);
                     if (!hocclkValidConfigValue((HocClkConfigValue)kval, input)) {
                         input = hocclkDefaultConfigValue((HocClkConfigValue)kval);
-                        fileUtils::LogLine("[cfg] Invalid value for key '%s': using default %llu", key, input);
+                        file::utils::LogLine("[cfg] Invalid value for key '%s': using default %llu", key, input);
                     }
                     configValues[kval] = input;
                     return 1;
                 }
             }
 
-            fileUtils::LogLine("[cfg] Skipping key '%s' in kip: Unrecognized config value", key);
+            file::utils::LogLine("[cfg] Skipping key '%s' in kip: Unrecognized config value", key);
             return 1;
         }
 
@@ -216,26 +216,26 @@ namespace config {
         }
 
         void LoadSettings() {
-            fileUtils::LogLine("[cfg] Reading %s", gSettingsPath.c_str());
+            file::utils::LogLine("[cfg] Reading %s", gSettingsPath.c_str());
             gSettingsMtime = CheckFileMtime(gSettingsPath.c_str());
             if (!gSettingsMtime) {
-                fileUtils::LogLine("[cfg] Settings file not found, using defaults");
+                file::utils::LogLine("[cfg] Settings file not found, using defaults");
                 return;
             }
             if (!ini_browse(&BrowseSettingsIni, nullptr, gSettingsPath.c_str())) {
-                fileUtils::LogLine("[cfg] Error loading settings file");
+                file::utils::LogLine("[cfg] Error loading settings file");
             }
         }
 
         void LoadKip() {
-            fileUtils::LogLine("[cfg] Reading %s", gKipPath.c_str());
+            file::utils::LogLine("[cfg] Reading %s", gKipPath.c_str());
             gKipMtime = CheckFileMtime(gKipPath.c_str());
             if (!gKipMtime) {
-                fileUtils::LogLine("[cfg] KIP config file not found, using defaults");
+                file::utils::LogLine("[cfg] KIP config file not found, using defaults");
                 return;
             }
             if (!ini_browse(&BrowseKipIni, nullptr, gKipPath.c_str())) {
-                fileUtils::LogLine("[cfg] Error loading KIP config file");
+                file::utils::LogLine("[cfg] Error loading KIP config file");
             }
         }
 
@@ -298,7 +298,7 @@ namespace config {
 
             struct stat st;
             if (stat(path, &st) == 0) {
-                fileUtils::LogLine("[cfg] Loading profile %s", path);
+                file::utils::LogLine("[cfg] Loading profile %s", path);
                 ini_browse(&BrowseProfileIni, (void *)(uintptr_t)tid, path);
                 gProfileMtimes[tid] = st.st_mtime;
             } else {
@@ -341,7 +341,7 @@ namespace config {
                         return 1;
                     }
                 }
-                fileUtils::LogLine("[cfg]   Skipping unrecognized key '%s'", key);
+                file::utils::LogLine("[cfg]   Skipping unrecognized key '%s'", key);
             } else {
                 std::uint64_t tid = strtoul(section, NULL, 16);
                 if (tid && strlen(section) == 16) {
@@ -357,28 +357,28 @@ namespace config {
                 return;
             }
 
-            fileUtils::LogLine("[cfg] Migrating legacy config.ini");
-            fileUtils::LogLine("[cfg] Legacy path: %s", gLegacyPath.c_str());
-            fileUtils::LogLine("[cfg] Settings path: %s", gSettingsPath.c_str());
-            fileUtils::LogLine("[cfg] Profiles dir: %s", gProfilesDir.c_str());
+            file::utils::LogLine("[cfg] Migrating legacy config.ini");
+            file::utils::LogLine("[cfg] Legacy path: %s", gLegacyPath.c_str());
+            file::utils::LogLine("[cfg] Settings path: %s", gSettingsPath.c_str());
+            file::utils::LogLine("[cfg] Profiles dir: %s", gProfilesDir.c_str());
 
             MigrationData data;
-            fileUtils::LogLine("[cfg] Parsing legacy config.ini...");
+            file::utils::LogLine("[cfg] Parsing legacy config.ini...");
             ini_browse(&MigrationBrowseFunc, &data, gLegacyPath.c_str());
-            fileUtils::LogLine("[cfg] Found %zu settings keys, %zu KIP keys, %zu profile entries",
+            file::utils::LogLine("[cfg] Found %zu settings keys, %zu KIP keys, %zu profile entries",
                                data.settingsKeys.size(), data.kipKeys.size(), data.profileEntries.size());
 
             if (!data.settingsKeys.empty()) {
-                fileUtils::LogLine("[cfg] Creating kip directory: %s", FILE_KIP_DIR);
+                file::utils::LogLine("[cfg] Creating kip directory: %s", FILE_KIP_DIR);
                 mkdir(FILE_KIP_DIR, 0777);
-                fileUtils::LogLine("[cfg] Writing %zu settings to %s", data.settingsKeys.size(), gSettingsPath.c_str());
+                file::utils::LogLine("[cfg] Writing %zu settings to %s", data.settingsKeys.size(), gSettingsPath.c_str());
 
                 std::vector<std::string> sKeys;
                 std::vector<std::string> sVals;
                 sKeys.reserve(data.settingsKeys.size());
                 sVals.reserve(data.settingsKeys.size());
                 for (const auto &entry : data.settingsKeys) {
-                    fileUtils::LogLine("[cfg]   %s = %s", entry.first.c_str(), entry.second.c_str());
+                    file::utils::LogLine("[cfg]   %s = %s", entry.first.c_str(), entry.second.c_str());
                     sKeys.push_back(entry.first);
                     sVals.push_back(entry.second);
                 }
@@ -395,23 +395,23 @@ namespace config {
                 valPtrs.push_back(NULL);
 
                 if (!ini_putsection(CONFIG_VAL_SECTION, keyPtrs.data(), valPtrs.data(), gSettingsPath.c_str())) {
-                    fileUtils::LogLine("[cfg] FAILED to write settings section");
+                    file::utils::LogLine("[cfg] FAILED to write settings section");
                 } else {
-                    fileUtils::LogLine("[cfg] Settings migration done");
+                    file::utils::LogLine("[cfg] Settings migration done");
                 }
             } else {
-                fileUtils::LogLine("[cfg] No settings keys to migrate");
+                file::utils::LogLine("[cfg] No settings keys to migrate");
             }
 
             if (!data.kipKeys.empty()) {
-                fileUtils::LogLine("[cfg] Writing %zu KIP keys to %s", data.kipKeys.size(), gKipPath.c_str());
+                file::utils::LogLine("[cfg] Writing %zu KIP keys to %s", data.kipKeys.size(), gKipPath.c_str());
 
                 std::vector<std::string> kKeys;
                 std::vector<std::string> kVals;
                 kKeys.reserve(data.kipKeys.size());
                 kVals.reserve(data.kipKeys.size());
                 for (const auto &entry : data.kipKeys) {
-                    fileUtils::LogLine("[cfg]   %s = %s", entry.first.c_str(), entry.second.c_str());
+                    file::utils::LogLine("[cfg]   %s = %s", entry.first.c_str(), entry.second.c_str());
                     kKeys.push_back(entry.first);
                     kVals.push_back(entry.second);
                 }
@@ -428,9 +428,9 @@ namespace config {
                 kValPtrs.push_back(NULL);
 
                 if (!ini_putsection(CONFIG_VAL_SECTION, kKeyPtrs.data(), kValPtrs.data(), gKipPath.c_str())) {
-                    fileUtils::LogLine("[cfg] FAILED to write KIP section");
+                    file::utils::LogLine("[cfg] FAILED to write KIP section");
                 } else {
-                    fileUtils::LogLine("[cfg] KIP migration done");
+                    file::utils::LogLine("[cfg] KIP migration done");
                 }
 
                 for (const auto &entry : data.kipKeys) {
@@ -448,10 +448,10 @@ namespace config {
                     }
                 }
             } else {
-                fileUtils::LogLine("[cfg] No KIP keys to migrate");
+                file::utils::LogLine("[cfg] No KIP keys to migrate");
             }
 
-            fileUtils::LogLine("[cfg] Creating profiles directory: %s", FILE_PROFILES_DIR);
+            file::utils::LogLine("[cfg] Creating profiles directory: %s", FILE_PROFILES_DIR);
             mkdir(FILE_PROFILES_DIR, 0777);
 
             std::map<std::uint64_t, std::vector<std::pair<std::string, std::string>>> profileBuckets;
@@ -459,20 +459,20 @@ namespace config {
                 profileBuckets[entry.first].push_back(entry.second);
             }
 
-            fileUtils::LogLine("[cfg] Writing %zu profiles (%zu TIDs)", data.profileEntries.size(), profileBuckets.size());
+            file::utils::LogLine("[cfg] Writing %zu profiles (%zu TIDs)", data.profileEntries.size(), profileBuckets.size());
             for (const auto &bucket : profileBuckets) {
                 char filename[32];
                 snprintf(filename, sizeof(filename), "%016lX.ini", bucket.first);
                 std::string profilePath = gProfilesDir + "/" + filename;
 
-                fileUtils::LogLine("[cfg]   TID=%016lX %zu keys -> %s", bucket.first, bucket.second.size(), profilePath.c_str());
+                file::utils::LogLine("[cfg]   TID=%016lX %zu keys -> %s", bucket.first, bucket.second.size(), profilePath.c_str());
 
                 std::vector<std::string> pKeys;
                 std::vector<std::string> pVals;
                 pKeys.reserve(bucket.second.size());
                 pVals.reserve(bucket.second.size());
                 for (const auto &kv : bucket.second) {
-                    fileUtils::LogLine("[cfg]     %s = %s", kv.first.c_str(), kv.second.c_str());
+                    file::utils::LogLine("[cfg]     %s = %s", kv.first.c_str(), kv.second.c_str());
                     pKeys.push_back(kv.first);
                     pVals.push_back(kv.second);
                 }
@@ -489,17 +489,17 @@ namespace config {
                 valPtrs.push_back(NULL);
 
                 if (!ini_putsection(CONFIG_VAL_SECTION, keyPtrs.data(), valPtrs.data(), profilePath.c_str())) {
-                    fileUtils::LogLine("[cfg]   FAILED to write profile for TID %016lX", bucket.first);
+                    file::utils::LogLine("[cfg]   FAILED to write profile for TID %016lX", bucket.first);
                 }
             }
-            fileUtils::LogLine("[cfg] Profiles migration done");
+            file::utils::LogLine("[cfg] Profiles migration done");
 
-            fileUtils::LogLine("[cfg] Renaming legacy config to config.ini.migrated");
+            file::utils::LogLine("[cfg] Renaming legacy config to config.ini.migrated");
             if (rename(gLegacyPath.c_str(), (gLegacyPath + ".migrated").c_str()) != 0) {
-                fileUtils::LogLine("[cfg] WARNING: Failed to rename legacy config file");
+                file::utils::LogLine("[cfg] WARNING: Failed to rename legacy config file");
             }
             gMigrationHappened = true;
-            fileUtils::LogLine("[cfg] Migration complete");
+            file::utils::LogLine("[cfg] Migration complete");
         }
 
     }  // namespace
@@ -570,7 +570,7 @@ namespace config {
             auto it = gProfileMtimes.find(HOCCLK_GLOBAL_PROFILE_TID);
             time_t known = (it != gProfileMtimes.end()) ? it->second : 0;
             if (CheckFileMtime(profilePath) != known) {
-                fileUtils::LogLine("[cfg] Global profile changed on disk, dropping cache");
+                file::utils::LogLine("[cfg] Global profile changed on disk, dropping cache");
                 DropGlobalProfile();
                 profilesChanged = true;
             }
@@ -580,7 +580,7 @@ namespace config {
             auto it = gProfileMtimes.find(gCurrentGameTid);
             time_t known = (it != gProfileMtimes.end()) ? it->second : 0;
             if (CheckFileMtime(profilePath) != known) {
-                fileUtils::LogLine("[cfg] Profile %016lX changed on disk, dropping cache", gCurrentGameTid);
+                file::utils::LogLine("[cfg] Profile %016lX changed on disk, dropping cache", gCurrentGameTid);
                 EvictCurrentGame();
                 profilesChanged = true;
             }
@@ -676,7 +676,7 @@ namespace config {
         if (keys.empty()) {
             struct stat st;
             if (stat(profilePath, &st) == 0 && remove(profilePath) != 0) {
-                fileUtils::LogLine("[cfg] Failed to remove empty profile %s", profilePath);
+                file::utils::LogLine("[cfg] Failed to remove empty profile %s", profilePath);
                 return false;
             }
         } else if (!ini_putsection(CONFIG_VAL_SECTION, keyPointers.data(), valuePointers.data(), profilePath)) {
@@ -829,9 +829,9 @@ namespace config {
         if (immediate) {
             for (unsigned int kval = 0; kval < HocClkConfigValue_EnumMax; kval++) {
                 if (hocclkValidConfigValue((HocClkConfigValue)kval, configValues->values[kval])) {
-                    config::configValues[kval] = configValues->values[kval];
+                    file::config::configValues[kval] = configValues->values[kval];
                 } else {
-                    config::configValues[kval] = hocclkDefaultConfigValue((HocClkConfigValue)kval);
+                    file::config::configValues[kval] = hocclkDefaultConfigValue((HocClkConfigValue)kval);
                 }
             }
             SetProfileDirty(true);
@@ -842,7 +842,7 @@ namespace config {
 
     bool ResetConfigValue(HocClkConfigValue kval) {
         if (!HOCCLK_ENUM_VALID(HocClkConfigValue, kval)) {
-            fileUtils::LogLine("[cfg] Invalid HocClkConfigValue: %u", kval);
+            file::utils::LogLine("[cfg] Invalid HocClkConfigValue: %u", kval);
             return false;
         }
 
@@ -869,12 +869,12 @@ namespace config {
         const char *targetPath = hocclkIsKipConfigValue(kval) ? gKipPath.c_str() : gSettingsPath.c_str();
 
         if (!ini_putsection(CONFIG_VAL_SECTION, iniKeys.data(), valuePointers.data(), targetPath)) {
-            fileUtils::LogLine("[cfg] Failed to reset config value %u in INI", kval);
+            file::utils::LogLine("[cfg] Failed to reset config value %u in INI", kval);
             return false;
         }
 
         configValues[kval] = defaultValue;
-        fileUtils::LogLine("[cfg] Reset config value %u to default: %llu", kval, defaultValue);
+        file::utils::LogLine("[cfg] Reset config value %u to default: %llu", kval, defaultValue);
         SetProfileDirty(true);
 
         return true;
@@ -923,4 +923,4 @@ namespace config {
         ini_puts(section, key, NULL, gSettingsPath.c_str());
         ini_puts(section, key, NULL, gKipPath.c_str());
     }
-}  // namespace config
+}  // namespace file::config

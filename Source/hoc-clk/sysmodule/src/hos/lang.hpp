@@ -19,11 +19,11 @@
 
 #include <string>
 
-namespace lang {
+namespace hos {
 
     // Translates text using Ultrahand's language setting and
     // /config/horizon-oc/lang/<lang>.json (same format as the overlay).
     // Returns the original text when no translation is available.
     std::string Translate(const std::string &text);
 
-}  // namespace lang
+}  // namespace hos

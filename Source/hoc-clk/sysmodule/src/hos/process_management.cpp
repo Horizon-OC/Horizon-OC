@@ -31,7 +31,7 @@
 #include "process_management.hpp"
 
 
-namespace processManagement {
+namespace hos {
 
     namespace {
         constexpr u64 Qlaunch = 0x0100000000001000ULL;
@@ -39,7 +39,7 @@ namespace processManagement {
         Service pdmqryClone;
     }  // namespace
 
-    void Initialize() {
+    void InitializeProcessManagement() {
         Result rc = 0;
 
         rc = pmdmntInitialize();
@@ -67,7 +67,7 @@ namespace processManagement {
     }
 
     // Ty to Masa for this function!
-    Result isApplicationOutOfFocus(bool *outOfFocus) {
+    Result IsApplicationOutOfFocus(bool *outOfFocus) {
         static s32 last_total_entries = 0;
         static bool isOutOfFocus = false;
         s32 total_entries = 0;
@@ -158,10 +158,10 @@ namespace processManagement {
         return tid;
     }
 
-    void Exit() {
+    void ExitProcessManagement() {
         pmdmntExit();
         pminfoExit();
         pdmqryExit();
     }
 
-}  // namespace processManagement
+}  // namespace hos

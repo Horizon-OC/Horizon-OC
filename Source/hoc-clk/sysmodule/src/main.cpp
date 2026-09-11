@@ -120,44 +120,44 @@ void __appExit(void) {
 }
 
 int main(int argc, char **argv) {
-    Result rc = fileUtils::Initialize();
+    Result rc = file::utils::Initialize();
     if (R_FAILED(rc)) {
         fatalThrow(rc);
         return 1;
     }
-    config::Initialize();
-    config::Refresh();  // Get config from file
+    file::config::Initialize();
+    file::config::Refresh();  // Get config from file
 
     board::Initialize();
-    processManagement::Initialize();
+    hos::InitializeProcessManagement();
 
-    processManagement::WaitForQLaunch();
+    hos::WaitForQLaunch();
 
-    clockManager::Initialize();
+    mgr::Initialize();
     ipcService::Initialize();
 
-    clockManager::SetRunning(true);
-    config::SetEnabled(true);
+    mgr::SetRunning(true);
+    file::config::SetEnabled(true);
     ipcService::SetRunning(true);
     // TemperaturePoint *table;
     // ReadConfigFile(&table);
     // InitFanController(table);
     // StartFanControllerThread();
 
-    while (clockManager::Running()) {
-        clockManager::Tick();
-        clockManager::WaitForNextTick();
+    while (mgr::Running()) {
+        mgr::Tick();
+        mgr::WaitForNextTick();
     }
 
     ipcService::SetRunning(false);
     ipcService::Exit();
-    clockManager::Exit();
-    processManagement::Exit();
+    mgr::Exit();
+    hos::ExitProcessManagement();
     board::Exit();
-    config::Exit();
-    fileUtils::LogLine("Exiting hoc-clk");
+    file::config::Exit();
+    file::utils::LogLine("Exiting hoc-clk");
     svcSleepThread(1000000ULL);
-    fileUtils::Exit();
+    file::utils::Exit();
 
     return 0;
 }

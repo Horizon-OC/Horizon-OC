@@ -55,7 +55,7 @@ namespace board {
 
         s32 PollDramMr4TempMilli() {
             u8 mr4 = 0;
-            if (!soc::mrr::ReadRamMr4(&mr4))
+            if (!soc::ReadRamMr4(&mr4))
                 return 0; /* stock exosphere */
 
             /* TODO: verify this table manually*/
@@ -132,7 +132,7 @@ namespace board {
                 break;
             }
             case HocClkThermalSensor_BQ24193: {
-                millis = bq24193::getBQTemp();
+                millis = tsensor::GetBqTemp();
                 break;
             }
             case HocClkThermalSensor_AO: {

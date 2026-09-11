@@ -82,10 +82,10 @@ namespace board {
 
     void HandleCpuUv() {
         if (board::GetSocType() == HocClkSocType_Erista)
-            board::SetDfllTunings(config::GetConfigValue(KipConfigValue_eristaCpuUV), 0, 1581000000);  // Erista tbreak is always 1581MHz
+            board::SetDfllTunings(file::config::GetConfigValue(KipConfigValue_eristaCpuUV), 0, 1581000000);  // Erista tbreak is always 1581MHz
         else
-            board::SetDfllTunings(config::GetConfigValue(KipConfigValue_marikoCpuUVLow), config::GetConfigValue(KipConfigValue_marikoCpuUVHigh),
-                                  board::CalculateTbreak(config::GetConfigValue(KipConfigValue_tableConf)));
+            board::SetDfllTunings(file::config::GetConfigValue(KipConfigValue_marikoCpuUVLow), file::config::GetConfigValue(KipConfigValue_marikoCpuUVHigh),
+                                  board::CalculateTbreak(file::config::GetConfigValue(KipConfigValue_tableConf)));
     }
 
     void SetHz(HocClkModule module, u32 hz) {
@@ -130,11 +130,11 @@ namespace board {
                 PcvSetHz(GetPcvModule(module), pcvHz);
             }
         }
-        if (config::GetConfigValue(HocClkConfigValue_LiveCpuUv) && module == HocClkModule_CPU) {
+        if (file::config::GetConfigValue(HocClkConfigValue_LiveCpuUv) && module == HocClkModule_CPU) {
             HandleCpuUv();
         }
         if (useGm20b) {
-            if (gm20b::setClock(hz / 1000)) {
+            if (soc::SetClock(hz / 1000)) {
                 currentInjectedHz = hz;
             }
         }

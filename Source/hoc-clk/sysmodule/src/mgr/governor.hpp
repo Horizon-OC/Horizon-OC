@@ -28,7 +28,7 @@
 #include "clock_manager.hpp"
 
 
-namespace governor {
+namespace mgr {
     extern bool isCpuGovernorInBoostMode;
     extern bool isVRREnabled;
     extern bool isGpuGovernorEnabled;
@@ -36,7 +36,7 @@ namespace governor {
     extern bool lastGpuGovernorState;
     extern bool lastCpuGovernorState;
     extern bool lastVrrGovernorState;
-    void startThreads();
-    void exitThreads();
+    void StartThreads();
+    void ExitThreads();
     void HandleGovernor(uint32_t targetHz);
-}  // namespace governor
+}  // namespace mgr

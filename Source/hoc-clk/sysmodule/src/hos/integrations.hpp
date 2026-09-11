@@ -20,7 +20,7 @@
 #include <hocclk.h>
 #include <switch.h>
 
-namespace integrations {
+namespace hos {
 
     struct NxFpsSharedBlock {
         uint32_t MAGIC;
@@ -66,4 +66,4 @@ namespace integrations {
     u8 GetSaltyNXFPS();
     u16 GetSaltyNXResolutionHeight();
 
-}  // namespace integrations
+}  // namespace hos

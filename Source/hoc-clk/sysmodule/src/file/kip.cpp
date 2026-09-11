@@ -22,22 +22,22 @@
 #include "../mapping/mem_map.hpp"
 #include "kip.hpp"
 
-namespace kip {
+namespace file::kip {
 
     bool kipAvailable = false;
     void SetKipData() {
         // TODO: figure out if this REALLY causes issues (i doubt it)
         // if(board::GetSocType() == HocClkSocType_Mariko) {
-        //     if(R_FAILED(I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM_VDDQ, config::GetConfigValue(KipConfigValue_marikoEmcVddqVolt) / 1000))) {
-        //         fileUtils::LogLine("[clock_manager] Failed set i2c vddq");
-        //         notification::writeNotification("Horizon OC\nFailed to write I2C\nwhile setting vddq");
+        //     if(R_FAILED(I2c_BuckConverter_SetMvOut(&I2c_Mariko_DRAM_VDDQ, file::config::GetConfigValue(KipConfigValue_marikoEmcVddqVolt) / 1000))) {
+        //         file::utils::LogLine("[clock_manager] Failed set i2c vddq");
+        //         hos::WriteNotification("Horizon OC\nFailed to write I2C\nwhile setting vddq");
         //     }
         // }
         CustomizeTable table;
         FILE *fp = fopen("sdmc:/atmosphere/kips/hoc.kip", "r+b");
 
         if (fp == NULL) {
-            notification::writeNotification("Horizon OC\nKip opening failed");
+            hos::WriteNotification("Horizon OC\nKip opening failed");
             kipAvailable = false;
             return;
         }
@@ -45,8 +45,8 @@ namespace kip {
 
         if (!cust_read_table_f(fp, &table)) {
             fclose(fp);
-            fileUtils::LogLine("[kip] Failed to read KIP file");
-            notification::writeNotification("Horizon OC\nKip read failed");
+            file::utils::LogLine("[kip] Failed to read KIP file");
+            hos::WriteNotification("Horizon OC\nKip read failed");
             return;
         }
 
@@ -54,121 +54,121 @@ namespace kip {
         u32 kipVersion = cust_get_kip_version(&table);
         if (custRev < CUST_REV || kipVersion < KIP_VERSION) {
             fclose(fp);
-            notification::writeNotification("Horizon OC\nOutdated kip detected!\nPlease update Horizon OC");
-            fileUtils::LogLine("Cust revision: %u", custRev);
-            fileUtils::LogLine("Kip version: %u", kipVersion);
+            hos::WriteNotification("Horizon OC\nOutdated kip detected!\nPlease update Horizon OC");
+            file::utils::LogLine("Cust revision: %u", custRev);
+            file::utils::LogLine("Kip version: %u", kipVersion);
             return;
         } else if (custRev > CUST_REV || kipVersion > KIP_VERSION) {
             fclose(fp);
-            notification::writeNotification("Horizon OC\nOutdated sysmodule detected!\nPlease update Horizon OC");
-            fileUtils::LogLine("Cust revision: %u", custRev);
-            fileUtils::LogLine("Kip version: %u", kipVersion);
+            hos::WriteNotification("Horizon OC\nOutdated sysmodule detected!\nPlease update Horizon OC");
+            file::utils::LogLine("Cust revision: %u", custRev);
+            file::utils::LogLine("Kip version: %u", kipVersion);
             return;
         }
 
-        // CUST_WRITE_FIELD_BATCH(&table, mtcConf, config::GetConfigValue(KipConfigValue_mtcConf));
-        CUST_WRITE_FIELD_BATCH(&table, hpMode, config::GetConfigValue(KipConfigValue_hpMode));
+        // CUST_WRITE_FIELD_BATCH(&table, mtcConf, file::config::GetConfigValue(KipConfigValue_mtcConf));
+        CUST_WRITE_FIELD_BATCH(&table, hpMode, file::config::GetConfigValue(KipConfigValue_hpMode));
 
-        CUST_WRITE_FIELD_BATCH(&table, commonEmcMemVolt, config::GetConfigValue(KipConfigValue_commonEmcMemVolt));
-        CUST_WRITE_FIELD_BATCH(&table, eristaEmcMaxClock, config::GetConfigValue(KipConfigValue_eristaEmcMaxClock));
-        CUST_WRITE_FIELD_BATCH(&table, marikoEmcMaxClock, config::GetConfigValue(KipConfigValue_marikoEmcMaxClock));
-        CUST_WRITE_FIELD_BATCH(&table, marikoEmcVddqVolt, config::GetConfigValue(KipConfigValue_marikoEmcVddqVolt));
-        CUST_WRITE_FIELD_BATCH(&table, emcDvbShift, config::GetConfigValue(KipConfigValue_emcDvbShift));
-        CUST_WRITE_FIELD_BATCH(&table, marikoSocVmax, config::GetConfigValue(KipConfigValue_marikoSocVmax));
+        CUST_WRITE_FIELD_BATCH(&table, commonEmcMemVolt, file::config::GetConfigValue(KipConfigValue_commonEmcMemVolt));
+        CUST_WRITE_FIELD_BATCH(&table, eristaEmcMaxClock, file::config::GetConfigValue(KipConfigValue_eristaEmcMaxClock));
+        CUST_WRITE_FIELD_BATCH(&table, marikoEmcMaxClock, file::config::GetConfigValue(KipConfigValue_marikoEmcMaxClock));
+        CUST_WRITE_FIELD_BATCH(&table, marikoEmcVddqVolt, file::config::GetConfigValue(KipConfigValue_marikoEmcVddqVolt));
+        CUST_WRITE_FIELD_BATCH(&table, emcDvbShift, file::config::GetConfigValue(KipConfigValue_emcDvbShift));
+        CUST_WRITE_FIELD_BATCH(&table, marikoSocVmax, file::config::GetConfigValue(KipConfigValue_marikoSocVmax));
 
-        CUST_WRITE_FIELD_BATCH(&table, t1_tRCD, config::GetConfigValue(KipConfigValue_t1_tRCD));
-        CUST_WRITE_FIELD_BATCH(&table, t2_tRP, config::GetConfigValue(KipConfigValue_t2_tRP));
-        CUST_WRITE_FIELD_BATCH(&table, t3_tRAS, config::GetConfigValue(KipConfigValue_t3_tRAS));
-        CUST_WRITE_FIELD_BATCH(&table, t4_tRRD, config::GetConfigValue(KipConfigValue_t4_tRRD));
-        CUST_WRITE_FIELD_BATCH(&table, t5_tRFC, config::GetConfigValue(KipConfigValue_t5_tRFC));
-        CUST_WRITE_FIELD_BATCH(&table, t6_tRTW, config::GetConfigValue(KipConfigValue_t6_tRTW));
-        CUST_WRITE_FIELD_BATCH(&table, t7_tWTR, config::GetConfigValue(KipConfigValue_t7_tWTR));
-        CUST_WRITE_FIELD_BATCH(&table, t8_tREFI, config::GetConfigValue(KipConfigValue_t8_tREFI));
-        CUST_WRITE_FIELD_BATCH(&table, stepMode, config::GetConfigValue(KipConfigValue_stepMode));
+        CUST_WRITE_FIELD_BATCH(&table, t1_tRCD, file::config::GetConfigValue(KipConfigValue_t1_tRCD));
+        CUST_WRITE_FIELD_BATCH(&table, t2_tRP, file::config::GetConfigValue(KipConfigValue_t2_tRP));
+        CUST_WRITE_FIELD_BATCH(&table, t3_tRAS, file::config::GetConfigValue(KipConfigValue_t3_tRAS));
+        CUST_WRITE_FIELD_BATCH(&table, t4_tRRD, file::config::GetConfigValue(KipConfigValue_t4_tRRD));
+        CUST_WRITE_FIELD_BATCH(&table, t5_tRFC, file::config::GetConfigValue(KipConfigValue_t5_tRFC));
+        CUST_WRITE_FIELD_BATCH(&table, t6_tRTW, file::config::GetConfigValue(KipConfigValue_t6_tRTW));
+        CUST_WRITE_FIELD_BATCH(&table, t7_tWTR, file::config::GetConfigValue(KipConfigValue_t7_tWTR));
+        CUST_WRITE_FIELD_BATCH(&table, t8_tREFI, file::config::GetConfigValue(KipConfigValue_t8_tREFI));
+        CUST_WRITE_FIELD_BATCH(&table, stepMode, file::config::GetConfigValue(KipConfigValue_stepMode));
 
-        CUST_WRITE_FIELD_BATCH(&table, timingEmcTbreak, config::GetConfigValue(KipConfigValue_timingEmcTbreak));
-        CUST_WRITE_FIELD_BATCH(&table, low_t1_tRCD, config::GetConfigValue(KipConfigValue_low_t1_tRCD));
-        CUST_WRITE_FIELD_BATCH(&table, low_t2_tRP, config::GetConfigValue(KipConfigValue_low_t2_tRP));
-        CUST_WRITE_FIELD_BATCH(&table, low_t3_tRAS, config::GetConfigValue(KipConfigValue_low_t3_tRAS));
-        CUST_WRITE_FIELD_BATCH(&table, low_t4_tRRD, config::GetConfigValue(KipConfigValue_low_t4_tRRD));
-        CUST_WRITE_FIELD_BATCH(&table, low_t5_tRFC, config::GetConfigValue(KipConfigValue_low_t5_tRFC));
-        CUST_WRITE_FIELD_BATCH(&table, low_t6_tRTW, config::GetConfigValue(KipConfigValue_low_t6_tRTW));
-        CUST_WRITE_FIELD_BATCH(&table, low_t7_tWTR, config::GetConfigValue(KipConfigValue_low_t7_tWTR));
-        CUST_WRITE_FIELD_BATCH(&table, low_t8_tREFI, config::GetConfigValue(KipConfigValue_low_t8_tREFI));
+        CUST_WRITE_FIELD_BATCH(&table, timingEmcTbreak, file::config::GetConfigValue(KipConfigValue_timingEmcTbreak));
+        CUST_WRITE_FIELD_BATCH(&table, low_t1_tRCD, file::config::GetConfigValue(KipConfigValue_low_t1_tRCD));
+        CUST_WRITE_FIELD_BATCH(&table, low_t2_tRP, file::config::GetConfigValue(KipConfigValue_low_t2_tRP));
+        CUST_WRITE_FIELD_BATCH(&table, low_t3_tRAS, file::config::GetConfigValue(KipConfigValue_low_t3_tRAS));
+        CUST_WRITE_FIELD_BATCH(&table, low_t4_tRRD, file::config::GetConfigValue(KipConfigValue_low_t4_tRRD));
+        CUST_WRITE_FIELD_BATCH(&table, low_t5_tRFC, file::config::GetConfigValue(KipConfigValue_low_t5_tRFC));
+        CUST_WRITE_FIELD_BATCH(&table, low_t6_tRTW, file::config::GetConfigValue(KipConfigValue_low_t6_tRTW));
+        CUST_WRITE_FIELD_BATCH(&table, low_t7_tWTR, file::config::GetConfigValue(KipConfigValue_low_t7_tWTR));
+        CUST_WRITE_FIELD_BATCH(&table, low_t8_tREFI, file::config::GetConfigValue(KipConfigValue_low_t8_tREFI));
 
-        CUST_WRITE_FIELD_BATCH(&table, readLatency1333, config::GetConfigValue(KipConfigValue_read_latency_1333));
-        CUST_WRITE_FIELD_BATCH(&table, readLatency1600, config::GetConfigValue(KipConfigValue_read_latency_1600));
-        CUST_WRITE_FIELD_BATCH(&table, readLatency1866, config::GetConfigValue(KipConfigValue_read_latency_1866));
-        CUST_WRITE_FIELD_BATCH(&table, readLatency2133, config::GetConfigValue(KipConfigValue_read_latency_2133));
+        CUST_WRITE_FIELD_BATCH(&table, readLatency1333, file::config::GetConfigValue(KipConfigValue_read_latency_1333));
+        CUST_WRITE_FIELD_BATCH(&table, readLatency1600, file::config::GetConfigValue(KipConfigValue_read_latency_1600));
+        CUST_WRITE_FIELD_BATCH(&table, readLatency1866, file::config::GetConfigValue(KipConfigValue_read_latency_1866));
+        CUST_WRITE_FIELD_BATCH(&table, readLatency2133, file::config::GetConfigValue(KipConfigValue_read_latency_2133));
 
-        CUST_WRITE_FIELD_BATCH(&table, writeLatency1333, config::GetConfigValue(KipConfigValue_write_latency_1333));
-        CUST_WRITE_FIELD_BATCH(&table, writeLatency1600, config::GetConfigValue(KipConfigValue_write_latency_1600));
-        CUST_WRITE_FIELD_BATCH(&table, writeLatency1866, config::GetConfigValue(KipConfigValue_write_latency_1866));
-        CUST_WRITE_FIELD_BATCH(&table, writeLatency2133, config::GetConfigValue(KipConfigValue_write_latency_2133));
+        CUST_WRITE_FIELD_BATCH(&table, writeLatency1333, file::config::GetConfigValue(KipConfigValue_write_latency_1333));
+        CUST_WRITE_FIELD_BATCH(&table, writeLatency1600, file::config::GetConfigValue(KipConfigValue_write_latency_1600));
+        CUST_WRITE_FIELD_BATCH(&table, writeLatency1866, file::config::GetConfigValue(KipConfigValue_write_latency_1866));
+        CUST_WRITE_FIELD_BATCH(&table, writeLatency2133, file::config::GetConfigValue(KipConfigValue_write_latency_2133));
 
-        CUST_WRITE_FIELD_BATCH(&table, eristaCpuUV, config::GetConfigValue(KipConfigValue_eristaCpuUV));
-        CUST_WRITE_FIELD_BATCH(&table, eristaCpuVmin, config::GetConfigValue(KipConfigValue_eristaCpuVmin));
-        CUST_WRITE_FIELD_BATCH(&table, eristaCpuMaxVolt, config::GetConfigValue(KipConfigValue_eristaCpuMaxVolt));
-        CUST_WRITE_FIELD_BATCH(&table, eristaCpuUnlock, config::GetConfigValue(KipConfigValue_eristaCpuUnlock));
+        CUST_WRITE_FIELD_BATCH(&table, eristaCpuUV, file::config::GetConfigValue(KipConfigValue_eristaCpuUV));
+        CUST_WRITE_FIELD_BATCH(&table, eristaCpuVmin, file::config::GetConfigValue(KipConfigValue_eristaCpuVmin));
+        CUST_WRITE_FIELD_BATCH(&table, eristaCpuMaxVolt, file::config::GetConfigValue(KipConfigValue_eristaCpuMaxVolt));
+        CUST_WRITE_FIELD_BATCH(&table, eristaCpuUnlock, file::config::GetConfigValue(KipConfigValue_eristaCpuUnlock));
 
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuUVLow, config::GetConfigValue(KipConfigValue_marikoCpuUVLow));
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuUVHigh, config::GetConfigValue(KipConfigValue_marikoCpuUVHigh));
-        CUST_WRITE_FIELD_BATCH(&table, tableConf, config::GetConfigValue(KipConfigValue_tableConf));
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuLowVmin, config::GetConfigValue(KipConfigValue_marikoCpuLowVmin));
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuHighVmin, config::GetConfigValue(KipConfigValue_marikoCpuHighVmin));
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuMaxVolt, config::GetConfigValue(KipConfigValue_marikoCpuMaxVolt));
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuMaxClock, config::GetConfigValue(KipConfigValue_marikoCpuMaxClock));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuUVLow, file::config::GetConfigValue(KipConfigValue_marikoCpuUVLow));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuUVHigh, file::config::GetConfigValue(KipConfigValue_marikoCpuUVHigh));
+        CUST_WRITE_FIELD_BATCH(&table, tableConf, file::config::GetConfigValue(KipConfigValue_tableConf));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuLowVmin, file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuHighVmin, file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuMaxVolt, file::config::GetConfigValue(KipConfigValue_marikoCpuMaxVolt));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuMaxClock, file::config::GetConfigValue(KipConfigValue_marikoCpuMaxClock));
 
-        CUST_WRITE_FIELD_BATCH(&table, eristaCpuBoostClock, config::GetConfigValue(KipConfigValue_eristaCpuBoostClock));
-        CUST_WRITE_FIELD_BATCH(&table, marikoCpuBoostClock, config::GetConfigValue(KipConfigValue_marikoCpuBoostClock));
+        CUST_WRITE_FIELD_BATCH(&table, eristaCpuBoostClock, file::config::GetConfigValue(KipConfigValue_eristaCpuBoostClock));
+        CUST_WRITE_FIELD_BATCH(&table, marikoCpuBoostClock, file::config::GetConfigValue(KipConfigValue_marikoCpuBoostClock));
 
-        CUST_WRITE_FIELD_BATCH(&table, eristaGpuUV, config::GetConfigValue(KipConfigValue_eristaGpuUV));
-        CUST_WRITE_FIELD_BATCH(&table, eristaGpuVmin, config::GetConfigValue(KipConfigValue_eristaGpuVmin));
+        CUST_WRITE_FIELD_BATCH(&table, eristaGpuUV, file::config::GetConfigValue(KipConfigValue_eristaGpuUV));
+        CUST_WRITE_FIELD_BATCH(&table, eristaGpuVmin, file::config::GetConfigValue(KipConfigValue_eristaGpuVmin));
 
-        CUST_WRITE_FIELD_BATCH(&table, marikoGpuUV, config::GetConfigValue(KipConfigValue_marikoGpuUV));
-        CUST_WRITE_FIELD_BATCH(&table, marikoGpuVmin, config::GetConfigValue(KipConfigValue_marikoGpuVmin));
-        CUST_WRITE_FIELD_BATCH(&table, marikoGpuVmax, config::GetConfigValue(KipConfigValue_marikoGpuVmax));
+        CUST_WRITE_FIELD_BATCH(&table, marikoGpuUV, file::config::GetConfigValue(KipConfigValue_marikoGpuUV));
+        CUST_WRITE_FIELD_BATCH(&table, marikoGpuVmin, file::config::GetConfigValue(KipConfigValue_marikoGpuVmin));
+        CUST_WRITE_FIELD_BATCH(&table, marikoGpuVmax, file::config::GetConfigValue(KipConfigValue_marikoGpuVmax));
 
-        CUST_WRITE_FIELD_BATCH(&table, commonGpuVoltOffset, config::GetConfigValue(KipConfigValue_commonGpuVoltOffset));
+        CUST_WRITE_FIELD_BATCH(&table, commonGpuVoltOffset, file::config::GetConfigValue(KipConfigValue_commonGpuVoltOffset));
 
         for (int i = 0; i < 25; i++) {
-            table.marikoGpuVoltArray[i] = config::GetConfigValue((HocClkConfigValue)(KipConfigValue_g_volt_76800 + i));
+            table.marikoGpuVoltArray[i] = file::config::GetConfigValue((HocClkConfigValue)(KipConfigValue_g_volt_76800 + i));
         }
 
         for (int i = 0; i < 27; i++) {
-            table.eristaGpuVoltArray[i] = config::GetConfigValue((HocClkConfigValue)(KipConfigValue_g_volt_e_76800 + i));
+            table.eristaGpuVoltArray[i] = file::config::GetConfigValue((HocClkConfigValue)(KipConfigValue_g_volt_e_76800 + i));
         }
 
         for (size_t i = 0; i < 28; ++i) {
-            table.marikoSocVoltArray[i] = config::GetConfigValue((HocClkConfigValue) (KipConfigValue_g_soc_volt_1866000 + i));
+            table.marikoSocVoltArray[i] = file::config::GetConfigValue((HocClkConfigValue) (KipConfigValue_g_soc_volt_1866000 + i));
         }
 
-        CUST_WRITE_FIELD_BATCH(&table, t6_tRTW_fine_tune, config::GetConfigValue(KipConfigValue_t6_tRTW_fine_tune));
-        CUST_WRITE_FIELD_BATCH(&table, t7_tWTR_fine_tune, config::GetConfigValue(KipConfigValue_t7_tWTR_fine_tune));
-        CUST_WRITE_FIELD_BATCH(&table, pcvLogVerbosity,   config::GetConfigValue(KipConfigValue_PcvDebugVerbosity));
+        CUST_WRITE_FIELD_BATCH(&table, t6_tRTW_fine_tune, file::config::GetConfigValue(KipConfigValue_t6_tRTW_fine_tune));
+        CUST_WRITE_FIELD_BATCH(&table, t7_tWTR_fine_tune, file::config::GetConfigValue(KipConfigValue_t7_tWTR_fine_tune));
+        CUST_WRITE_FIELD_BATCH(&table, pcvLogVerbosity,   file::config::GetConfigValue(KipConfigValue_PcvDebugVerbosity));
 
         if (!cust_write_table_f(fp, &table)) {
             fclose(fp);
-            fileUtils::LogLine("[kip] Failed to write KIP file");
-            notification::writeNotification("Horizon OC\nKip write failed");
+            file::utils::LogLine("[kip] Failed to write KIP file");
+            hos::WriteNotification("Horizon OC\nKip write failed");
             return;
         }
         fclose(fp);
 
         HocClkConfigValueList configValues;
-        config::GetConfigValues(&configValues);
+        file::config::GetConfigValues(&configValues);
 
-        configValues.values[KipCrc32] = (u64)crc32::checksum_file("sdmc:/atmosphere/kips/hoc.kip");  // write checksum
+        configValues.values[KipCrc32] = (u64)util::ChecksumFile("sdmc:/atmosphere/kips/hoc.kip");  // write checksum
 
-        if (config::SetConfigValues(&configValues, true)) {
-            fileUtils::LogLine("[kip] KIP data set. CRC32: %ld (Cust Rev %ld)", configValues.values[KipCrc32],
+        if (file::config::SetConfigValues(&configValues, true)) {
+            file::utils::LogLine("[kip] KIP data set. CRC32: %ld (Cust Rev %ld)", configValues.values[KipCrc32],
                                configValues.values[KipConfigValue_custRev]);
             for (u64 i = KipConfigValue_hpMode; i < HocClkConfigValue_EnumMax; i++) {
-                fileUtils::LogLine("%s: %ld", hocclkFormatConfigValue((HocClkConfigValue)i, false), configValues.values[i]);
+                file::utils::LogLine("%s: %ld", hocclkFormatConfigValue((HocClkConfigValue)i, false), configValues.values[i]);
             }
         } else {
-            fileUtils::LogLine("[kip] Warning: Failed to set config values from KIP");
-            notification::writeNotification("Horizon OC\nKip config set failed");
+            file::utils::LogLine("[kip] Warning: Failed to set config values from KIP");
+            hos::WriteNotification("Horizon OC\nKip config set failed");
         }
     }
 
@@ -185,8 +185,8 @@ namespace kip {
             return true;
         }
 
-        notification::writeNotification("Kip is not loaded!");
-        fileUtils::LogLine("Kip was not loaded!");
+        hos::WriteNotification("Kip is not loaded!");
+        file::utils::LogLine("Kip was not loaded!");
         return false;
     }
 
@@ -196,26 +196,26 @@ namespace kip {
         FILE *fp = fopen("sdmc:/atmosphere/kips/hoc.kip", "rb");
 
         if (fp == NULL) {
-            notification::writeNotification("Horizon OC\nKip opening failed");
+            hos::WriteNotification("Horizon OC\nKip opening failed");
             kipAvailable = false;
             return;
         }
         kipAvailable = true;
 
         HocClkConfigValueList configValues;
-        config::GetConfigValues(&configValues);
+        file::config::GetConfigValues(&configValues);
 
         CustomizeTable table;
         if (!cust_read_table_f(fp, &table)) {
             fclose(fp);
-            fileUtils::LogLine("[kip] Failed to read KIP file for GetKipData");
-            notification::writeNotification("Horizon OC\nKip read failed");
+            file::utils::LogLine("[kip] Failed to read KIP file for GetKipData");
+            hos::WriteNotification("Horizon OC\nKip read failed");
             return;
         }
         fclose(fp);
 
         // if(cust_get_cust_rev(&table) != CUST_REV) {
-        //     notification::writeNotification("Horizon OC\nKip version mismatch\nPlease reinstall Horizon OC");
+        //     hos::WriteNotification("Horizon OC\nKip version mismatch\nPlease reinstall Horizon OC");
         //     return;
         // }
 
@@ -223,47 +223,47 @@ namespace kip {
         /* I hate this. */
         /* Don't fetch frequency if it's already set or we would overwrite it. */
         /* This technically only applies to Mariko *for now*. */
-        if (clockManager::patchedEmcMaxClock == 0) {
+        if (mgr::patchedEmcMaxClock == 0) {
             if (board::GetSocType() == HocClkSocType_Mariko) {
-                clockManager::patchedEmcMaxClock = cust_get_mariko_emc_max(&table);
+                mgr::patchedEmcMaxClock = cust_get_mariko_emc_max(&table);
             } else {
-                clockManager::patchedEmcMaxClock = cust_get_erista_emc_max(&table);
+                mgr::patchedEmcMaxClock = cust_get_erista_emc_max(&table);
             }
         }
 
-        if ((u64)crc32::checksum_file("sdmc:/atmosphere/kips/hoc.kip") != config::GetConfigValue(KipCrc32) &&
-            !config::GetConfigValue(HocClkConfigValue_IsFirstLoad)) {
+        if ((u64)util::ChecksumFile("sdmc:/atmosphere/kips/hoc.kip") != file::config::GetConfigValue(KipCrc32) &&
+            !file::config::GetConfigValue(HocClkConfigValue_IsFirstLoad)) {
             MigrateKipData(cust_get_cust_rev(&table), cust_get_kip_version(&table));
             SetKipData();
-            clockManager::gContext.rebootRequired = true;
-            notification::writeNotification("Horizon OC\nKIP has been updated\nPlease reboot your console to use Horizon OC");
+            mgr::gContext.rebootRequired = true;
+            hos::WriteNotification("Horizon OC\nKIP has been updated\nPlease reboot your console to use Horizon OC");
             return;
         }
-        if (config::GetConfigValue(HocClkConfigValue_IsFirstLoad) == true) {
+        if (file::config::GetConfigValue(HocClkConfigValue_IsFirstLoad) == true) {
             configValues.values[HocClkConfigValue_IsFirstLoad] = (u64) false;
-            notification::writeNotification("Horizon OC has been installed");
+            hos::WriteNotification("Horizon OC has been installed");
         }
 
-        configValues.values[KipCrc32] = (u64)crc32::checksum_file("sdmc:/atmosphere/kips/hoc.kip");  // write checksum
+        configValues.values[KipCrc32] = (u64)util::ChecksumFile("sdmc:/atmosphere/kips/hoc.kip");  // write checksum
         // configValues.values[KipConfigValue_mtcConf] = cust_get_mtc_conf(&table);
-        clockManager::gContext.custRev = cust_get_cust_rev(&table);
+        mgr::gContext.custRev = cust_get_cust_rev(&table);
 
         u32 custRev = cust_get_cust_rev(&table);
         u32 kipVersion = cust_get_kip_version(&table);
         if (custRev < CUST_REV || kipVersion < KIP_VERSION) {
-            notification::writeNotification("Horizon OC\nOutdated kip detected!\nPlease update Horizon OC");
-            fileUtils::LogLine("Cust revision: %u", custRev);
-            fileUtils::LogLine("Kip version: %u", kipVersion);
+            hos::WriteNotification("Horizon OC\nOutdated kip detected!\nPlease update Horizon OC");
+            file::utils::LogLine("Cust revision: %u", custRev);
+            file::utils::LogLine("Kip version: %u", kipVersion);
             return;
         } else if (custRev > CUST_REV || kipVersion > KIP_VERSION) {
-            notification::writeNotification("Horizon OC\nOutdated sysmodule detected!\nPlease update Horizon OC");
-            fileUtils::LogLine("Cust revision: %u", custRev);
-            fileUtils::LogLine("Kip version: %u", kipVersion);
+            hos::WriteNotification("Horizon OC\nOutdated sysmodule detected!\nPlease update Horizon OC");
+            file::utils::LogLine("Cust revision: %u", custRev);
+            file::utils::LogLine("Kip version: %u", kipVersion);
             return;
         }
 
-        clockManager::gContext.isKipLoaded = IsKipLoaded();
-        clockManager::gContext.kipVersion = kipVersion;
+        mgr::gContext.isKipLoaded = IsKipLoaded();
+        mgr::gContext.kipVersion = kipVersion;
         configValues.values[KipConfigValue_custRev] = cust_get_cust_rev(&table);
         configValues.values[KipConfigValue_KipVersion] = cust_get_kip_version(&table);  // Run this after the check so we can do migration process
         configValues.values[KipConfigValue_hpMode] = cust_get_hp_mode(&table);
@@ -345,25 +345,25 @@ namespace kip {
         configValues.values[KipConfigValue_PcvDebugVerbosity] = cust_get_log_verbosity(&table);
 
         if (sizeof(HocClkConfigValueList) <= sizeof(configValues)) {
-            if (config::SetConfigValues(&configValues, true)) {
-                fileUtils::LogLine("[kip] KIP loaded. CRC32: %ld (Cust Rev %ld)", configValues.values[KipCrc32],
+            if (file::config::SetConfigValues(&configValues, true)) {
+                file::utils::LogLine("[kip] KIP loaded. CRC32: %ld (Cust Rev %ld)", configValues.values[KipCrc32],
                                    configValues.values[KipConfigValue_custRev]);
                 for (u64 i = KipConfigValue_hpMode; i < HocClkConfigValue_EnumMax; i++) {
-                    fileUtils::LogLine("%s: %ld", hocclkFormatConfigValue((HocClkConfigValue)i, false), configValues.values[i]);
+                    file::utils::LogLine("%s: %ld", hocclkFormatConfigValue((HocClkConfigValue)i, false), configValues.values[i]);
                 }
             } else {
-                fileUtils::LogLine("[kip] Warning: Failed to set config values from KIP");
-                notification::writeNotification("Horizon OC\nKip config set failed");
+                file::utils::LogLine("[kip] Warning: Failed to set config values from KIP");
+                hos::WriteNotification("Horizon OC\nKip config set failed");
             }
         } else {
-            fileUtils::LogLine("[kip] Error: Config value list buffer size mismatch");
-            notification::writeNotification("Horizon OC\nConfig Buffer Mismatch");
+            file::utils::LogLine("[kip] Error: Config value list buffer size mismatch");
+            hos::WriteNotification("Horizon OC\nConfig Buffer Mismatch");
         }
     }
 
     void MigrateKipData(u32 custRev, u32 version) {
         HocClkConfigValueList configValues;
-        config::GetConfigValues(&configValues);
+        file::config::GetConfigValues(&configValues);
         u32 previousVersion = configValues.values[KipConfigValue_KipVersion];
         if (previousVersion < 240 && version >= 240) {
             // <2.4.0 -> 2.4.0 migration
@@ -377,15 +377,15 @@ namespace kip {
             }
 
             // delete handheld TDP config entries
-            config::DeleteKey(CONFIG_VAL_SECTION, "handheld_tdp");
-            config::DeleteKey(CONFIG_VAL_SECTION, "tdp_limit");
-            config::DeleteKey(CONFIG_VAL_SECTION, "tdp_limit_l");
+            file::config::DeleteKey(CONFIG_VAL_SECTION, "handheld_tdp");
+            file::config::DeleteKey(CONFIG_VAL_SECTION, "tdp_limit");
+            file::config::DeleteKey(CONFIG_VAL_SECTION, "tdp_limit_l");
         }
         if(previousVersion < 300 && version >= 300) {
             configValues.values[KipConfigValue_g_volt_1574400] = 2000;
         }
-        config::SetConfigValues(&configValues, true);
+        file::config::SetConfigValues(&configValues, true);
 
     }
 
-}  // namespace kip
+}  // namespace file::kip

@@ -31,7 +31,7 @@ Result QueryMemoryMapping(u64 *virtaddr, u64 physaddr, u64 size) {
 Result MapAddress(u64 &va, const u64 &physAddr, const char *name) {
     Result mapResult = QueryMemoryMapping(&va, physAddr, 0x1000);
     if (R_FAILED(mapResult)) {
-        fileUtils::LogLine("Failed to map %s! %u", name, R_DESCRIPTION(mapResult));
+        file::utils::LogLine("Failed to map %s! %u", name, R_DESCRIPTION(mapResult));
     }
 
     return mapResult;
