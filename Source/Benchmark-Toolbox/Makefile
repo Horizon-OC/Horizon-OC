@@ -12,14 +12,14 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	Benchmark-Toolbox
 BUILD		:=	build
-SOURCES		:=	source source/furmark source/memtester source/cpustress
+SOURCES		:=	source source/furmark source/memtester source/cpustress source/cuda95
 DATA		:=	data
 ICON		:=	icon.jpg
-INCLUDES	:=	source source/furmark source/memtester source/cpustress ../hoc-clk/common/include
+INCLUDES	:=	source source/furmark source/memtester source/cpustress source/cuda95 ../hoc-clk/common/include
 
 APP_TITLE	:=	Benchmark Toolbox
 APP_AUTHOR	:=	Horizon-OC
-APP_VERSION	:=	2.0.0
+APP_VERSION	:=	3.0.0
 
 ROMFS			:=	resources
 BOREALIS_PATH	:=	lib/borealis

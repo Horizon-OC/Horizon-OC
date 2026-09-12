@@ -14,6 +14,7 @@ extern "C" {
 
 #include "bench.h"
 #include "cpu_stress.h"
+#include "cuda95.h"
 #include "gpu_bw.h"
 #include "gpu_stress.h"
 #include "hoc_clk.h"
@@ -436,6 +437,126 @@ class StressTab : public brls::Box {
     brls::Label *statusL, *gflops, *dispatches, *mismatches;
 };
 
+class Cuda95Tab : public brls::Box {
+    public:
+    Cuda95Tab() {
+        this->setAxis(brls::Axis::COLUMN);
+        this->setGrow(1.0f);
+        this->setPadding(40.0f, 60.0f, 40.0f, 60.0f);
+
+        auto *profRow = new brls::Box(brls::Axis::ROW);
+        profRow->setMarginBottom(14.0f);
+        auto *pl = new brls::Label();
+        pl->setText("Profile");
+        pl->setGrow(1.0f);
+        profRow->addView(pl);
+        profVal = new brls::Label();
+        profRow->addView(profVal);
+        this->addView(profRow);
+
+        refreshOpts();
+
+        auto *hint = new brls::Label();
+        hint->setText("L / R: profile. A: start / stop.");
+        hint->setFontSize(15.0f);
+        hint->setTextColor(nvgRGB(150, 150, 150));
+        hint->setMarginBottom(18.0f);
+        this->addView(hint);
+
+        toggle = new brls::Button();
+        toggle->setText("Start");
+        toggle->registerClickAction([this](brls::View *) {
+            onToggle();
+            return true;
+        });
+        this->addView(toggle);
+
+        this->registerAction("Prev profile", brls::ControllerButton::BUTTON_LB, [this](brls::View *) {
+            cycleProfile(-1);
+            return true;
+        });
+        this->registerAction("Next profile", brls::ControllerButton::BUTTON_RB, [this](brls::View *) {
+            cycleProfile(1);
+            return true;
+        });
+
+        statusL = new brls::Label();
+        statusL->setText("Stopped");
+        statusL->setMarginTop(10.0f);
+        statusL->setMarginBottom(8.0f);
+        this->addView(statusL);
+
+        auto *h = new brls::Header();
+        h->setTitle("Info");
+        this->addView(h);
+        rowRate = makeRow(this, "Read rate");
+        rowBatches = makeRow(this, "Batches");
+        rowMismatch = makeRow(this, "Mismatches");
+    }
+
+    ~Cuda95Tab() override {
+        if (cuda95_running())
+            cuda95_stop();
+    }
+
+    void willDisappear(bool resetState = false) override {
+        if (cuda95_running())
+            cuda95_stop();
+        brls::Box::willDisappear(resetState);
+    }
+
+    void frame(brls::FrameContext *ctx) override {
+        cuda95_status_t st;
+        cuda95_get(&st);
+        if (cuda95_running() || lastRunning) {
+            rowRate->setText(fstr("%.2f GB/s", st.gbps));
+            rowBatches->setText(fstru("%llu", (unsigned long long)st.batches));
+            unsigned long long mm = (unsigned long long)st.detected + (unsigned long long)st.selfFail
+                + (unsigned long long)st.dataBad + (unsigned long long)st.timeouts;
+            rowMismatch->setText(fstru("%llu", mm));
+            if (cuda95_running())
+                statusL->setText(st.error ? std::string("Error: ") + st.status : std::string(st.status));
+        }
+        syncToggle(cuda95_running() != 0);
+        brls::Box::frame(ctx);
+    }
+
+    private:
+    void refreshOpts() {
+        char b[64];
+        std::snprintf(b, sizeof b, "%s (%u/%u)", cuda95_profile_name(profile),
+                      cuda95_profile_alu(profile), cuda95_profile_gather(profile));
+        profVal->setText(b);
+    }
+    void cycleProfile(int dir) {
+        profile = (profile + dir + CUDA95_NUM_PROFILES) % CUDA95_NUM_PROFILES;
+        refreshOpts();
+        if (cuda95_running())
+            cuda95_set_profile(profile);
+    }
+    void onToggle() {
+        if (cuda95_running()) {
+            cuda95_stop();
+        } else {
+            rowRate->setText("-");
+            rowBatches->setText("-");
+            rowMismatch->setText("-");
+            cuda95_start(profile, 4);
+        }
+    }
+    void syncToggle(bool running) {
+        if (running == lastRunning)
+            return;
+        lastRunning = running;
+        toggle->setText(running ? "Stop" : "Start");
+        if (!running)
+            statusL->setText("Stopped");
+    }
+    int profile = 0;
+    bool lastRunning = false;
+    brls::Label *profVal, *statusL, *rowRate, *rowBatches, *rowMismatch;
+    brls::Button *toggle;
+};
 class FurmarkTab : public brls::Box {
     public:
     FurmarkTab(int which, const char *desc) : which(which) {
@@ -849,6 +970,7 @@ class CreditsTab : public brls::Box {
         makeRow(this, "Memtester")->setText("Simon Kirby, Charles Cazabon, KazushiMe & CTCaer");
         makeRow(this, "FurMark")->setText("StanislavPetrovV & AnxietyTimmy");
         makeRow(this, "GPU Test")->setText("NaGaa95");
+        makeRow(this, "CUDA95")->setText("AnxietyTimmy");
         makeRow(this, "Membench")->setText("Siarhei Siamashka, KazushiMe & Lineon");
         makeRow(this, "Stress-ng")->setText("ColinIanKing & Lineon");
 
@@ -944,6 +1066,7 @@ class MainActivity : public brls::Activity {
 
         tab->addHeader("GPU");
         tab->addTab("GPU Test", [] { return new StressTab(); });
+        tab->addTab("CUDA95", [] { return new Cuda95Tab(); });
         tab->addTab("Furmark", [] { return new FurmarkTab(0, "FurMark for Switch (48 step)"); });
         tab->addTab("GPU Path Trace", [] { return new FurmarkTab(2, "GPU Path Tracer"); });
 
@@ -988,6 +1111,8 @@ int main(int argc, char *argv[]) {
         mt_cpu_stop();
     if (cpu_stress_running())
         cpu_stress_stop();
+    if (cuda95_running())
+        cuda95_stop();
 
     _exit(EXIT_SUCCESS);
 }
