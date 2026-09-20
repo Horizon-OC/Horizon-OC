@@ -602,8 +602,9 @@ static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
         case HocClkConfigValue_ThermalThrottle:
         case HocClkConfigValue_IsFirstLoad:
         case HocClkConfigValue_DVFSMode:
-        case HocClkConfigValue_AutoRAMCPUOverclock:
             return 1ULL;
+        case HocClkConfigValue_AutoRAMCPUOverclock:
+            return 0ULL;
         case HocClkConfigValue_AutoRamCpuCpuOCFreq:
             return 1683000ULL;
         case HocClkConfigValue_AutoRamCpuRamOCThreshold:
