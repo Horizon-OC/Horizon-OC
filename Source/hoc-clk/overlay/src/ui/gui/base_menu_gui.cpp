@@ -348,15 +348,15 @@ void BaseMenuGui::refresh() {
 
     millis = context->temps[HocClkThermalSensor_CPU];
     sprintf(displayStrings[28], "%u.%u", millis / 1000U, (millis % 1000U) / 100U);
-    tempColors[HocClkThermalSensor_CPU] = tsl::GradientColor(millis * 0.001f);
+    tempColors[HocClkThermalSensor_CPU] = tsl::GradientColor(millis * 0.001f, tsl::DEFAULT_TEMP_RANGE_HIGH);
 
     millis = context->temps[HocClkThermalSensor_GPU];
     sprintf(displayStrings[29], "%u.%u", millis / 1000U, (millis % 1000U) / 100U);
-    tempColors[HocClkThermalSensor_GPU] = tsl::GradientColor(millis * 0.001f);
+    tempColors[HocClkThermalSensor_GPU] = tsl::GradientColor(millis * 0.001f, tsl::DEFAULT_TEMP_RANGE_HIGH);
 
     millis = context->temps[HocClkThermalSensor_MEM];
     sprintf(displayStrings[30], "%u.%u", millis / 1000U, (millis % 1000U) / 100U);
-    tempColors[HocClkThermalSensor_MEM] = tsl::GradientColor(millis * 0.001f);
+    tempColors[HocClkThermalSensor_MEM] = tsl::GradientColor(millis * 0.001f, tsl::DEFAULT_TEMP_RANGE_HIGH);
 }
 
 tsl::elm::Element *BaseMenuGui::baseUI() {
