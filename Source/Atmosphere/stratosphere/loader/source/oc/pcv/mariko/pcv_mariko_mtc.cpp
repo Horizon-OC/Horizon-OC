@@ -475,7 +475,6 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result MemFreqMtcTable(u32 *ptr) {
         static const DramId dramId = [] {
             DramId id = GetDramId();
-            id = HOAG_4GB_MICRON_MT53E512M32D2NP_046_WTF;
             return id;
         }();
 
