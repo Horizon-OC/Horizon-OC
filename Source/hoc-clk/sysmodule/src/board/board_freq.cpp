@@ -28,15 +28,16 @@
 #include <i2c.h>
 #include <max17050.h>
 #include <switch.h>
+#include <t210.h>
 #include <tmp451.h>
 
-#include "../bpmp/bpmp.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"
 #include "../file/errors.hpp"
 #include "../hos/apm_ext.h"
 #include "../i2c/i2cDrv.h"
 #include "../soc/gm20b.hpp"
+#include "../soc/pllmb.hpp"
 #include "board.hpp"
 #include "board_name.hpp"
 #include <ipc_server.h>
@@ -183,30 +184,13 @@ namespace board {
         u32 hz = 0;
         switch (module) {
             case HocClkModule_CPU:
-                return bpmp::GetSharedInfo()->freqCpu * 1000;
-            case HocClkModule_GPU: {
-                constexpr u32 ClkOutEnbX  = 0x280;
-                constexpr u32 RstDevicesX = 0x28C;
-                constexpr u32 GpuBit      = (1u << 24);
-
-                const bool gpuEnabled = (*reinterpret_cast<volatile u32 *>(clkVirtAddr + ClkOutEnbX) & GpuBit) &&
-                                        !(*reinterpret_cast<volatile u32 *>(clkVirtAddr + RstDevicesX) & GpuBit);
-                if (!gpuEnabled) {
-                    return 0;
-                }
-
-                const u32 coeff = *reinterpret_cast<volatile u32 *>(gpuVirtAddr + 0x137004);
-                const u32 divm  = coeff & 0xFF;
-                const u32 divn  = (coeff >> 8) & 0xFF;
-                const u32 divp  = (coeff >> 16) & 0x3F;
-                if (divm == 0 || divp == 0) {
-                    return 0;
-                }
-
-                return static_cast<u32>((static_cast<u64>(38400000) * divn) / (divm * divp) / 2);
-            }
+                return t210ClkCpuFreq();
+            case HocClkModule_GPU:
+                return t210ClkGpuFreq();
             case HocClkModule_MEM:
-                return bpmp::GetSharedInfo()->freqMemPll * 1000;
+                return file::config::GetConfigValue(HocClkConfigValue_MemoryFrequencyMeasurementMode) == MemoryFrequencyMeasurementMode_PLL
+                           ? pllmb::getRamClockRatePLLMB()
+                           : t210ClkMemFreq();
             case HocClkModule_Display:
                 return GetDisplayRate(hz);
             default:

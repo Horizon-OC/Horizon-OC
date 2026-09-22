@@ -34,7 +34,6 @@
 #include <switch.h>
 #include <tmp451.h>
 
-#include "../bpmp/bpmp.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/file_utils.hpp"
 #include "../hos/apm_ext.h"
@@ -53,13 +52,7 @@
 #include "../soc/dram_mrr.hpp"
 namespace board {
 
-    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr, sysVirtAddr, actmonVirtAddr, gpuVirtAddr, tmrVirtAddr;
-    consteval inline u32 PackCode(u32 r, u32 g, u32 b) {
-        return ((r & 0xF) << 8) | ((g & 0xF) << 4) | ((b & 0xF) << 0);
-    }
-    const u32 GpuPanic   = PackCode(0xF, 0x7, 0x0);
-    const u32 CpuPanic   = PackCode(0xF, 0x0, 0x0);
-    const u32 RamPanic   = PackCode(0x0, 0xF, 0xF);
+    u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr;
 
     HocClkSocType gSocType;
     u8 gDramID;
@@ -160,16 +153,6 @@ namespace board {
         rc = QueryMemoryMapping(&fuseVirtAddr, 0x7000F000, 0x1000);
         ASSERT_RESULT_OK(rc, "QueryMemoryMapping (fuse)");
 
-        rc = QueryMemoryMapping(&sysVirtAddr, 0x6000C000, 0x1000);
-        ASSERT_RESULT_OK(rc, "QueryMemoryMapping (sys)");
-        actmonVirtAddr = sysVirtAddr + 0x800;
-
-        rc = QueryMemoryMapping(&gpuVirtAddr, 0x57000000, 0x1000000);
-        ASSERT_RESULT_OK(rc, "QueryMemoryMapping (gpu)");
-
-        rc = QueryMemoryMapping(&tmrVirtAddr, 0x60005000, 0x1000);
-        ASSERT_RESULT_OK(rc, "QueryMemoryMapping (tmr)");
-
         FetchHardwareInfos();
 
         Result nvCheck = 1;
@@ -189,12 +172,6 @@ namespace board {
         batteryInfoInitialize();
 
         tsensor::InitializeSoctherm();  // SOCTHERM must be init before AOTAG
-
-        Result bpmpfwRc = bpmp::StartBpmfwExecution();
-        if (R_FAILED(bpmpfwRc)) {
-            file::utils::LogLine("[bpmp] StartBpmfwExecution failed: 0x%x", bpmpfwRc);
-        }
-        bpmp::StartSleepMonitorThread();
 
         // PMC exosphere check
         SecmonArgs args = {};
@@ -224,7 +201,6 @@ namespace board {
     }
 
     void Exit() {
-        bpmp::StopSleepMonitorThread();
 
         if (HOSSVC_HAS_CLKRST) {
             clkrstExit();
@@ -252,30 +228,6 @@ namespace board {
         batteryInfoExit();
         pmdmntExit();
         nvExit();
-    }
-
-    #define MMIO32(addr) (*reinterpret_cast<volatile u32 *>(addr))
-    NX_NORETURN void Panic(u32 c) {
-        SmcReadWriteRegister(0x7000EC40 /* PMC_BASE + APBDEV_PMC_SCRATCH200 */, ~0, c);
-        
-        /* Write timer magic */
-        MMIO32(tmrVirtAddr + 0x18C) = 0xC45A;
-
-        /* Disable counters */
-        MMIO32(tmrVirtAddr + 0x188) = 0x2;
-
-        /* Start periodic timer */
-        MMIO32(tmrVirtAddr + 0x80) = 0xC0000000;
-
-        /* Set the reboot source to the timer */
-        MMIO32(tmrVirtAddr + 0x180) = 0x8019;
-
-        /* Enable counter */
-        MMIO32(tmrVirtAddr + 0x188) = 0x1;
-
-        /* Hang. */
-        for(;;)
-            ;
     }
 
     HocClkSocType GetSocType() {

@@ -30,7 +30,6 @@
 #include <i2c.h>
 
 #include "../board/board.hpp"
-#include "../bpmp/bpmp.hpp"
 #include "../display/aula.hpp"
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"
@@ -630,8 +629,6 @@ namespace mgr {
     bool RefreshContext() {
         bool hasChanged = false;
 
-        gContext.bpmpInfo = *bpmp::GetSharedInfo();
-
         std::uint32_t mode = 0;
         Result rc = apmExtGetCurrentPerformanceConfiguration(&mode);
         ASSERT_RESULT_OK(rc, "apmExtGetCurrentPerformanceConfiguration");
@@ -882,10 +879,6 @@ namespace mgr {
     }
 
     void WaitForNextTick() {
-        if (!bpmp::IsAwake()) {
-            svcSleepThread(250 * 1000000ULL);  // 250ms
-            return;
-        }
 
         if (board::GetHz(HocClkModule_MEM) > 665000000)
             svcSleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);

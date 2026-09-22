@@ -157,12 +157,8 @@ namespace ams::secmon::smc {
             /* Validate that all other cores are off. */
             AMS_ABORT_UNLESS(reg::HasValue(PMC + APBDEV_PMC_PWRGATE_STATUS, PMC_REG_BITS_VALUE(PWRGATE_STATUS_CE123, 0)));
 
-            /* Horizon-OC: Halt BPMP here as hoc-clk may be running it, and if it's running there will be a panic. */
-            const bool jtag = IsJtagEnabled();
-            reg::Write(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
-                                                               FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, jtag, ENABLED, DISABLED));
-
             /* Validate that the bpmp is appropriately halted. */
+            const bool jtag = IsJtagEnabled();
             AMS_ABORT_UNLESS(reg::Read(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS) == reg::Encode(FLOW_REG_BITS_ENUM    (HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
                                                                                              FLOW_REG_BITS_ENUM_SEL(HALT_COP_EVENTS_JTAG, jtag, ENABLED, DISABLED)));
 

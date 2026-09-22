@@ -22,7 +22,7 @@ CONFIG_DIR	:=	horizon-oc
 BUILD		:=	build
 OUTDIR		:=	out
 RESOURCES	:=	res
-SOURCES		:=	src src/hos src/i2c src/ipc src/board src/bpmp src/display src/tsensor src/mgr src/file src/soc src/mapping src/pwr src/util
+SOURCES		:=	src src/hos src/i2c src/ipc src/board src/display src/tsensor src/mgr src/file src/soc src/mapping src/pwr src/util
 DATA		:=	data
 INCLUDES	:=	../common/include src/hos src/soc src/i2c src/util src/pwr src/ipc
 EXEFS_SRC	:=	exefs_src
@@ -105,7 +105,7 @@ export BUILD_EXEFS_SRC := $(TOPDIR)/$(EXEFS_SRC)
 
 export APP_JSON := $(TOPDIR)/perms.json
 
-.PHONY: $(BUILD) clean clean-libs clean-build all libs sync-bpmpfw
+.PHONY: $(BUILD) clean clean-libs clean-build all libs
 
 #---------------------------------------------------------------------------------
 all: $(BUILD)
@@ -116,11 +116,7 @@ libs:
 $(LIBNAMES):
 	@echo $@
 
-sync-bpmpfw:
-	@$(MAKE) --no-print-directory -C $(TOPDIR)/../bpmpfw
-	@cp -f $(TOPDIR)/../bpmpfw/out/bpmpfw.bin $(TOPDIR)/data/bpmpfw.bin
-
-$(BUILD): libs sync-bpmpfw
+$(BUILD): libs
 	@[ -d $@ ] || mkdir -p $@
 	@[ -d $(OUTDIR) ] || mkdir -p $(OUTDIR)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile

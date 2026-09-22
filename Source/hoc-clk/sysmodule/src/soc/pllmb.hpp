@@ -1,5 +1,7 @@
 /*
- * Copyright (c) Souldbminer, Lightos and Horizon OC Contributors
+ * Copyright (c) Souldbminer
+ *
+ * Copyright (c) KazushiMe
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -16,10 +18,14 @@
  */
 
 #pragma once
-#include "regs.hpp"
+#include <cstdint>
+#include <hocclk.h>
+#include <registers.h>
+#include <switch.h>
 
-constexpr u32 SocthermBase       = 0x700E2000;
-constexpr u32 SocthermSensorTemp1 = 0x1C8;
-constexpr u32 SocthermSensorTemp2 = 0x1CC;
+#include "../board/board.hpp"
 
-s32 TranslateSocthermTemp(u16 val);
+namespace pllmb {
+
+    u64 getRamClockRatePLLMB();
+}

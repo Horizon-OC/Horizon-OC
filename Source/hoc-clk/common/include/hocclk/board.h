@@ -30,9 +30,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#ifdef __SWITCH__ // Wont be defined in BPMP-FW
 #include <switch/types.h>
-#endif
 
 typedef enum
 {

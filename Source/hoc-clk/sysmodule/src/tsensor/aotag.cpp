@@ -22,7 +22,6 @@
 
 #include <notification.h>
 
-#include "../bpmp/bpmp.hpp"
 #include "../file/file_utils.hpp"
 #include "../mapping/mem_map.hpp"
 #include "aotag.hpp"
@@ -215,7 +214,24 @@ namespace tsensor {
             return -126;
         }
 
-        return bpmp::GetSharedInfo()->tempAO;
+        u32 regval = 0, abs = 0, fraction = 0, valid = 0, sign = 0;
+        s32 temp = 0;
+        regval = ReadPmcReg(PMC_TSENSOR_STATUS1);
+        valid = REG_GET(regval, STATUS1_TEMP_VALID);
+
+        if (!valid) {
+            return -125;
+        }
+
+        abs = REG_GET(regval, STATUS1_TEMP_ABS);
+        fraction = REG_GET(regval, STATUS1_TEMP_FRAC);
+        sign = REG_GET(regval, STATUS1_TEMP_SIGN);
+        temp = (abs * 1000) + (fraction * 500);
+        if (sign) {
+            temp = (-1) * (temp);
+        }
+
+        return temp;
     }
 
     bool IsInitialized() {

@@ -26,38 +26,22 @@
 
 #pragma once
 
-#include <hocclk.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <switch.h>
 
-#include "../mapping/mem_map.hpp"
-#include "board_freq.hpp"
-#include "board_fuse.hpp"
-#include "board_load.hpp"
-#include "board_name.hpp"
-#include "board_profile.hpp"
-#include "board_sensor.hpp"
-#include "board_volt.hpp"
+u32 t210ClkCpuFreq(void);
+u32 t210ClkMemFreq(void);
+u32 t210ClkGpuFreq(void);
+u32 t210EmcLoadAll(void);
+u32 t210EmcLoadCpu(void);
+u32 t210EmcBwAll(void);
+u32 t210EmcBwCpu(void);
+u32 t210EmcBwGpu(void);
+u32 t210EmcBwPeak(void);
 
-#define HOSSVC_HAS_CLKRST (hosversionAtLeast(8, 0, 0))
-#define HOSSVC_HAS_TC (hosversionAtLeast(5, 0, 0))
-
-namespace board {
-    extern u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr;
-    extern HocClkSocType gSocType;
-    extern u8 gDramID;
-    extern HocClkConsoleType gConsoleType;
-    extern FuseData fuseData;
-    extern u8 speedoBracket;
-
-    void Initialize();
-    void Exit();
-    HocClkSocType GetSocType();
-    HocClkConsoleType GetConsoleType();
-    u8 GetFuseDramId();
-    u8 GetDramID();
-    u8 GetGpuSpeedoBracket();
-    bool IsDram8GB();
-    void SetDisplayRefreshDockedState(bool docked);
-    FuseData *GetFuseData();
-    
-}  // namespace board
+#ifdef __cplusplus
+}
+#endif

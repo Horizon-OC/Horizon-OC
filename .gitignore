@@ -8,4 +8,3 @@ build
 Source/hekate
 dist/*
 !dist/.gitignore
-bpmpfw.bin

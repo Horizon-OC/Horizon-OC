@@ -900,32 +900,6 @@ namespace ams::secmon {
             reg::ReadWrite(PMC + APBDEV_PMC_SECURE_SCRATCH39, REG_BITS_VALUE(0, 27, WarmbootCarveoutConfig));
         }
 
-        void EnableBpmpSmmu() {
-            /* Define the ASID contents. */
-            constexpr int       BpmpAsid    = 1;
-            constexpr uintptr_t BpmpAsidPde = MemoryRegionPhysicalDeviceSecurityEngine.GetAddress();
-
-            /* Configure the ASID. */
-            reg::Write(MC + MC_SMMU_PTB_ASID, MC_REG_BITS_VALUE(SMMU_PTB_ASID_CURRENT_ASID,  BpmpAsid));
-
-            reg::Write(MC + MC_SMMU_PTB_DATA, MC_REG_BITS_VALUE(SMMU_PTB_DATA_ASID_PDE_BASE,  BpmpAsidPde / 4_KB),
-                                              MC_REG_BITS_ENUM (SMMU_PTB_DATA_ASID_NONSECURE,            DISABLE),
-                                              MC_REG_BITS_ENUM (SMMU_PTB_DATA_ASID_WRITABLE,             DISABLE),
-                                              MC_REG_BITS_ENUM (SMMU_PTB_DATA_ASID_READABLE,             DISABLE));
-
-            /* Configure the BPMP and PPCS1 to use the asid. */
-            reg::Write(MC + MC_SMMU_AVPC_ASID,  MC_REG_BITS_ENUM(SMMU_AVPC_ASID_AVPC_SMMU_ENABLE, ENABLE),   MC_REG_BITS_VALUE(SMMU_AVPC_ASID_AVPC_ASID,   BpmpAsid));
-            reg::Write(MC + MC_SMMU_PPCS1_ASID, MC_REG_BITS_ENUM(SMMU_PPCS1_ASID_PPCS1_SMMU_ENABLE, ENABLE), MC_REG_BITS_VALUE(SMMU_PPCS1_ASID_PPCS1_ASID, BpmpAsid));
-
-            /* Flush the entire page table cache, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_PTC_FLUSH_0, 0);
-            reg::Read (MC + MC_SMMU_TLB_CONFIG);
-
-            /* Flush the entire translation lookaside buffer, and read TLB_CONFIG to ensure the flush takes. */
-            reg::Write(MC + MC_SMMU_TLB_FLUSH, 0);
-            reg::Read (MC + MC_SMMU_TLB_CONFIG);
-        }
-
         void ValidateResetExpected() {
             /* We're coming out of reset, so check that we expected to come out of reset. */
             if (!IsResetExpected()) {
@@ -933,11 +907,6 @@ namespace ams::secmon {
                 AMS_ABORT("unexpected reset");
             }
             SetResetExpected(false);
-        }
-
-        void ActmonInterruptHandler() {
-            SetError(pkg1::ErrorInfo_ActivityMonitorInterrupt);
-            AMS_ABORT("actmon observed bpmp wakeup");
         }
 
         void ExitChargerHiZMode() {
@@ -1182,39 +1151,6 @@ namespace ams::secmon {
         FinalizeCarveoutSecureScratchRegisters();
         pmc::LockSecureRegister(pmc::SecureRegister_Carveout);
 
-        /* Clear all the BPMP exception vectors to a fixed value. */
-        constexpr u32 BpmpExceptionVector = 0x7D000000;
-        reg::Write(EVP + EVP_COP_RESET_VECTOR,          BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_UNDEF_VECTOR,          BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_SWI_VECTOR,            BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_PREFETCH_ABORT_VECTOR, BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_DATA_ABORT_VECTOR,     BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_RSVD_VECTOR,           BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_IRQ_VECTOR,            BpmpExceptionVector);
-        reg::Write(EVP + EVP_COP_FIQ_VECTOR,            BpmpExceptionVector);
-
-        /* Disable arbitration for the bpmp. */
-        reg::ReadWrite(SYSTEM + AHB_ARBITRATION_DISABLE, AHB_REG_BITS_ENUM(ARBITRATION_DISABLE_COP, DISABLE));
-
-        /* Turn on the SMMU for the BPMP. */
-        EnableBpmpSmmu();
-
-        /* Wait until the flow controller reports that the BPMP is halted. */
-        while (!reg::HasValue(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP))) {
-            util::WaitMicroSeconds(1);
-        }
-
-        /* Enable clock to the activity monitor. */
-        clkrst::EnableActmonClock();
-
-        /* If JTAG is disabled, disable JTAG. */
-        if (!secmon::IsJtagEnabled()) {
-            reg::Write(FLOW_CTLR + FLOW_CTLR_HALT_COP_EVENTS, FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_MODE, FLOW_MODE_STOP),
-                                                              FLOW_REG_BITS_ENUM(HALT_COP_EVENTS_JTAG,       DISABLED));
-
-            /* Turn on the activity monitor to prevent booting up the bpmp. */
-            actmon::StartMonitoringBpmp(ActmonInterruptHandler);
-        }
     }
 
     void SetupPmcAndMcSecure() {

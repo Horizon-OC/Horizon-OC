@@ -33,9 +33,9 @@
 #include <minIni.h>
 #include <numeric>
 #include <switch.h>
+#include <t210.h>
 #include <tmp451.h>
 
-#include "../bpmp/bpmp.hpp"
 #include "../hos/apm_ext.h"
 #include "board.hpp"
 #include "board_misc.hpp"
@@ -116,9 +116,9 @@ namespace board {
     u32 GetPartLoad(HocClkPartLoad loadSource) {
         switch (loadSource) {
             case HocClkPartLoad_EMC:
-                return bpmp::GetSharedInfo()->emcLoadAll;
+                return t210EmcLoadAll();
             case HocClkPartLoad_EMCCpu:
-                return bpmp::GetSharedInfo()->emcLoadCpu;
+                return t210EmcLoadCpu();
             case HocClkPartLoad_GPU:
                 return gpuLoad;
             case HocClkPartLoad_CPUMax:
@@ -130,13 +130,13 @@ namespace board {
             case HocClkPartLoad_FAN:
                 return GetFanLevel();
             case HocClkPartLoad_RamBWAll:
-                return bpmp::GetSharedInfo()->emcBwAll;
+                return t210EmcBwAll();
             case HocClkPartLoad_RamBWCpu:
-                return bpmp::GetSharedInfo()->emcBwCpu;
+                return t210EmcBwCpu();
             case HocClkPartLoad_RamBWGpu:
-                return bpmp::GetSharedInfo()->emcBwGpu;
+                return t210EmcBwGpu();
             case HocClkPartLoad_RamBWPeak:
-                return static_cast<u32>((static_cast<u64>(bpmp::GetSharedInfo()->freqMem) * 16) / 1000);
+                return t210EmcBwPeak();
             default:
                 ASSERT_ENUM_VALID(HocClkPartLoad, loadSource);
         }
