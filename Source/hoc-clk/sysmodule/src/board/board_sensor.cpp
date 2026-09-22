@@ -118,9 +118,9 @@ namespace board {
             case HocClkThermalSensor_MEM: {
                 if (board::GetSocType() == HocClkSocType_Mariko && tsensor::IsInitialized() && tsensor::ReadAotag() > 0) {
                     if(board::GetConsoleType() == HocClkConsoleType_Aula) { // Aula has a misplaced thermal sensor that makes tBoard report too high
-                        millis = (tsensor::ReadAotag() * 0.40f) + (gDramMr4Millis * 0.60f);
+                        millis = (tsensor::ReadAotag() * 1.0f);// + (gDramMr4Millis * 0.60f);
                     } else { // On other consoles it's placed correctly so avoid relying on AOTAG
-                        millis = (tsensor::ReadAotag() * 0.20f) + (tmp451TempPcb() * 0.40f) + (gDramMr4Millis * 0.40f); 
+                        millis = (tsensor::ReadAotag() * 0.40f) + (tmp451TempPcb() * 0.60f);// + (gDramMr4Millis * 0.40f); 
                     }
                 } else {
                     millis = board::GetSocType() == HocClkSocType_Mariko ? temps.pllx : temps.mem;
@@ -142,7 +142,7 @@ namespace board {
             case HocClkThermalSensor_DRAM: {
                 if (++gDramMr4Tick >= DramMr4PollDivisor) {
                     gDramMr4Tick = 0;
-                    gDramMr4Millis = PollDramMr4TempMilli();
+                    gDramMr4Millis = 0;//PollDramMr4TempMilli();
                 }
                 millis = gDramMr4Millis;
                 break;

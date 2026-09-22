@@ -364,11 +364,11 @@ namespace soc {
         const u8 fuseId = board::GetFuseDramId();
         const HocClkSocType soc = board::GetSocType();
 
-        if (soc == HocClkSocType_Erista)
+        // if (soc == HocClkSocType_Erista)
             return fuseId;
 
-        if (!IsMrrAvailable())
-            return fuseId;
+        // if (!IsMrrAvailable())
+        //     return fuseId;
 
         emc_mr_data_t vendor = {}, rev0 = {}, rev1 = {}, density = {};
         EmcTopology topo = {};
