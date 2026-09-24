@@ -219,6 +219,7 @@ Refer to COMPILATION.md
 * **Lightos's Cats** - Cats
 * **Souldbminer** - hoc-clk and loader development
 * **Lightos** - Loader patches development, hoc-clk development, guides
+* **HAZEL** - Perfect DRAM timings help
 * **TDRR** - HOC Logo Design
 * **tetetete-ctrl** - Website design
 * **SciresM** - Atmosphere CFW
