@@ -100,8 +100,6 @@ namespace ams::secmon::smc {
         #include "secmon_define_mc_access_table.inc"
         #include "secmon_define_emc_access_table.inc"
         #include "secmon_define_emc01_access_table.inc"
-        #include "secmon_define_flow_controller_access_table.inc"
-        #include "secmon_define_exception_vectors_access_table.inc"
         #include "secmon_define_rtc_pmc_access_table.inc"
         #include "secmon_define_mc01_access_table.inc"
 
@@ -111,8 +109,6 @@ namespace ams::secmon::smc {
             { EmcAccessTable::ReducedAccessTable.data(),              MemoryRegionVirtualDeviceExternalMemoryController.GetAddress(),                     EmcAccessTable::Address,                                                             EmcAccessTable::Size,              },
             { Emc01AccessTable::ReducedAccessTable.data(),            Emc01AccessTable::Address + MemoryRegionVirtualDeviceExternalMemoryController0.GetAddress(), Emc01AccessTable::Address + MemoryRegionPhysicalDeviceExternalMemoryController0.GetAddress(), Emc01AccessTable::Size, },
             { Emc01AccessTable::ReducedAccessTable.data(),            Emc01AccessTable::Address + MemoryRegionVirtualDeviceExternalMemoryController1.GetAddress(), Emc01AccessTable::Address + MemoryRegionPhysicalDeviceExternalMemoryController1.GetAddress(), Emc01AccessTable::Size, },
-            { FlowControllerAccessTable::ReducedAccessTable.data(),   MemoryRegionVirtualDeviceFlowController.GetAddress(),                               FlowControllerAccessTable::Address,                                                  FlowControllerAccessTable::Size,   },
-            { ExceptionVectorsAccessTable::ReducedAccessTable.data(), MemoryRegionVirtualDeviceExceptionVectors.GetAddress(),                             ExceptionVectorsAccessTable::Address,                                                ExceptionVectorsAccessTable::Size, },
             { RtcPmcAccessTable::ReducedAccessTable.data(),           MemoryRegionVirtualDeviceRtcPmc.GetAddress(),                                       RtcPmcAccessTable::Address,                                                          RtcPmcAccessTable::Size,           },
             { Mc01AccessTable::ReducedAccessTable.data(),             Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController0.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController0.GetAddress(), Mc01AccessTable::Size,             },
             { Mc01AccessTable::ReducedAccessTable.data(),             Mc01AccessTable::Address + MemoryRegionVirtualDeviceMemoryController1.GetAddress(), Mc01AccessTable::Address + MemoryRegionPhysicalDeviceMemoryController1.GetAddress(), Mc01AccessTable::Size,             },
