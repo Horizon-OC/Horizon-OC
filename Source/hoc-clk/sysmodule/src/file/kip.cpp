@@ -335,7 +335,7 @@ namespace file::kip {
             configValues.values[KipConfigValue_g_volt_e_76800 + i] = cust_get_erista_gpu_volt(&table, i);
         }
 
-        for (size_t i = 0; i < 26; ++i) {
+        for (size_t i = 0; i < 28; ++i) {
             configValues.values[KipConfigValue_g_soc_volt_1866000 + i] = cust_get_mariko_soc_volt(&table, i);
         }
 
