@@ -168,7 +168,7 @@ namespace ams::ldr::hoc::pcv {
         for (u32 i = 0; i < std::size(rlMapDBI); ++i) {
             if (rlMapDBI[i] == RL) {
                 rlIndex = i;
-                    break;
+                break;
             }
         }
 
