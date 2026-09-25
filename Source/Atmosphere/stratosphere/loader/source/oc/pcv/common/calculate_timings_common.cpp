@@ -58,7 +58,6 @@ namespace ams::ldr::hoc::pcv {
             return value + (value % 2);
         }
 
-
         double GetTckAvg(u32 khz) {
             return 1000'000.0 / static_cast<double>(khz);
         }
