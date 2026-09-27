@@ -925,6 +925,12 @@ class ExperimentalSettingsSubMenuGui : public MiscGui {
             addConfigButton(HocClkConfigValue_AulaDisplayColorPreset, "Display Color Preset", ValueRange(0, 1, 1, "", 0), "Display Color Preset",
                             &thresholdsDisabled, {}, displayClrPreset, false, false);
         }
+        addConfigToggle(HocClkConfigValue_AutoRAMCPUOverclock, "Auto CPU RAM OC");
+        addConfigButton(HocClkConfigValue_AutoRamCpuCpuOCFreq, "Auto CPU RAM OC CPU clock", ValueRange(0, 0, 1, "", 1), "CPU Clock",
+                        &thresholdsDisabled, {}, clkOptionsRamOc, false, false);
+        addConfigButton(HocClkConfigValue_AutoRamCpuRamOCThreshold, "Auto CPU RAM OC Threshold", ValueRange(0, 0, 1, "", 1), "RAM Clock",
+                        &thresholdsDisabled, {}, emcMaxClock, false, false);
+
     }
 };
 
@@ -2200,11 +2206,6 @@ class CpuSubmenuGui : public MiscGui {
                 NamedValue("3366 MHz", 3366000, "±1800 speedo"),
                 NamedValue("3400 MHz", 3400000, "±1820 speedo"),
             };
-            addConfigToggle(HocClkConfigValue_AutoRAMCPUOverclock, "Auto CPU RAM OC");
-            addConfigButton(HocClkConfigValue_AutoRamCpuCpuOCFreq, "Auto CPU RAM OC CPU clock", ValueRange(0, 0, 1, "", 1), "CPU Clock",
-                            &thresholdsDisabled, {}, clkOptionsRamOc, false, false);
-            addConfigButton(HocClkConfigValue_AutoRamCpuRamOCThreshold, "Auto CPU RAM OC Threshold", ValueRange(0, 0, 1, "", 1), "RAM Clock",
-                            &thresholdsDisabled, {}, emcMaxClock, false, false);
         } else {
             addConfigTrackbar(KipConfigValue_eristaCpuUV, "CPU UV", ValueRange(0, 5, 1));
 
