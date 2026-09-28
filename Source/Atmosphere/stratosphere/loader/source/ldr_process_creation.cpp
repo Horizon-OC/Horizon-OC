@@ -774,7 +774,7 @@ namespace ams::ldr {
             /* Set permissions. */
             const size_t text_size = util::AlignUp(nso_header->text_size, os::MemoryPageSize);
             const size_t ro_size   = util::AlignUp(nso_header->ro_size, os::MemoryPageSize);
-            const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize);
+            const size_t rw_size   = util::AlignUp(nso_header->rw_size + nso_header->bss_size, os::MemoryPageSize) + arena_size;
             if (text_size) {
                 const bool prevent_code_reads = (nso_header->flags & NsoHeader::Flag_PreventCodeReads);
                 R_TRY(os::SetProcessMemoryPermission(process_handle, nso_address + nso_header->text_dst_offset, text_size, prevent_code_reads ? os::MemoryPermission_ExecuteOnly : os::MemoryPermission_ReadExecute));
