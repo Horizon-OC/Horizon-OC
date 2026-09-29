@@ -139,6 +139,7 @@ typedef enum {
 
     KipConfigValue_eristaGpuUV,
     KipConfigValue_eristaGpuVmin,
+    KipConfigValue_eristaGpuVmax,
 
     KipConfigValue_marikoGpuUV,
     KipConfigValue_marikoGpuVmin,
@@ -456,6 +457,8 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
             return pretty ? "Erista GPU Undervolt" : "erista_gpu_uv";
         case KipConfigValue_eristaGpuVmin:
             return pretty ? "Erista GPU Vmin" : "erista_gpu_vmin";
+        case KipConfigValue_eristaGpuVmax:
+            return pretty ? "Erista GPU Vmax" : "erista_gpu_vmax";
 
         // GPU – Mariko
         case KipConfigValue_marikoGpuUV:
@@ -707,6 +710,7 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case KipConfigValue_marikoCpuMaxClock:
         case KipConfigValue_eristaGpuUV:
         case KipConfigValue_eristaGpuVmin:
+        case KipConfigValue_eristaGpuVmax:
         case KipConfigValue_marikoGpuUV:
         case KipConfigValue_marikoGpuVmin:
         case KipConfigValue_marikoGpuVmax:

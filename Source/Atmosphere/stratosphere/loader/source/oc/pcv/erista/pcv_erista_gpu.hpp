@@ -71,12 +71,26 @@ namespace ams::ldr::hoc::pcv::erista {
         {                                                        },
     };
 
+    // constexpr u32 MaxGpuRgltrVolt     = 1150'000; // 1.15V
+    // constexpr u32 MaxGoodGpuRgltrVolt = 1050'000; // NVIDIA rating
+
+    // // 0x20 byte struct (8xu32), RgltrEntry. TODO: determine what the other values are
+    // inline constexpr u32 GpuRgltrVoltPattern[] = {
+    //     0x2,       // unknown, -5
+    //     0x0,       // padding
+    //     6250,      // Step
+    //     0x0,       // padding
+    //     618750,    // Min volt?
+    //     1150000,   // max volt, anchor
+    //     0x0,       // padding
+    //     1000000,   // unknown
+    // };
+    // static_assert(sizeof(GpuRgltrVoltPattern) == (sizeof(u32) * 8), "Invalid GpuRgltrVoltPattern");
+
     Result GpuVoltDVFS(u32 *ptr);
     Result GpuVoltThermals(u32 *ptr);
     Result GpuFreqMaxAsm(u32 *ptr32);
     Result GpuFreqPllMax(u32 *ptr);
-
-    // patch out 1305MHz limit on erista, don't use this!
-    // Result GpuFreqPllLimit(u32 *ptr);
-
+    Result GpuFreqPllLimit(u32 *ptr);
+    // Result GpuRgltrMax(u32* ptr);
 }

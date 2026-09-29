@@ -34,6 +34,10 @@ namespace ams::ldr::hoc::pcv::erista {
             PATCH_OFFSET(ptr, C.eristaGpuVmin);
         }
 
+        // if(C.eristaGpuVmax) {
+        //     PATCH_OFFSET(ptr + 1, C.eristaGpuVmax);
+        // }
+
         R_SUCCEED();
     }
 
@@ -49,6 +53,15 @@ namespace ams::ldr::hoc::pcv::erista {
             PATCH_OFFSET(ptr + 9,  C.eristaGpuVmin);
             PATCH_OFFSET(ptr + 12, C.eristaGpuVmin);
         }
+
+        // if(C.eristaGpuVmax) {
+        //     PATCH_OFFSET(ptr -  2, C.eristaGpuVmax);
+        //     PATCH_OFFSET(ptr +  1, C.eristaGpuVmax);
+        //     PATCH_OFFSET(ptr +  4, C.eristaGpuVmax);
+        //     PATCH_OFFSET(ptr +  7, C.eristaGpuVmax);
+        //     PATCH_OFFSET(ptr + 10, C.eristaGpuVmax);
+        //     PATCH_OFFSET(ptr + 13, C.eristaGpuVmax);
+        // }
 
         R_SUCCEED();
     }
@@ -107,17 +120,34 @@ namespace ams::ldr::hoc::pcv::erista {
         R_SUCCEED();
     }
 
-    // patch out 1305MHz limit on erista, don't use this!
-    // Result GpuFreqPllLimit(u32 *ptr) {
-    //     u32 prev_freq = *(ptr - 1);
+    /* Not strictly needed but there for completeness. Table will limit far before this */
+    Result GpuFreqPllLimit(u32 *ptr) {
+        u32 prev_freq = *(ptr - 1);
 
-    //     if (prev_freq != 128000 && prev_freq != 1300000 && prev_freq != 76800) {
-    //         R_THROW(ldr::ResultInvalidGpuPllEntry());
+        if (prev_freq != 128000 && prev_freq != 1300000 && prev_freq != 76800) {
+            R_THROW(ldr::ResultInvalidGpuPllEntry());
+        }
+
+        PATCH_OFFSET(ptr, 3600000);
+
+        R_SUCCEED();
+    }
+
+    // Result GpuRgltrMax(u32* ptr) {
+    //     /* Confirm that we are in the correct struct */
+    //     if (std::memcmp(ptr - 5, GpuRgltrVoltPattern, sizeof(GpuRgltrVoltPattern))) {
+    //         R_THROW(ldr::ResultInvalidGpuRgltrPattern());
     //     }
 
-    //     PATCH_OFFSET(ptr, 3600000);
+    //     /* Ensure that the max voltage is actually present before patching it */
+    //     if(C.eristaGpuVmax) {
+    //         /* Rgltr Vmax is in uV for some reason? */
+    //         PATCH_OFFSET(ptr, C.eristaGpuVmax * 1000);
+    //     } else {
+    //         /* Lower the default max for safety */
+    //         PATCH_OFFSET(ptr, MaxGoodGpuRgltrVolt);
+    //     }
 
     //     R_SUCCEED();
     // }
-
 }

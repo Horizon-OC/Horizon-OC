@@ -115,6 +115,7 @@ volatile CustomizeTable C = {
 
 .eristaGpuUV   = 0,
 .eristaGpuVmin = 810,
+.eristaGpuVmax = 1050, /* unused for now*/
 
 .marikoGpuUV = 2,
 /* Vmin past 795mV won't work due boot voltage being 800mV. */

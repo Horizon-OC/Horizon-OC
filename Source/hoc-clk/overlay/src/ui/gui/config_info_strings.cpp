@@ -538,6 +538,12 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Default: 810 mV (812mV as erista is stepped by 6.5mV instead of 5mV)"
             };
 
+        case KipConfigValue_eristaGpuVmax:
+            return {
+                "Maximum GPU voltage",
+                "Default: 1050mV"
+            };
+
         case KipConfigValue_commonGpuVoltOffset:
             return {
                 "The offset added/subtracted to all GPU voltages marked as \"auto\"",

@@ -118,7 +118,8 @@ struct CustomizeTable {
 
     u32 eristaGpuUV;
     u32 eristaGpuVmin;
-
+    u32 eristaGpuVmax;
+    
     u32 marikoGpuUV;
     u32 marikoGpuVmin;
     u32 marikoGpuVmax;
