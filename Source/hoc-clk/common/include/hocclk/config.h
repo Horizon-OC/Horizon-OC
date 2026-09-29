@@ -387,7 +387,7 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
         case KipConfigValue_low_t7_tWTR:
             return pretty ? "Low T7 - tWTR" : "low_t7_tWTR";
         case KipConfigValue_low_t8_tREFI:
-            return pretty ? "Low T8 - tREFI" : "low_t7_tREFI";
+            return pretty ? "Low T8 - tREFI" : "low_t8_tREFI";
 
         case KipConfigValue_read_latency_1333:
             return pretty ? "1333 Read Latency" : "read_latency_1333";
