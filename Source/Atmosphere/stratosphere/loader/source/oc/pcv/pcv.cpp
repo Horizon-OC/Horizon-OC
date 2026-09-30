@@ -161,7 +161,6 @@ namespace ams::ldr::hoc::pcv {
             { eristaGpuDvfsMaxFreq,   768'000, 1152'000, panic::Gpu,      },
             { marikoGpuDvfsMaxFreq,   768'000, 1574'400, panic::Gpu,      },
             { C.marikoGpuVmax,            800,      995, panic::Gpu,      }, /* Official GPU vMax is 1050mV */
-            { C.eristaGpuVmax,            800,     1050, panic::Gpu       },
         };
 
         for (auto &v : validators) {

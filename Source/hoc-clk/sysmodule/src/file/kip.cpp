@@ -124,7 +124,6 @@ namespace file::kip {
 
         CUST_WRITE_FIELD_BATCH(&table, eristaGpuUV, file::config::GetConfigValue(KipConfigValue_eristaGpuUV));
         CUST_WRITE_FIELD_BATCH(&table, eristaGpuVmin, file::config::GetConfigValue(KipConfigValue_eristaGpuVmin));
-        CUST_WRITE_FIELD_BATCH(&table, eristaGpuVmax, file::config::GetConfigValue(KipConfigValue_eristaGpuVmax));
 
         CUST_WRITE_FIELD_BATCH(&table, marikoGpuUV, file::config::GetConfigValue(KipConfigValue_marikoGpuUV));
         CUST_WRITE_FIELD_BATCH(&table, marikoGpuVmin, file::config::GetConfigValue(KipConfigValue_marikoGpuVmin));
@@ -323,8 +322,6 @@ namespace file::kip {
 
         configValues.values[KipConfigValue_eristaGpuUV] = cust_get_erista_gpu_uv(&table);
         configValues.values[KipConfigValue_eristaGpuVmin] = cust_get_erista_gpu_vmin(&table);
-        configValues.values[KipConfigValue_eristaGpuVmax] = cust_get_erista_gpu_vmax(&table);
-        
         configValues.values[KipConfigValue_marikoGpuUV] = cust_get_mariko_gpu_uv(&table);
         configValues.values[KipConfigValue_marikoGpuVmin] = cust_get_mariko_gpu_vmin(&table);
         configValues.values[KipConfigValue_marikoGpuVmax] = cust_get_mariko_gpu_vmax(&table);

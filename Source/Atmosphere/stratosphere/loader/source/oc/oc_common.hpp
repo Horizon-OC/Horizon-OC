@@ -93,7 +93,6 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(HookUnavailable,           1030);
     R_DEFINE_ERROR_RESULT(InvalidNvsrvDevTable,      1031);
     R_DEFINE_ERROR_RESULT(InvalidForceVerbosityPattern, 1032);
-    R_DEFINE_ERROR_RESULT(InvalidGpuRgltrPattern, 1033);
 }
 
 namespace ams::ldr::hoc {

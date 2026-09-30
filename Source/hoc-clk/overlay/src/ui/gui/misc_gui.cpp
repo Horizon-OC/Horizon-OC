@@ -2570,8 +2570,6 @@ class GpuSubmenuGui : public MiscGui {
                             {}, gpuUvConfE, false, true);
             addConfigButton(KipConfigValue_eristaGpuVmin, "GPU Minimum Voltage", ValueRange(675, 875, 5, "mV", 1), "GPU Minimum Voltage",
                             &thresholdsDisabled, {}, {}, false, true);
-            // addConfigButton(KipConfigValue_eristaGpuVmax, "GPU Maximum Voltage", ValueRange(800, 1050, 5, "mV", 1), "GPU Maximum Voltage",
-            //                 &thresholdsDisabled, {}, {}, false, true);
         } else {
             addConfigButton(KipConfigValue_marikoGpuUV, "GPU Undervolt Table", ValueRange(0, 1, 1, "", 1), "GPU Undervolt Table", &thresholdsDisabled,
                             {}, gpuUvConfM, false, true);
@@ -2592,8 +2590,10 @@ class GpuSubmenuGui : public MiscGui {
             addConfigButton(KipConfigValue_marikoGpuVmin, "GPU VMIN", ValueRange(0, 0, 0, "0", 1), "GPU VMIN", &thresholdsDisabled, {}, mGpuVoltsVmin,
                             false, true);
             ValueThresholds MgpuVmaxThresholds(805, 850);
-            addConfigButton(KipConfigValue_marikoGpuVmax, "GPU Maximum Voltage", ValueRange(800, 995, 5, "mV", 1), "GPU Maximum Voltage",
-                            &MgpuVmaxThresholds, {}, {}, false, true);
+            if(IsMariko()) {
+                addConfigButton(KipConfigValue_marikoGpuVmax, "GPU Maximum Voltage", ValueRange(800, 995, 5, "mV", 1), "GPU Maximum Voltage",
+                                &MgpuVmaxThresholds, {}, {}, false, true);
+            }
         }
 
         std::vector<NamedValue> gpuOffset = {

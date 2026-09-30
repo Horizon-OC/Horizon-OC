@@ -86,7 +86,6 @@ namespace file::kip {
 
         u32 eristaGpuUV;
         u32 eristaGpuVmin;
-        u32 eristaGpuVmax;
 
         u32 marikoGpuUV;
         u32 marikoGpuVmin;
@@ -365,9 +364,6 @@ namespace file::kip {
     static inline bool cust_set_erista_gpu_vmin(const char *p, u32 v) {
         CUST_WRITE_FIELD(p, eristaGpuVmin, v);
     }
-    static inline bool cust_set_erista_gpu_vmax(const char *p, u32 v) {
-        CUST_WRITE_FIELD(p, eristaGpuVmax, v);
-    }
     static inline bool cust_set_mariko_gpu_uv(const char *p, u32 v) {
         CUST_WRITE_FIELD(p, marikoGpuUV, v);
     }
@@ -584,9 +580,6 @@ namespace file::kip {
     }
     static inline u32 cust_get_erista_gpu_vmin(const CustomizeTable *t) {
         return CUST_GET_FIELD(t, eristaGpuVmin);
-    }
-    static inline u32 cust_get_erista_gpu_vmax(const CustomizeTable *t) {
-        return CUST_GET_FIELD(t, eristaGpuVmax);
     }
     static inline u32 cust_get_mariko_gpu_uv(const CustomizeTable *t) {
         return CUST_GET_FIELD(t, marikoGpuUV);
