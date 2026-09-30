@@ -24,6 +24,7 @@
 #include <switch.h>
 
 #include "../board/board.hpp"
+#include "../board/board_volt.hpp"
 #include "../file/file_utils.hpp"
 #include "../mapping/mem_map.hpp"
 #include "soctherm.hpp"
@@ -480,7 +481,31 @@ namespace tsensor {
 
         if (!IsSensorEnabled()) {
             StartSensors();
+        }  
+
+        /* Workaround for potential HW bug */
+        /* Refer to TRM 40.3.1.3 TSOSC Vmin limitations */
+        /* Vmins estimated. TODO: find the correct ones via community testing */
+
+        /* Get the CPU voltage*/
+        u32 cpuVoltage = board::GetVoltage(HocClkVoltage_CPU) / 1000;
+
+        /* Infered from stock voltage. We know that below stock is unreliable */
+        constexpr u32 kEristaTSOSCVmin = 825;
+        constexpr u32 kMarikoTSOSCVmin = 620;
+
+        /* Get the correct vmin for the hardware type currently used */
+        u32 TSOSCVmin = board::GetSocType() == HocClkSocType_Mariko ? kMarikoTSOSCVmin : kEristaTSOSCVmin;
+
+        /* Mark the sensor as invalid so HW can recalibrate it */
+        if(cpuVoltage >= TSOSCVmin) {
+            WriteReg(socthermVa, SENSOR_VALID, 1);
+        } else {
+            WriteReg(socthermVa, SENSOR_VALID, 0);
         }
+
+        /* Wait for HW recalibration */
+        svcSleepThread(25'000);
 
         temps.cpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) >> 16);
         temps.gpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) & SENSOR_TEMP1_GPU_TEMP_MASK);
