@@ -39,6 +39,7 @@ typedef struct {
     long size;
     int core;
     bool created;
+    uint64_t ticks;
 } bw_worker_t;
 
 typedef struct bw_pool {
@@ -58,7 +59,9 @@ static void bw_worker_entry(void *arg) {
         bench_kernel_fn f = w->func;
         if (!f)
             break;
+        uint64_t t0 = armGetSystemTick();
         f(w->dst, w->src, w->size);
+        w->ticks = armGetSystemTick() - t0;
         semaphoreSignal(&p->done);
     }
 }
@@ -115,13 +118,14 @@ static double bw_run_once(bw_pool_t *p, bench_kernel_fn f, int64_t *dstbuf, int6
         w->src = srcbuf + (size * i) / (long)sizeof(int64_t);
         w->size = size;
     }
-    uint64_t t0 = armGetSystemTick();
     for (int i = 0; i < threads; i++)
         semaphoreSignal(&p->workers[i].start);
     for (int i = 0; i < threads; i++)
         semaphoreWait(&p->done);
-    uint64_t t1 = armGetSystemTick();
-    return (double)armTicksToNs(t1 - t0) / 1000000000.0;
+    uint64_t sum = 0;
+    for (int i = 0; i < threads; i++)
+        sum += p->workers[i].ticks;
+    return (double)armTicksToNs(sum) / 1000000000.0 / threads;
 }
 
 #define BW_GPR_CLOBBERS \
@@ -201,14 +205,14 @@ static double gettime(void) {
 
 static double bandwidth_bench_helper(bw_pool_t *pool, int threads, int64_t *dstbuf, int64_t *srcbuf, long size, bench_kernel_fn f) {
     int i, loopcount, innerloopcount, n;
-    double t, speed, maxspeed, s, s0, s1, s2;
+    double t, speed, maxspeed;
 
     if (!pool || !pool->ok)
         return 0.;
 
-    s = s0 = s1 = s2 = 0.;
     maxspeed = 0.;
     for (n = 0; n < MAXREPEATS; n++) {
+        bw_run_once(pool, f, dstbuf, srcbuf, size);
         loopcount = 0;
         innerloopcount = 1;
         t = 0.;
@@ -217,19 +221,11 @@ static double bandwidth_bench_helper(bw_pool_t *pool, int threads, int64_t *dstb
             for (i = 0; i < innerloopcount; i++)
                 t += bw_run_once(pool, f, dstbuf, srcbuf, size);
             innerloopcount *= 2;
-        } while (t < 0.5);
+        } while (t < 0.25);
 
         speed = (double)size * threads * loopcount / t / 1000000.;
-        s0 += 1.;
-        s1 += speed;
-        s2 += speed * speed;
         if (speed > maxspeed)
             maxspeed = speed;
-        if (s0 > 2.) {
-            s = sqrt((s0 * s2 - s1 * s1) / (s0 * (s0 - 1)));
-            if (s < maxspeed / 1000.)
-                break;
-        }
     }
     return maxspeed;
 }
