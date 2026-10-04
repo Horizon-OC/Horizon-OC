@@ -780,7 +780,7 @@ namespace mgr {
             gContext.resolutionHeight = 0;  // N/A
 
         gContext.isWdtEnabled = i2c::wdt::IsWdtEnabled();
-        
+
         return hasChanged;
     }
 

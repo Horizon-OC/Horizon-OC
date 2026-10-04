@@ -59,5 +59,5 @@ namespace board {
     void PcvHijackGpuVolts(u32 vmin);
     void PcvHijackGpuFrequency(u32 voltage, u32 hz);
     u32 GetMinimumGpuVmin(u32 freqMhz, u32 bracket);
-
+    void ApplyCpuDvfs(u32 ramFreqMhz);
 }  // namespace board

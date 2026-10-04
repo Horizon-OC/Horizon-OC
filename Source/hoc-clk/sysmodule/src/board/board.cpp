@@ -61,6 +61,8 @@ namespace board {
     HocClkConsoleType gConsoleType = HocClkConsoleType_Icosa;
     FuseData fuseData;
     u8 speedoBracket;
+    u8 CpuSpeedoBracket;
+
     PwmChannelSession iCon;
 
     u32 fd = 0, fd2 = 0;
@@ -115,7 +117,7 @@ namespace board {
     void FetchHardwareInfos() {
         ReadFuses(fuseData, fuseVirtAddr);
         SetGpuBracket(fuseData.gpuSpeedo, speedoBracket);
-
+        SetCpuBracket(fuseData.cpuSpeedo, CpuSpeedoBracket);
         u32 hidrev = *(u32 *)(apbVirtAddr + APB_MISC_GP_HIDREV);
         if (((hidrev >> 4) & 0xF) >= GP_HIDREV_MAJOR_T210B01) {
             gSocType = HocClkSocType_Mariko;
@@ -337,6 +339,10 @@ namespace board {
 
     u8 GetGpuSpeedoBracket() {
         return speedoBracket;
+    }
+
+    u8 GetCpuSpeedoBracket() {
+        return CpuSpeedoBracket;
     }
 
 }  // namespace board

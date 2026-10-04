@@ -30,6 +30,7 @@
 #include "board.hpp"
 #include "board_freq.hpp"
 #include "board_volt.hpp"
+#include "../i2c/max77620_wdt.hpp"
 
 namespace board {
 
@@ -456,6 +457,11 @@ namespace board {
         }
     }
 
+    struct DvfsEntry {
+        u32 freq;
+        u32 volt;
+    };
+
     u32 GetMinimumGpuVmin(u32 freqMhz, u32 bracket) {
         u32 baseVolt = 800;
         if (GetSocType() == HocClkSocType_Mariko) {
@@ -511,89 +517,38 @@ namespace board {
             }
             return baseVolt;
         } else {
-            struct DvfsEntry {
-                u32 freq;
-                u32 volt;
-            };
-            static const DvfsEntry ramTable[][19] = {
-                { { 1733, 725 },
-                  { 1800, 730 },
-                  { 1866, 735 },
-                  { 1920, 740 },
-                  { 1958, 745 },
-                  { 1996, 750 },
-                  { 2035, 755 },
-                  { 2073, 760 },
-                  { 2112, 765 },
-                  { 2131, 770 },
-                  { 2150, 775 },
-                  { 2169, 780 },
-                  { 2188, 785 },
-                  { 2227, 790 },
-                  { 2265, 795 },
-                  { 2304, 800 },
-                  { 2342, 805 },
-                  { 2380, 810 },
-                  { 2400, 815 } },  // Bracket 0
-                { { 1733, 715 },
-                  { 1800, 720 },
-                  { 1866, 725 },
-                  { 1920, 730 },
-                  { 1958, 735 },
-                  { 1996, 740 },
-                  { 2035, 745 },
-                  { 2073, 750 },
-                  { 2112, 755 },
-                  { 2131, 760 },
-                  { 2150, 765 },
-                  { 2169, 770 },
-                  { 2188, 775 },
-                  { 2227, 780 },
-                  { 2265, 785 },
-                  { 2304, 790 },
-                  { 2342, 795 },
-                  { 2380, 800 },
-                  { 2400, 805 } },  // Bracket 1
-                { { 1733, 705 },
-                  { 1800, 710 },
-                  { 1866, 715 },
-                  { 1920, 720 },
-                  { 1958, 725 },
-                  { 1996, 730 },
-                  { 2035, 735 },
-                  { 2073, 740 },
-                  { 2112, 745 },
-                  { 2131, 750 },
-                  { 2150, 755 },
-                  { 2169, 760 },
-                  { 2188, 765 },
-                  { 2227, 770 },
-                  { 2265, 775 },
-                  { 2304, 780 },
-                  { 2342, 785 },
-                  { 2380, 790 },
-                  { 2400, 795 } },  // Bracket 2
-                { { 1733, 695 },
-                  { 1800, 700 },
-                  { 1866, 705 },
-                  { 1920, 710 },
-                  { 1958, 715 },
-                  { 1996, 720 },
-                  { 2035, 725 },
-                  { 2073, 730 },
-                  { 2112, 735 },
-                  { 2131, 740 },
-                  { 2150, 745 },
-                  { 2169, 750 },
-                  { 2188, 755 },
-                  { 2227, 760 },
-                  { 2265, 765 },
-                  { 2304, 770 },
-                  { 2342, 775 },
-                  { 2380, 780 },
-                  { 2400, 785 } },  // Bracket 3
-            };
 
+            static const DvfsEntry ramTable[][19] = {
+                { // Bracket 0
+                    {1733, 725}, {1800, 730}, {1866, 735}, {1920, 740},
+                    {1958, 745}, {1996, 750}, {2035, 755}, {2073, 760},
+                    {2112, 765}, {2131, 770}, {2150, 775}, {2169, 780},
+                    {2188, 785}, {2227, 790}, {2265, 795}, {2304, 800},
+                    {2342, 805}, {2380, 810}, {2400, 815}
+                },
+                { // Bracket 1
+                    {1733, 715}, {1800, 720}, {1866, 725}, {1920, 730},
+                    {1958, 735}, {1996, 740}, {2035, 745}, {2073, 750},
+                    {2112, 755}, {2131, 760}, {2150, 765}, {2169, 770},
+                    {2188, 775}, {2227, 780}, {2265, 785}, {2304, 790},
+                    {2342, 795}, {2380, 800}, {2400, 805}
+                },
+                { // Bracket 2
+                    {1733, 705}, {1800, 710}, {1866, 715}, {1920, 720},
+                    {1958, 725}, {1996, 730}, {2035, 735}, {2073, 740},
+                    {2112, 745}, {2131, 750}, {2150, 755}, {2169, 760},
+                    {2188, 765}, {2227, 770}, {2265, 775}, {2304, 780},
+                    {2342, 785}, {2380, 790}, {2400, 795}
+                },
+                { // Bracket 3
+                    {1733, 695}, {1800, 700}, {1866, 705}, {1920, 710},
+                    {1958, 715}, {1996, 720}, {2035, 725}, {2073, 730},
+                    {2112, 735}, {2131, 740}, {2150, 745}, {2169, 750},
+                    {2188, 755}, {2227, 760}, {2265, 765}, {2304, 770},
+                    {2342, 775}, {2380, 780}, {2400, 785}
+                },
+            };
+            
             if (freqMhz <= 1600)
                 return 0;  // DVFS doesnt work below 1600MHz, it will just use vMin
             if (bracket >= std::size(ramTable))
@@ -610,4 +565,71 @@ namespace board {
             return baseVolt;
         }
     }
+    /* TODO: Verify table on consoles */
+    const DvfsEntry CpuVminRamTable[/* Bracket */7][/* Entry */12] = {
+        { {1866, 550}, {1996, 560}, {2133, 570}, {2400, 580}, {2533, 590}, {2666, 600}, {2800, 610}, {2933, 620}, {3066, 630}, {3200, 640}, {3333, 660}, {3466, 680} }, // Bracket 0 (Speedo 1751-1800)
+        { {1866, 555}, {1996, 565}, {2133, 575}, {2400, 585}, {2533, 595}, {2666, 605}, {2800, 615}, {2933, 625}, {3066, 635}, {3200, 645}, {3333, 665}, {3466, 685} }, // Bracket 1 (Speedo 1701-1750)
+        { {1866, 560}, {1996, 570}, {2133, 580}, {2400, 590}, {2533, 600}, {2666, 610}, {2800, 620}, {2933, 630}, {3066, 640}, {3200, 650}, {3333, 670}, {3466, 690} }, // Bracket 2 (Speedo 1651-1700)
+        { {1866, 565}, {1996, 575}, {2133, 585}, {2400, 595}, {2533, 605}, {2666, 615}, {2800, 625}, {2933, 635}, {3066, 645}, {3200, 655}, {3333, 675}, {3466, 695} }, // Bracket 3 (Speedo 1601-1650)
+        { {1866, 570}, {1996, 580}, {2133, 590}, {2400, 600}, {2533, 610}, {2666, 620}, {2800, 630}, {2933, 640}, {3066, 650}, {3200, 660}, {3333, 680}, {3466, 700} }, // Bracket 4 (Speedo 1551-1600)
+        { {1866, 575}, {1996, 585}, {2133, 595}, {2400, 605}, {2533, 615}, {2666, 625}, {2800, 635}, {2933, 645}, {3066, 655}, {3200, 665}, {3333, 685}, {3466, 705} }, // Bracket 5 (Speedo 1501-1550)
+        { {1866, 580}, {1996, 590}, {2133, 600}, {2400, 610}, {2533, 620}, {2666, 630}, {2800, 640}, {2933, 650}, {3066, 660}, {3200, 670}, {3333, 690}, {3466, 710} }, // Bracket 6 (Speedo 1451-1500)
+    };
+
+    u32 GetMinimumCpuVmin(u32 freqMhz, u32 bracket) {
+        if (freqMhz <= 1600)
+            return 0;  // DVFS doesnt work below 1600MHz, it will just use vMin
+        if (bracket >= std::size(CpuVminRamTable))
+            bracket = 0;
+
+        const auto &entries = CpuVminRamTable[bracket];
+        u32 baseVolt = entries[std::size(entries) - 1].volt;
+        for (const auto &entry : entries) {
+            if (freqMhz <= entry.freq) {
+                baseVolt = entry.volt;
+                break;
+            }
+        }
+        return baseVolt;
+    }
+
+    constexpr u32 PmicVmin = 250;
+    constexpr u32 PmicStep = 5;
+
+    u32 ConvertVoltToLut(u32 mv) {
+        /* Refer to TRM 6.1.19 */
+        return (mv - PmicVmin) / PmicStep;
+    }
+
+    void ApplyCpuDvfs(u32 ramFreqMhz) {
+        /* Get the minimum DRAM OC Cpu Vmin */
+        u32 vmin = GetMinimumCpuVmin(ramFreqMhz, GetCpuSpeedoBracket());
+
+        /* Create the new modified CPU LUT buffer */
+        u32 NewCpuVoltTable[32] = { 0 };
+        memcpy(NewCpuVoltTable, cpuVoltTable, sizeof(NewCpuVoltTable));
+
+        /* Apply the new vmin to the reconstructed table and convert it to the appropriate format */
+        for(auto &vlt : NewCpuVoltTable) {
+            /* Will never run on freq zero so it just converts the table */
+            if(vlt < vmin) {
+                vlt = vmin;
+            }
+
+            /* Don't know if modifying and passing argument causes undefined behavior? */
+            u32 tempVlt = vlt;
+            vlt = ConvertVoltToLut(tempVlt); 
+        }
+        
+        /* Pet the watchdog to avoid it hanging the system during this operation */
+        i2c::wdt::Pet();
+
+        /* DSB to prevent a hang during setting the new LUT */
+        __asm__("dsb SY");
+
+        /* Copy the edited LUT into it's appropriate location */
+        memcpy((void*)(cldvfs + CL_DVFS_OUTPUT_LUT_0), NewCpuVoltTable, sizeof(NewCpuVoltTable));
+
+    }
 }  // namespace board
+
