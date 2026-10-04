@@ -1191,6 +1191,7 @@ class SafetySubMenuGui : public MiscGui {
         this->listElement->addItem(new CompactCategoryHeader("Safety Settings"));
         addConfigToggle(HocClkConfigValue_UncappedClocks, nullptr);
         addConfigToggle(HocClkConfigValue_ThermalThrottle, nullptr);
+        addConfigToggle(HocClkConfigValue_Watchdog, nullptr);
 
 #if IS_MINIMAL == 0
         ValueThresholds throttleThresholds(70, 80);

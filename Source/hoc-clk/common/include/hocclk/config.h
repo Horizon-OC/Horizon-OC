@@ -79,6 +79,8 @@ typedef enum {
     HocClkConfigValue_AutoRamCpuCpuOCFreq,
     HocClkConfigValue_AutoRamCpuRamOCThreshold,
 
+    HocClkConfigValue_Watchdog,
+
     KipConfigValue_custRev,
     KipConfigValue_KipVersion,
     // KipConfigValue_mtcConf,
@@ -337,7 +339,8 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
             return pretty ? "Auto High RAM CPU OC Freq" : "auto_ram_cpu_cpu_oc_freq";
         case HocClkConfigValue_AutoRamCpuRamOCThreshold:
             return pretty ? "Auto High RAM CPU OC RAM Threshold" : "auto_ram_cpu_ram_oc_threshold";
-
+        case HocClkConfigValue_Watchdog:
+            return pretty ? "Watchcat" : "watchdog"; // More dignified
         // KIP config values
         case KipConfigValue_custRev:
             return pretty ? "Custom Revision" : "kip_cust_rev";
@@ -656,6 +659,7 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case HocClkConfigValue_MarikoMiddleFreqs:
         case HocClkConfigValue_LiveGpuVoltage:
         case HocClkConfigValue_AutoRAMCPUOverclock:
+        case HocClkConfigValue_Watchdog:
             return (input & 0x1) == input;
 
         case KipConfigValue_KipVersion:

@@ -44,6 +44,7 @@ tsl::elm::ListItem* aotagTempItem = NULL;
 tsl::elm::ListItem* dramTempItem = NULL;
 tsl::elm::ListItem* cTypeItem = NULL;
 tsl::elm::ListItem* creditsItem = NULL;
+tsl::elm::ListItem* wdtItem = NULL;
 
 #define R_ARROW "\u2192"
 
@@ -158,6 +159,9 @@ void AboutGui::listUI()
 
     kipLoadedItem = new tsl::elm::ListItem("KIP status:");
     this->listElement->addItem(kipLoadedItem);
+
+    wdtItem = new tsl::elm::ListItem("Watchcat:");
+    this->listElement->addItem(wdtItem);
 
     if(!IsHoag()) {
         sysdockStatusItem =
@@ -282,6 +286,7 @@ void AboutGui::refresh()
     dramTempItem->setValue(strings[12]);
 
     cTypeItem->setValue(hocClkFormatConsoleType(this->context->consoleType, true));
+    wdtItem->setValue(context->isWdtEnabled ? "Enabled" : "Disabled");
 }
 
 class CreditsSubMenu : public AboutGui {

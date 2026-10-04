@@ -83,7 +83,8 @@ typedef struct {
     bool isKipLoaded;
     bool rebootRequired;
     bool isFirstLoad;
-
+    
+    bool isWdtEnabled;
     // Reserved for future use
     u8 reserved[0x358];
 } HocClkContext;

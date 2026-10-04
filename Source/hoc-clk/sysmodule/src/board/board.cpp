@@ -95,7 +95,8 @@ namespace board {
             rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
             if (R_SUCCEEDED(rc)) {
                 if (state == PscPmState_Awake) {
-                    i2c::wdt::Arm(i2c::wdt::MAX77620_WDT_2S);
+                    i2c::wdt::ResetWdtEnableState();
+                    i2c::wdt::Pet();
                     s_isAwake = true;
                 } else if (state == PscPmState_ReadySleep) {
                     i2c::wdt::Disarm();
@@ -251,9 +252,6 @@ namespace board {
         
         rc = threadStart(&s_pscThread);
         ASSERT_RESULT_OK(rc, "threadStart");
-
-        /* Arm the watchdog */
-        i2c::wdt::Arm(i2c::wdt::MAX77620_WDT_2S);
     }
 
     void Exit() {

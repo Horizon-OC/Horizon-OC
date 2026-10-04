@@ -15,6 +15,8 @@
  *
  */
 
+#pragma once
+
 #include <hocclk.h>
 #include <switch.h>
 #include "i2cDrv.h"
@@ -34,4 +36,6 @@ namespace i2c::wdt {
 
     void Pet();
 
-} // namespace pwr::wdt
+    void ResetWdtEnableState();
+    bool IsWdtEnabled();
+} // namespace i2c::wdt
