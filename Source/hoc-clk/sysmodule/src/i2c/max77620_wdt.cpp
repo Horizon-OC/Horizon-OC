@@ -49,7 +49,6 @@
 
 namespace i2c::wdt {
 
-    static LockableMutex g_wdt_mutex;
     static bool isWdtEnabled = false;
 
     static Result update_bits(u8 reg, u8 mask, u8 val) {
@@ -64,7 +63,7 @@ namespace i2c::wdt {
         return I2cSet_U8(I2cDevice_Max77620Pmic, reg, cur);
     }
 
-    static void ArmLocked(max77620_wdt_time_t timeout) {
+    void Arm(max77620_wdt_time_t timeout) {
         if (isWdtEnabled) {
             return;
         }
@@ -117,15 +116,8 @@ namespace i2c::wdt {
     }
 
     void ResetWdtEnableState() {
-        std::scoped_lock lock{g_wdt_mutex};
 
         isWdtEnabled = false;
-    }
-
-    void Arm(max77620_wdt_time_t timeout) {
-        std::scoped_lock lock{g_wdt_mutex};
-
-        ArmLocked(timeout);
     }
 
     bool IsWdtEnabled() {
@@ -134,10 +126,9 @@ namespace i2c::wdt {
 
     void Pet() {
         const bool watchdogEnabled = file::config::GetConfigValue(HocClkConfigValue_Watchdog);
-        std::scoped_lock lock{g_wdt_mutex};
 
         if (watchdogEnabled) {
-            ArmLocked(i2c::wdt::MAX77620_WDT_2S);
+            Arm(i2c::wdt::MAX77620_WDT_2S);
             Result rc = update_bits(MAX77620_REG_CNFGGLBL3, MAX77620_WDTC_MASK, MAX77620_WDTC_KICK);
             ASSERT_RESULT_OK(rc, "update_bits");
         } else {
