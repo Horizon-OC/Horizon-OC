@@ -50,8 +50,6 @@
 #include <lockable_mutex.h>
 #include "../mapping/mem_map.hpp"
 #include "../soc/dram_mrr.hpp"
-#include "../i2c/max77620_wdt.hpp"
-
 namespace board {
 
     u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr;
@@ -65,52 +63,13 @@ namespace board {
 
     u32 fd = 0, fd2 = 0;
 
-    #define PMC_BASE 0x7000E400
-    #define APB_MISC_GP_HIDREV 0x804
-    #define GP_HIDREV_MAJOR_T210 0x1
-    #define GP_HIDREV_MAJOR_T210B01 0x2
-    #define APB_BASE 0x70000000
-    #define FUSE_RESERVED_ODMX(x) (0x1C8 + 4 * (x))
-    #define FUSE_OFFSET 0x800
-
-    constexpr u32 pscDependencies[] = { PscPmModuleId_Olsc };
-    constexpr PscPmModuleId PscModuleId = (PscPmModuleId)705;
-
-    PscPmModule s_pscModule;
-    bool s_pscPrepared = false;
-    Thread s_pscThread;
-    bool s_pscExit = false;
-
-    std::atomic_bool s_isAwake = true;
-
-    void PscThreadFunc(void *) {
-        while (!s_pscExit) {
-            Result rc = eventWait(&s_pscModule.event, 1'000'000'000ULL);
-            if (R_FAILED(rc)) {
-                continue; // Timeout
-            }
-
-            PscPmState state;
-            u32 flags;
-            rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
-            if (R_SUCCEEDED(rc)) {
-                if (state == PscPmState_Awake) {
-                    i2c::wdt::Arm(i2c::wdt::MAX77620_WDT_2S);
-                    s_isAwake = true;
-                } else if (state == PscPmState_ReadySleep) {
-                    i2c::wdt::Disarm();
-                    s_isAwake = false;
-                } else if (state == PscPmState_ReadyShutdown) {
-                    i2c::wdt::Disarm();
-                    s_isAwake = false;
-
-                }
-
-                pscPmModuleAcknowledge(&s_pscModule, state);
-            }
-        }
-    }
-    
+#define PMC_BASE 0x7000E400
+#define APB_MISC_GP_HIDREV 0x804
+#define GP_HIDREV_MAJOR_T210 0x1
+#define GP_HIDREV_MAJOR_T210B01 0x2
+#define APB_BASE 0x70000000
+#define FUSE_RESERVED_ODMX(x) (0x1C8 + 4 * (x))
+#define FUSE_OFFSET 0x800
     void FetchHardwareInfos() {
         ReadFuses(fuseData, fuseVirtAddr);
         SetGpuBracket(fuseData.gpuSpeedo, speedoBracket);
@@ -239,21 +198,6 @@ namespace board {
 
         CacheDfllData();
         CacheGpuVoltTable();
-
-        rc = pscmInitialize();
-        ASSERT_RESULT_OK(rc, "pscmInitialize");
-
-        rc = pscmGetPmModule(&s_pscModule, PscModuleId, pscDependencies, sizeof(pscDependencies) / sizeof(u32), true);
-        ASSERT_RESULT_OK(rc, "pscmGetPmModule");
-
-        rc = threadCreate(&s_pscThread, PscThreadFunc, nullptr, NULL, 0x1000, 0x10, 3);
-        ASSERT_RESULT_OK(rc, "threadCreate");
-        
-        rc = threadStart(&s_pscThread);
-        ASSERT_RESULT_OK(rc, "threadStart");
-
-        /* Arm the watchdog */
-        i2c::wdt::Arm(i2c::wdt::MAX77620_WDT_2S);
     }
 
     void Exit() {
@@ -284,16 +228,6 @@ namespace board {
         batteryInfoExit();
         pmdmntExit();
         nvExit();
-        
-        eventFire(&s_pscModule.event);
-        threadWaitForExit(&s_pscThread);
-        threadClose(&s_pscThread);
-
-        pscPmModuleFinalize(&s_pscModule);
-        pscPmModuleClose(&s_pscModule);
-        pscmExit();
-
-        i2c::wdt::Disarm();
     }
 
     HocClkSocType GetSocType() {

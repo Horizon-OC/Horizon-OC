@@ -44,8 +44,6 @@
 #include "../util/lockable_mutex.h"
 #include "clock_manager.hpp"
 #include "governor.hpp"
-#include "../i2c/max77620_wdt.hpp"
-
 
 #define HOSPPC_HAS_BOOST (hosversionAtLeast(7, 0, 0))
 
@@ -881,7 +879,10 @@ namespace mgr {
     }
 
     void WaitForNextTick() {
-        i2c::wdt::Pet();
-        svcSleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
+
+        if (board::GetHz(HocClkModule_MEM) > 665000000)
+            svcSleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
+        else
+            svcSleepThread(5000 * 1000000ULL);  // 5 seconds in sleep mode
     }
 }  // namespace mgr
