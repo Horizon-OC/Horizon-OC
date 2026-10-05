@@ -143,14 +143,6 @@ enum {
     DVFSMode_EnumMax,
 };
 
-enum {
-    CPUDVFSMode_Disabled = 0,
-    CPUDVFSMode_Modify, // LUT Modify dvfs
-    // DVFSMode_OfficialService,
-    // DVFSMode_Hack,
-    CPUDVFSMode_EnumMax,
-};
-
 typedef enum {
     GpuSchedulingMode_DoNotOverride = 0,
     GpuSchedulingMode_Enabled,

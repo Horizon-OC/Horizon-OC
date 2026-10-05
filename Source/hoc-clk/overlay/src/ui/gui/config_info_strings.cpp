@@ -506,7 +506,7 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Default: 800 mV"
             };
 
-        case HocClkConfigValue_GPUDVFSMode:
+        case HocClkConfigValue_DVFSMode:
             return {
                 "The mode used for GPU DVFS",
                 "Adjusts GPU vmin when RAM clock is changed due to a higher requirement",
@@ -516,28 +516,12 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Default: PCV Hijack"
             };
 
-        case HocClkConfigValue_GPUDVFSOffset:
+        case HocClkConfigValue_DVFSOffset:
             return {
                 "The offset added/subtracted to the GPU vmin when the RAM clock is changed due to a higher requirement in PCV Hijack mode",
                 "Default: 0 mV (Disabled)"
             };
 
-        case HocClkConfigValue_CPUDVFSMode:
-            return {
-                "The mode used for CPU DVFS",
-                "Adjusts CPU vmin when RAM clock is changed due to a higher requirement",
-                "Options:",
-                "- Disabled: disabled...",
-                "- LUT Modify: Modify CLDVFS Lut",
-                "Default: LUT Modify"
-            };
-
-        case HocClkConfigValue_CPUDVFSOffset:
-            return {
-                "The offset added/subtracted to the CPU vmin when the RAM clock is changed due to a higher requirement in LUT Modify mode",
-                "Default: 0 mV (Disabled)"
-            };
-            
         case KipConfigValue_eristaGpuUV:
             return {
                 "GPU undervolt level",
