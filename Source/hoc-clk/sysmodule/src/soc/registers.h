@@ -528,6 +528,8 @@
 
 #define CLK_SOURCE_EMC 0x19c
 
+#define CL_DVFS_LUT_TABLE_0 0x200
+
 #define PLLC_BASE 0x080
 #define PLLM_BASE 0x090
 #define PLLP_BASE 0x0a0

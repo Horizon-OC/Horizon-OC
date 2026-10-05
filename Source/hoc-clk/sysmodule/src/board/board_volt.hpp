@@ -60,4 +60,8 @@ namespace board {
     void PcvHijackGpuFrequency(u32 voltage, u32 hz);
     u32 GetMinimumGpuVmin(u32 freqMhz, u32 bracket);
 
+    void InitializeCpuLut();
+    void ApplyCpuMinVolt(u32 vmin);
+    u32 GetMinimumCpuVmin(u32 freqMhz, u32 bracket);
+
 }  // namespace board

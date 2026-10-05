@@ -2477,6 +2477,26 @@ class CpuSubmenuGui : public MiscGui {
                             this->configList->values[KipConfigValue_marikoCpuUVHigh] ? &mCpuClockThresholdsUV : &mCpuClockThresholds, {}, maxClkOptions,
                             false, true);
 
+            std::vector<NamedValue> cpuDvfsOffset = {
+                NamedValue("-80 mV", 0xFFFFFFB0), NamedValue("-75 mV", 0xFFFFFFB5), NamedValue("-70 mV", 0xFFFFFFBA), NamedValue("-65 mV", 0xFFFFFFBF),
+                NamedValue("-60 mV", 0xFFFFFFC4), NamedValue("-55 mV", 0xFFFFFFC9), NamedValue("-50 mV", 0xFFFFFFCE), NamedValue("-45 mV", 0xFFFFFFD3),
+                NamedValue("-40 mV", 0xFFFFFFD8), NamedValue("-35 mV", 0xFFFFFFDD), NamedValue("-30 mV", 0xFFFFFFE2), NamedValue("-25 mV", 0xFFFFFFE7),
+                NamedValue("-20 mV", 0xFFFFFFEC), NamedValue("-15 mV", 0xFFFFFFF1), NamedValue("-10 mV", 0xFFFFFFF6), NamedValue(" -5 mV", 0xFFFFFFFB),
+                NamedValue("Disabled", 0),        NamedValue(" +5 mV", 5),          NamedValue("+10 mV", 10),         NamedValue("+15 mV", 15),
+                NamedValue("+20 mV", 20),
+            };
+
+            std::vector<NamedValue> cpuDvfsValues = {
+                NamedValue("Disabled", CPUDVFSMode_Disabled),
+                NamedValue("LUT Modify", CPUDVFSMode_Modify),
+            };
+
+            addConfigButton(HocClkConfigValue_CPUDVFSMode, "CPU DVFS Mode", ValueRange(0, 0, 1, "", 0), "CPU DVFS Mode", &thresholdsDisabled, {}, cpuDvfsValues,
+                            false);
+
+            addConfigButton(HocClkConfigValue_CPUDVFSOffset, "CPU DVFS Offset", ValueRange(0, 12, 1, "", 0), "CPU DVFS Offset", &thresholdsDisabled, {},
+                            cpuDvfsOffset, false);
+
         } else {
             addConfigTrackbar(KipConfigValue_eristaCpuUV, "CPU UV", ValueRange(0, 5, 1));
 
@@ -2648,10 +2668,10 @@ class GpuSubmenuGui : public MiscGui {
             // NamedValue("Official Service", DVFSMode_OfficialService),
         };
 
-        addConfigButton(HocClkConfigValue_DVFSMode, "GPU DVFS Mode", ValueRange(0, 0, 1, "", 0), "GPU DVFS Mode", &thresholdsDisabled, {}, dvfsValues,
+        addConfigButton(HocClkConfigValue_GPUDVFSMode, "GPU DVFS Mode", ValueRange(0, 0, 1, "", 0), "GPU DVFS Mode", &thresholdsDisabled, {}, dvfsValues,
                         false);
 
-        addConfigButton(HocClkConfigValue_DVFSOffset, "GPU DVFS Offset", ValueRange(0, 12, 1, "", 0), "GPU DVFS Offset", &thresholdsDisabled, {},
+        addConfigButton(HocClkConfigValue_GPUDVFSOffset, "GPU DVFS Offset", ValueRange(0, 12, 1, "", 0), "GPU DVFS Offset", &thresholdsDisabled, {},
                         dvfsOffset, false);
 
         tsl::elm::ListItem *customTableSubmenu = new tsl::elm::ListItem("GPU Voltage Table");

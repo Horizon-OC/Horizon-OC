@@ -61,6 +61,7 @@ namespace board {
     HocClkConsoleType gConsoleType = HocClkConsoleType_Icosa;
     FuseData fuseData;
     u8 speedoBracket;
+    u8 cpuSpeedoBracket;
     PwmChannelSession iCon;
 
     u32 fd = 0, fd2 = 0;
@@ -104,17 +105,17 @@ namespace board {
                 } else if (state == PscPmState_ReadyShutdown) {
                     i2c::wdt::Disarm();
                     s_isAwake = false;
-
                 }
 
                 pscPmModuleAcknowledge(&s_pscModule, state);
             }
         }
     }
-    
+
     void FetchHardwareInfos() {
         ReadFuses(fuseData, fuseVirtAddr);
         SetGpuBracket(fuseData.gpuSpeedo, speedoBracket);
+        SetCpuBracket(fuseData.cpuSpeedo, cpuSpeedoBracket);
 
         u32 hidrev = *(u32 *)(apbVirtAddr + APB_MISC_GP_HIDREV);
         if (((hidrev >> 4) & 0xF) >= GP_HIDREV_MAJOR_T210B01) {
@@ -239,6 +240,7 @@ namespace board {
         display::Initialize(&cfg);
 
         CacheDfllData();
+        InitializeCpuLut();
         CacheGpuVoltTable();
 
         rc = pscmInitialize();
@@ -249,7 +251,7 @@ namespace board {
 
         rc = threadCreate(&s_pscThread, PscThreadFunc, nullptr, NULL, 0x1000, 0x10, 3);
         ASSERT_RESULT_OK(rc, "threadCreate");
-        
+
         rc = threadStart(&s_pscThread);
         ASSERT_RESULT_OK(rc, "threadStart");
     }
@@ -282,7 +284,7 @@ namespace board {
         batteryInfoExit();
         pmdmntExit();
         nvExit();
-        
+
         eventFire(&s_pscModule.event);
         threadWaitForExit(&s_pscThread);
         threadClose(&s_pscThread);
@@ -337,6 +339,10 @@ namespace board {
 
     u8 GetGpuSpeedoBracket() {
         return speedoBracket;
+    }
+
+    u8 GetCpuSpeedoBracket() {
+        return cpuSpeedoBracket;
     }
 
 }  // namespace board

@@ -60,6 +60,36 @@ namespace board {
         }
     }
 
+    void SetCpuBracket(u16 speedo, u8 &cpuBracket) {
+        switch (speedo) {
+            // Mariko
+            case 1451 ... 1500:
+                cpuBracket = 6;
+                break;
+            case 1501 ... 1550:
+                cpuBracket = 5;
+                break;
+            case 1551 ... 1600:
+                cpuBracket = 4;
+                break;
+            case 1601 ... 1650:
+                cpuBracket = 3;
+                break;
+            case 1651 ... 1700:
+                cpuBracket = 2;
+                break;
+            case 1701 ... 1750:
+                cpuBracket = 1;
+                break;
+            case 1751 ... 1800:
+                cpuBracket = 0;
+                break;
+            default:
+                cpuBracket = 6;
+                break;
+        }
+    }
+
     void ReadFuses(FuseData &speedo, u64 fuseVa) {
         constexpr u32 FuseOffset = 0x800;
         u8 *fusePtr = reinterpret_cast<u8 *>(fuseVa) + FuseOffset;
