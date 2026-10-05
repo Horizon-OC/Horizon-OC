@@ -52,8 +52,12 @@ typedef enum {
     HocClkConfigValue_OverwriteRefreshRate,
     HocClkConfigValue_MaxDisplayClockH,
 
-    HocClkConfigValue_DVFSMode,
-    HocClkConfigValue_DVFSOffset,
+    HocClkConfigValue_GPUDVFSMode,
+    HocClkConfigValue_GPUDVFSOffset,
+
+    HocClkConfigValue_CPUDVFSMode,
+    HocClkConfigValue_CPUDVFSOffset,
+
     HocClkConfigValue_LiveCpuUv,
     HocClkConfigValue_EnableExperimentalSettings,
 
@@ -288,11 +292,17 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
         case HocClkConfigValue_MaxDisplayClockH:
             return pretty ? "Max Display Clock (Handheld)" : "drr_max_clock";
 
-        case HocClkConfigValue_DVFSMode:
-            return pretty ? "DVFS Mode" : "dvfs_mode";
+        case HocClkConfigValue_GPUDVFSMode:
+            return pretty ? "GPU DVFS Mode" : "dvfs_mode";
 
-        case HocClkConfigValue_DVFSOffset:
-            return pretty ? "DVFS Offset" : "dvfs_offset";
+        case HocClkConfigValue_GPUDVFSOffset:
+            return pretty ? "GPU DVFS Offset" : "dvfs_offset";
+
+        case HocClkConfigValue_CPUDVFSMode:
+            return pretty ? "CPU DVFS Mode" : "cpu_dvfs_mode";
+
+        case HocClkConfigValue_CPUDVFSOffset:
+            return pretty ? "CPU DVFS Offset" : "cpu_dvfs_offset";
 
         case HocClkConfigValue_GPUScheduling:
             return pretty ? "GPU Scheduling" : "gpu_scheduling";
@@ -604,7 +614,8 @@ static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
 
         case HocClkConfigValue_ThermalThrottle:
         case HocClkConfigValue_IsFirstLoad:
-        case HocClkConfigValue_DVFSMode:
+        case HocClkConfigValue_GPUDVFSMode:
+        case HocClkConfigValue_CPUDVFSMode:
             return 1ULL;
         case HocClkConfigValue_AutoRAMCPUOverclock:
             return 0ULL;
@@ -800,8 +811,10 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case KipConfigValue_t6_tRTW_fine_tune:
         case KipConfigValue_t7_tWTR_fine_tune:
         case KipCrc32:
-        case HocClkConfigValue_DVFSMode:
-        case HocClkConfigValue_DVFSOffset:
+        case HocClkConfigValue_GPUDVFSMode:
+        case HocClkConfigValue_GPUDVFSOffset:
+        case HocClkConfigValue_CPUDVFSMode:
+        case HocClkConfigValue_CPUDVFSOffset:
         case HocClkConfigValue_GPUScheduling:
         case HocClkConfigValue_RAMVoltDisplayMode:
         case HocClkConfigValue_CpuGovernorMinimumFreq:

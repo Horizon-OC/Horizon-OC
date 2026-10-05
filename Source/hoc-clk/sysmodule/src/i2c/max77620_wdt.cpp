@@ -20,6 +20,7 @@
 #include "../file/config.hpp"
 #include <lockable_mutex.h>
 #include <mutex>
+#include "../file/file_utils.hpp"
 
 /* PMIC Registers */
 #define MAX77620_REG_CNFGGLBL2  ((u8)0x01)
@@ -68,6 +69,8 @@ namespace i2c::wdt {
             return;
         }
 
+        file::utils::LogLine("[Watchdog] armed");
+
         Result rc;
         u8 twd;
 
@@ -108,6 +111,7 @@ namespace i2c::wdt {
         if (!isWdtEnabled) {
             return;
         }
+        file::utils::LogLine("[Watchdog] disarmed");
 
         Result rc = update_bits(MAX77620_REG_CNFGGLBL2, MAX77620_WDTEN, (u8)0x00);
         ASSERT_RESULT_OK(rc, "update_bits");

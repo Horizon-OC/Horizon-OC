@@ -427,7 +427,7 @@ namespace mgr {
     }
 
     void ApplyGpuDvfs(u32 targetHz) {
-        s32 dvfsOffset = file::config::GetConfigValue(HocClkConfigValue_DVFSOffset);
+        s32 dvfsOffset = file::config::GetConfigValue(HocClkConfigValue_GPUDVFSOffset);
         dvfsOffset = std::max(dvfsOffset, -80);
         u32 vmin = board::GetMinimumGpuVmin(targetHz / 1000000, board::GetGpuSpeedoBracket());
 
@@ -450,8 +450,39 @@ namespace mgr {
         }
     }
 
+    void ApplyCpuDvfs(u32 targetHz) {
+        if(file::config::GetConfigValue(HocClkConfigValue_CPUDVFSMode) == CPUDVFSMode_Modify) {
+            board::ApplyCpuDvfs(targetHz / 1'000'000); // convert to mhz
+            u32 ltargetHz = gContext.overrideFreqs[HocClkModule_CPU];
+            if (!ltargetHz) {
+                ltargetHz = file::config::GetAutoClockHz(gContext.applicationId, HocClkModule_CPU, gContext.profile, false);
+                if (!ltargetHz)
+                    ltargetHz = file::config::GetAutoClockHz(HOCCLK_GLOBAL_PROFILE_TID, HocClkModule_CPU, gContext.profile, false);
+            }
+
+            u32 maxHz = GetMaxAllowedHz(HocClkModule_CPU, gContext.profile);
+            u32 nearestHz = ltargetHz ? GetNearestHz(HocClkModule_CPU, ltargetHz, maxHz) : 0;
+            board::SetHz(HocClkModule_CPU, 1'785'000'000);
+            svcSleepThread(5'000'000);
+            if(nearestHz != 0) {
+                board::SetHz(HocClkModule_CPU, nearestHz);
+            } else {
+                board::ResetToStockCpu();
+            }
+        }
+    }
+
+    void ResetCpuDvfs() {
+        if(file::config::GetConfigValue(HocClkConfigValue_CPUDVFSMode) == CPUDVFSMode_Modify) {
+            board::ApplyCpuDvfs(0);
+            board::SetHz(HocClkModule_CPU, 1'785'000'000);
+            svcSleepThread(5'000'000);
+            board::ResetToStockCpu();
+        }
+    }
+
     void DVFSReset() {
-        if (file::config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
+        if (file::config::GetConfigValue(HocClkConfigValue_GPUDVFSMode) == DVFSMode_Hijack) {
             board::PcvHijackGpuVolts(0);  // Reset to vMin
 
             u32 targetHz = GetNearestOverrideHz(HocClkModule_GPU);
@@ -462,7 +493,7 @@ namespace mgr {
         }
     }
 
-    void HandleFreqReset(HocClkModule module, bool isBoost, bool didHijackPcv) {
+    void HandleFreqReset(HocClkModule module, bool isBoost, bool didHijackPcv, bool didApplyCpuDvfs) {
         switch (module) {
             case HocClkModule_CPU:
                 if (!(isBoost || (file::config::GetConfigValue(HocClkConfigValue_OverwriteBoostMode) && isBoost)))
@@ -485,6 +516,10 @@ namespace mgr {
                     DVFSReset();
                     didHijackPcv = true;
                 }
+                if(!didApplyCpuDvfs) {
+                    ResetCpuDvfs();
+                    didApplyCpuDvfs = true;
+                }
                 break;
             case HocClkModule_Display:
                 if (file::config::GetConfigValue(HocClkConfigValue_OverwriteRefreshRate)) {
@@ -506,9 +541,10 @@ namespace mgr {
         u32 nearestFreq = GetCurrentNearestFrequency(HocClkModule_MEM);
 
         if (targetRamHz != nearestFreq) {
-            if (file::config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
+            if (file::config::GetConfigValue(HocClkConfigValue_GPUDVFSMode) == DVFSMode_Hijack) {
                 ApplyGpuDvfs(targetRamHz);
             }
+            ApplyCpuDvfs(targetRamHz);
 
             board::SetHz(HocClkModule_MEM, targetRamHz);
         }
@@ -520,7 +556,7 @@ namespace mgr {
         std::uint32_t nearestHz = 0;
         static bool prepareBoostExit = false;
 
-        bool didHijackPcv = false;
+        bool didHijackPcv = false, didApplyCpuDvfs = false;
         bool skipCpuDueToBoost = isBoost && !file::config::GetConfigValue(HocClkConfigValue_OverwriteBoostMode);
         if (skipCpuDueToBoost) {
             board::SetHz(HocClkModule_CPU, board::GetHz(HocClkModule_CPU));
@@ -570,7 +606,7 @@ namespace mgr {
                     gContext.stable.freqs[HocClkModule_Display] = targetHz;
                     gContext.stable.realFreqs[HocClkModule_Display] = targetHz;
                 } else {
-                    HandleFreqReset(HocClkModule_Display, isBoost, didHijackPcv);
+                    HandleFreqReset(HocClkModule_Display, isBoost, didHijackPcv, didApplyCpuDvfs);
                 }
             }
 
@@ -605,9 +641,13 @@ namespace mgr {
                                        targetHz / 100000 - targetHz / 1000000 * 10);
 
                     // The logic MUST be done in this order otherwise you WILL get crashes
-                    if (module == HocClkModule_MEM && targetHz > oldHz && file::config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
+                    if (module == HocClkModule_MEM && targetHz > oldHz && file::config::GetConfigValue(HocClkConfigValue_GPUDVFSMode) == DVFSMode_Hijack) {
                         ApplyGpuDvfs(targetHz);
                     }
+                    if (module == HocClkModule_MEM && targetHz > oldHz && board::GetSocType() == HocClkSocType_Mariko) {
+                        ApplyCpuDvfs(targetHz);
+                    }     
+
                     board::SetHz((HocClkModule)module, nearestHz);
                     gContext.freqs[module] = nearestHz;
 
@@ -615,15 +655,22 @@ namespace mgr {
                         gContext.stable.freqs[module] = nearestHz;
                     }
 
-                    if (module == HocClkModule_MEM && targetHz < oldHz && file::config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
+                    if (module == HocClkModule_MEM && targetHz < oldHz && file::config::GetConfigValue(HocClkConfigValue_GPUDVFSMode) == DVFSMode_Hijack) {
                         ApplyGpuDvfs(targetHz);
                     }
+                    if (module == HocClkModule_MEM && targetHz < oldHz && board::GetSocType() == HocClkSocType_Mariko) {
+                        ApplyCpuDvfs(targetHz);
+                    }
 
-                    if (module == HocClkModule_MEM && file::config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack)
+                    if (module == HocClkModule_MEM && file::config::GetConfigValue(HocClkConfigValue_GPUDVFSMode) == DVFSMode_Hijack)
                         didHijackPcv = false;
+                    
+                    if(module == HocClkModule_MEM && board::GetSocType() == HocClkSocType_Mariko && file::config::GetConfigValue(HocClkConfigValue_CPUDVFSMode) == CPUDVFSMode_Modify) {
+                        didApplyCpuDvfs = true;
+                    }
                 }
             } else {
-                HandleFreqReset((HocClkModule)module, isBoost, didHijackPcv);
+                HandleFreqReset((HocClkModule)module, isBoost, didHijackPcv, didApplyCpuDvfs);
             }
         }
     }
@@ -652,7 +699,7 @@ namespace mgr {
         // restore clocks to stock values on app or profile change
         if (hasChanged) {
             board::ResetToStock();
-            if (file::config::GetConfigValue(HocClkConfigValue_DVFSMode) == DVFSMode_Hijack) {
+            if (file::config::GetConfigValue(HocClkConfigValue_GPUDVFSMode) == DVFSMode_Hijack) {
                 board::PcvHijackGpuVolts(0);
                 board::ResetToStockGpu();
             }

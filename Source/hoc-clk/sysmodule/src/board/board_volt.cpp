@@ -25,6 +25,7 @@
 #include <switch.h>
 
 #include "../file/file_utils.hpp"
+#include "../file/config.hpp"
 #include "../hos/rgltr.h"
 #include "../i2c/i2cDrv.h"
 #include "board.hpp"
@@ -593,6 +594,7 @@ namespace board {
         return baseVolt;
     }
 
+    /* Mariko only! */
     constexpr u32 PmicVmin = 250;
     constexpr u32 PmicStep = 5;
 
@@ -602,6 +604,12 @@ namespace board {
     }
 
     void ApplyCpuDvfs(u32 ramFreqMhz) {
+        /* Don't reapply the table if it has been*/
+        static u32 lastRamFreqMhz = 0;
+        if(ramFreqMhz == lastRamFreqMhz) {
+            return;
+        }
+
         /* Get the minimum DRAM OC Cpu Vmin */
         u32 vmin = GetMinimumCpuVmin(ramFreqMhz, GetCpuSpeedoBracket());
 
@@ -615,7 +623,6 @@ namespace board {
             if(vlt < vmin) {
                 vlt = vmin;
             }
-
             /* Don't know if modifying and passing argument causes undefined behavior? */
             u32 tempVlt = vlt;
             vlt = ConvertVoltToLut(tempVlt); 
@@ -624,12 +631,18 @@ namespace board {
         /* Pet the watchdog to avoid it hanging the system during this operation */
         i2c::wdt::Pet();
 
-        /* DSB to prevent a hang during setting the new LUT */
+        /* DSB to prevent a hang during setting the new LUT. ST will not work, SY is needed */
         __asm__("dsb SY");
 
         /* Copy the edited LUT into it's appropriate location */
         memcpy((void*)(cldvfs + CL_DVFS_OUTPUT_LUT_0), NewCpuVoltTable, sizeof(NewCpuVoltTable));
+        
+        file::utils::LogLine("[cpudvfs]: Set voltage to %dmV for %dMHz", vmin, ramFreqMhz);
+        /* Pet the watchdog to avoid it hanging the system during this operation */
+        i2c::wdt::Pet();
 
+        svcSleepThread(100'000'000); // 100ms
+        lastRamFreqMhz = ramFreqMhz;
     }
 }  // namespace board
 
