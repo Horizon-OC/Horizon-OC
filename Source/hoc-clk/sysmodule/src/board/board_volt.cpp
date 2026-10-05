@@ -616,9 +616,10 @@ namespace board {
         constexpr u32 PmicStep   = 5;
 
         struct {
-            volatile u32 *lut = nullptr;
+            volatile u32 *lut  = nullptr;
             u32 table[LutSize] = {};
-            bool initialized = false;
+            u32 lastVmin       = 0;
+            bool initialized   = false;
         } cpuVoltData;
     }
 
@@ -762,7 +763,7 @@ namespace board {
     }
 
     void ApplyCpuMinVolt(u32 vmin) {
-        if (!cpuVoltData.initialized) {
+        if (!cpuVoltData.initialized || vmin == cpuVoltData.lastVmin) {
             return;
         }
 
@@ -792,6 +793,12 @@ namespace board {
         PadLutTail(tmpLut, valid);
 
         VolatileCopyDwords(cpuVoltData.lut, tmpLut, LutSize);
+
+        if (vmin < cpuVoltData.lastVmin) {
+            UnstuckFreqWar();
+        }
+
+        cpuVoltData.lastVmin = vmin;
     }
 
 }
