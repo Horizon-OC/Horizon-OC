@@ -241,9 +241,9 @@ namespace display {
         uint32_t fd = fd_in;
 
         if (!fd)
-            nvOpen(&fd, "/dev/nvdisp-disp1");
+            nv::Open(&fd, "/dev/nvdisp-disp1");
         NvdcModeDB2 db2 = { 0 };
-        int rc = nvIoctl(fd, NVDISP_GET_MODE_DB2, &db2);
+        int rc = nv::Ioctl(fd, NVDISP_GET_MODE_DB2, &db2);
 
         if (rc == 0) {
             for (size_t i = 0; i < db2.num_modes; i++) {
@@ -266,7 +266,7 @@ namespace display {
             highestRefreshRate = g_dockedRefreshRates[numRates - 1];
 
         NvdcMode2 display_b = { 0 };
-        rc = nvIoctl(fd, NVDISP_GET_MODE2, &display_b);
+        rc = nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b);
 
         struct dpaux_read_0x100 {
             uint32_t cmd;
@@ -284,7 +284,7 @@ namespace display {
             } set;
         } dpaux = { 6, 0x100, 0x10 };
 
-        rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+        rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
         if (rc == 0) {
             g_dockedLinkRate = dpaux.set.link_rate;
             // if (display_b.hActive == 1920 && display_b.vActive == 1080 && highestRefreshRate > 75 && dpaux.set.link_rate < 20 && )
@@ -292,7 +292,7 @@ namespace display {
         }
 
         if (!fd_in)
-            nvClose(fd);
+            nv::Close(fd);
         g_dockedHighestRefreshRate = highestRefreshRate;
     }
 
@@ -320,8 +320,8 @@ namespace display {
             } DPCD;
         } dpaux = { 6, 0, 0x10 };
 
-        int rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
-        nvClose(fd);
+        int rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+        nv::Close(fd);
         if (rc != 0x75c)
             return false;
 
@@ -382,19 +382,19 @@ namespace display {
             return false;
 
         uint32_t fd = 0;
-        if (nvOpen(&fd, "/dev/nvdisp-disp1")) {
+        if (nv::Open(&fd, "/dev/nvdisp-disp1")) {
             return false;
         }
 
         NvdcMode2 display_b = { 0 };
-        int rc = nvIoctl(fd, NVDISP_GET_MODE2, &display_b);
+        int rc = nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b);
         if (rc != 0) {
-            nvClose(fd);
+            nv::Close(fd);
             return false;
         }
 
         if (!display_b.pclkKHz) {
-            nvClose(fd);
+            nv::Close(fd);
             return false;
         }
 
@@ -457,7 +457,7 @@ namespace display {
         }
 
         if (refreshRateNow == g_dockedRefreshRates[itr]) {
-            nvClose(fd);
+            nv::Close(fd);
             return true;
         }
 
@@ -479,13 +479,13 @@ namespace display {
                 display_b.bitsPerPixel = 24;
             }
 
-            rc = nvIoctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
+            rc = nv::Ioctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
             if (rc == 0) {
-                rc = nvIoctl(fd, NVDISP_SET_MODE2, &display_b);
+                rc = nv::Ioctl(fd, NVDISP_SET_MODE2, &display_b);
             }
         }
 
-        nvClose(fd);
+        nv::Close(fd);
         return true;
     }
 
@@ -503,24 +503,24 @@ namespace display {
         svc::SleepThread(1000000000);
 
         uint32_t fd = 0;
-        if (nvOpen(&fd, "/dev/nvdisp-disp0")) {
+        if (nv::Open(&fd, "/dev/nvdisp-disp0")) {
             return false;
         }
 
         NvdcMode2 display_b = { 0 };
-        int rc = nvIoctl(fd, NVDISP_GET_MODE2, &display_b);
+        int rc = nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b);
         if (rc != 0) {
-            nvClose(fd);
+            nv::Close(fd);
             return false;
         }
 
         if (!display_b.pclkKHz) {
-            nvClose(fd);
+            nv::Close(fd);
             return false;
         }
 
         if ((display_b.vActive == 1280 && display_b.hActive == 720) == false) {
-            nvClose(fd);
+            nv::Close(fd);
             return false;
         }
 
@@ -566,14 +566,14 @@ namespace display {
         display_b.vBackPorch = g_handheldTimingsRETRO[itr].vBackPorch;
         display_b.pclkKHz = g_handheldTimingsRETRO[itr].pixelClock_kHz;
 
-        rc = nvIoctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
+        rc = nv::Ioctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
         if (rc == 0) {
             for (size_t i = 0; i < 5; i++) {
-                nvIoctl(fd, NVDISP_SET_MODE2, &display_b);
+                nv::Ioctl(fd, NVDISP_SET_MODE2, &display_b);
             }
         }
 
-        nvClose(fd);
+        nv::Close(fd);
         return true;
     }
 
@@ -606,8 +606,8 @@ namespace display {
                 } DPCD;
             } dpaux = { 6, 0, 0x10 };
 
-            int rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
-            nvClose(fd);
+            int rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+            nv::Close(fd);
 
             if (rc != 0) {
                 if (!g_config.isRetroSUPER) {
@@ -640,15 +640,15 @@ namespace display {
             value = ((temp.PLLD_DIVN / temp.PLLD_DIVM) * 10) / 4;
 
             if (value != 0 && value != 80) {
-                if (!nvOpen(&fd, "/dev/nvdisp-disp0")) {
+                if (!nv::Open(&fd, "/dev/nvdisp-disp0")) {
                     NvdcMode2 display_b = { 0 };
-                    if (nvIoctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
+                    if (nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
                         uint64_t h_total = display_b.hActive + display_b.hFrontPorch + display_b.hSyncWidth + display_b.hBackPorch;
                         uint64_t v_total = display_b.vActive + display_b.vFrontPorch + display_b.vSyncWidth + display_b.vBackPorch;
                         uint64_t pixelClock = display_b.pclkKHz * 1000 + 999;
                         value = (u32)(pixelClock / (h_total * v_total));
                     }
-                    nvClose(fd);
+                    nv::Close(fd);
                 } else {
                     return false;
                 }
@@ -672,7 +672,7 @@ namespace display {
 
                 if (!g_canChangeRefreshRateDocked) {
                     uint32_t fd = 0;
-                    if (!nvOpen(&fd, "/dev/nvdisp-disp1")) {
+                    if (!nv::Open(&fd, "/dev/nvdisp-disp1")) {
                         struct dpaux_read_0x100 {
                             uint32_t cmd;
                             uint32_t addr;
@@ -689,8 +689,8 @@ namespace display {
                             } set;
                         } dpaux = { 6, 0x100, 0x10 };
 
-                        int rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
-                        nvClose(fd);
+                        int rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+                        nv::Close(fd);
 
                         if (rc == 0) {
                             _getDockedHighestRefreshRate(0);
@@ -708,11 +708,11 @@ namespace display {
                     return true;
                 }
                 uint32_t fd = 0;
-                if (!nvOpen(&fd, "/dev/nvdisp-disp1")) {
+                if (!nv::Open(&fd, "/dev/nvdisp-disp1")) {
                     NvdcMode2 display_b = { 0 };
-                    if (nvIoctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
+                    if (nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
                         if (!display_b.pclkKHz) {
-                            nvClose(fd);
+                            nv::Close(fd);
                             return false;
                         }
 
@@ -728,7 +728,7 @@ namespace display {
                     } else {
                         value = 60;
                     }
-                    nvClose(fd);
+                    nv::Close(fd);
                 } else {
                     value = 60;
                 }
