@@ -108,7 +108,7 @@ namespace file::utils {
 
         // Debug UART log
         if (g_uart_enabled) {
-            svcOutputDebugString(buff, len);
+            svc::OutputDebugString(buff, len);
         }
 
         if (g_log_enabled) {
@@ -188,27 +188,27 @@ namespace file::utils {
 
     void InitializeAsync() {
         Thread initThread = { 0 };
-        threadCreate(&initThread, InitializeThreadFunc, NULL, NULL, 0x4000, 0x15, 0);
-        threadStart(&initThread);
+        thread::Create(&initThread, InitializeThreadFunc, NULL, NULL, 0x4000, 0x15, 0);
+        thread::Start(&initThread);
     }
 
     Result Initialize() {
         Result rc = 0;
 
         if (R_SUCCEEDED(rc)) {
-            rc = timeInitialize();
+            rc = time::Initialize();
         }
 
         __libnx_init_time();
-        timeExit();
+        time::Exit();
         SetBootTime();
 
         if (R_SUCCEEDED(rc)) {
-            rc = fsInitialize();
+            rc = fs::Initialize();
         }
 
         if (R_SUCCEEDED(rc)) {
-            rc = fsdevMountSdmc();
+            rc = fsdev::MountSdmc();
         }
 
         if (R_SUCCEEDED(rc)) {
@@ -230,8 +230,8 @@ namespace file::utils {
         g_log_enabled = false;
         g_uart_enabled = false;
 
-        fsdevUnmountAll();
-        fsExit();
+        fsdev::UnmountAll();
+        fs::Exit();
     }
 
 }  // namespace file::utils
