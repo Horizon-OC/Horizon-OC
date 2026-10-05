@@ -45,7 +45,8 @@
 #include "clock_manager.hpp"
 #include "governor.hpp"
 #include "../i2c/max77620_wdt.hpp"
-
+#include "../hos/clkrst_ext.hpp"
+#include <switch.hpp>
 
 #define HOSPPC_HAS_BOOST (hosversionAtLeast(7, 0, 0))
 
@@ -868,6 +869,7 @@ namespace mgr {
         }
 
         mgr::StartThreads();
+
     }
 
     void Exit() {
@@ -914,6 +916,6 @@ namespace mgr {
 
     void WaitForNextTick() {
         i2c::wdt::Pet();
-        svcSleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
+        nx::svc::SleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
     }
 }  // namespace mgr

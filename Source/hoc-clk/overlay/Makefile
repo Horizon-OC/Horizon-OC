@@ -71,6 +71,8 @@ CFLAGS += -DUI_OVERRIDE_PATH="\"$(UI_OVERRIDE_PATH)\""
 
 CXXFLAGS	:= $(CFLAGS) -fno-exceptions -std=gnu++23
 
+switch.o: CXXFLAGS += -fno-lto
+
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map),-wrap,__cxa_throw -Wl,-wrap,_Unwind_Resume -Wl,-wrap,__gxx_personality_v0
 

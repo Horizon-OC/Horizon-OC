@@ -20,6 +20,7 @@
 #include "integrations.hpp"
 #include "process_management.hpp"
 #include <sys/stat.h>
+#include <switch.hpp>
 
 namespace hos {
 
@@ -41,7 +42,7 @@ namespace hos {
                 }
                 if (i == 66)
                     return false;
-                svcSleepThread(1'000'000);
+                nx::svc::SleepThread(1'000'000);
             }
 
             for (int i = 0; i < 67; i++) {
@@ -49,7 +50,7 @@ namespace hos {
                     svcCloseHandle(saltysd);
                     return true;
                 }
-                svcSleepThread(1'000'000);
+                nx::svc::SleepThread(1'000'000);
             }
 
             return false;

@@ -505,7 +505,7 @@ namespace tsensor {
         }
 
         /* Wait for HW recalibration */
-        svcSleepThread(25'000);
+        nx::svc::SleepThread(25'000);
 
         temps.cpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) >> 16);
         temps.gpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) & SENSOR_TEMP1_GPU_TEMP_MASK);
@@ -528,7 +528,7 @@ namespace tsensor {
 
         WriteReg(carVa, CAR_CLK_SOURCE_TSENSOR, CAR_CLK_SOURCE_TSENSOR_VAL);
         SetBits(carVa, CAR_CLK_OUT_ENB_V, 0x10);
-        svcSleepThread(2000);
+        nx::svc::SleepThread(2000);
 
         TSensorSharedCalib sharedCal = {};
         CalcSharedCal(&tfuse, &sharedCal, fuseVa);

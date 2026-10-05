@@ -140,7 +140,7 @@ namespace mgr {
                 cpuLastHz = 0;
                 gpuDownHoldRemaining = 0;
                 gpuLastHz = 0;
-                svcSleepThread(pollNs);
+                nx::svc::SleepThread(pollNs);
                 continue;
             }
 
@@ -302,14 +302,14 @@ namespace mgr {
                             if (++vrrTick > 50) {
                                 vrrTick = 0;
                                 board::SetHz(HocClkModule_Display, maxDisplay);
-                                svcSleepThread(50'000'000);
+                                nx::svc::SleepThread(50'000'000);
                             }
                         }
                     }
                 }
             }
 
-            svcSleepThread(pollNs);
+            nx::svc::SleepThread(pollNs);
         }
     }
 

@@ -53,7 +53,7 @@ namespace board {
         u32 gDramMr4Tick = DramMr4PollDivisor;
         s32 gDramMr4Millis = 30000; /* 4x refresh default */
 
-        s32 PollDramMr4TempMilli() {
+        [[maybe_unused]] s32 PollDramMr4TempMilli() {
             u8 mr4 = 0;
             if (!soc::ReadRamMr4(&mr4))
                 return 0; /* stock exosphere */

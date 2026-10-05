@@ -15,27 +15,10 @@
  *
  */
 
-/* --------------------------------------------------------------------------
- * "THE BEER-WARE LICENSE" (Revision 42):
- * <p-sam@d3vs.net>, <natinusala@gmail.com>, <m4x@m4xw.net>
- * wrote this file. As long as you retain this notice you can do whatever you
- * want with this stuff. If you meet any of us some day, and you think this
- * stuff is worth it, you can buy us a beer in return.  - The sys-clk authors
- * --------------------------------------------------------------------------
- */
-
-#pragma once
-
 #include <hocclk.h>
+#include <switch.h>
 
-#if defined(__cplusplus)
-    #include "cpp_util.hpp"
-
-extern "C" {
-#endif
-
-#include <hocclk/client/ipc.h>
-
-#if defined(__cplusplus)
-}
-#endif
+namespace hos::clkrst {
+    Result SetMinimumVoltageClockRate(ClkrstSession *session, u32 hz);
+    Result GetDvfsTable(ClkrstSession *session, u32 *out_rate_table, s32 in_rate_count, u32 *out_voltage_table, s32 in_voltage_count, s32 *out_count);
+} // namespace hos::clkrst

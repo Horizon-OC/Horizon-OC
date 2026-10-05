@@ -33,6 +33,7 @@
 #include <switch.h>
 #include <time.h>
 #include <vector>
+#include <switch.hpp>
 
 #define FILE_CONFIG_DIR "/config/" CONFIG_DIR
 #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"

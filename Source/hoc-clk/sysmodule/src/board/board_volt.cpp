@@ -657,7 +657,7 @@ namespace board {
             constexpr u32 KNOWN_GOOD_WAR_FREQUENCY = 1'785'000'000;
             u32 hz = board::GetHz(HocClkModule_CPU);
             board::SetHz(HocClkModule_CPU, KNOWN_GOOD_WAR_FREQUENCY);
-            svcSleepThread(5'000'000);
+            nx::svc::SleepThread(5'000'000);
             board::SetHz(HocClkModule_CPU, hz);
         }
 

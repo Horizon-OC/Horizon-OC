@@ -15,6 +15,7 @@
  *
  */
 #include "i2cDrv.h"
+#include <switch.hpp>
 
 Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
     // ams::fatal::srv::StopSoundTask::StopSound()
@@ -133,7 +134,7 @@ u32 I2c_BuckConverter_GetMvOut(const I2c_BuckConverter_Domain *domain) {
             return 0u;
 
         // Wait 1us
-        svcSleepThread(1E3);
+        nx::svc::SleepThread(1E3);
 
         if (!domain->por_val || val != domain->por_val)
             break;
@@ -149,7 +150,7 @@ u32 I2c_BuckConverter_GetUvOut(const I2c_BuckConverter_Domain *domain) {
             return 0u;
 
         // Wait 1us
-        svcSleepThread(1E3);
+        nx::svc::SleepThread(1E3);
 
         if (!domain->por_val || val != domain->por_val)
             break;
@@ -172,7 +173,7 @@ Result I2c_BuckConverter_SetMvOut(const I2c_BuckConverter_Domain *domain, u32 mv
         return res;
 
     // 5ms Ramp delay
-    svcSleepThread(5E6);
+    nx::svc::SleepThread(5E6);
     u8 new_val;
     res = I2cRead_OutU8(domain->device, domain->reg, &new_val);
     if (R_FAILED(res))

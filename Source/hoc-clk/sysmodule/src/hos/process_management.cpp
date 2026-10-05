@@ -62,7 +62,7 @@ namespace hos {
         u64 pid = 0;
         do {
             rc = pmdmntGetProcessId(&pid, Qlaunch);
-            svcSleepThread(50 * 1000000ULL);  // 50ms
+            nx::svc::SleepThread(50 * 1000000ULL);  // 50ms
         } while (R_FAILED(rc));
     }
 

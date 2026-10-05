@@ -33,8 +33,9 @@
 #include <minIni.h>
 #include <numeric>
 #include <switch.h>
-#include <t210.h>
+#include <t210.hpp>
 #include <tmp451.h>
+#include <switch.hpp>
 
 #include "../hos/apm_ext.h"
 #include "board.hpp"
@@ -74,7 +75,7 @@ namespace board {
                     gpu_load_array[i++ % gpu_samples_average] = temp;
                     gpuLoad = std::accumulate(&gpu_load_array[0], &gpu_load_array[gpu_samples_average], 0) / gpu_samples_average;
                 }
-                svcSleepThread(16'666'000);  // wait a bit (this is the perfect amount of time to keep the reading accurate)
+                nx::svc::SleepThread(16'666'000);  // wait a bit (this is the perfect amount of time to keep the reading accurate)
             } while (true);
     }
 

@@ -17,11 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "t210.h"
+#include "t210.hpp"
+#include <hocclk.h>
+#include <switch.hpp>
 
 #define WAIT_NS 1000000000UL
 
-#define usleep(x) svcSleepThread(1000UL * x)
+#define usleep(x) (nx::svc::SleepThread(1000UL * x))
 
 #define GPU_TRIM_SYS_GPCPLL_COEFF 0x4
 #define GPU_TRIM_SYS_GPCPLL(x) (*(volatile u32 *)(g_gpu_base + 0x137000ul + (x)))

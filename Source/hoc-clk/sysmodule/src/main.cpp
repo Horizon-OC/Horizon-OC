@@ -28,7 +28,7 @@
 #include <cstring>
 #include <malloc.h>
 #include <switch.h>
-
+#include <switch.hpp>
 #include "board/board.hpp"
 #include "file/config.hpp"
 #include "file/errors.hpp"
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
     board::Exit();
     file::config::Exit();
     file::utils::LogLine("Exiting hoc-clk");
-    svcSleepThread(1000000ULL);
+    nx::svc::SleepThread(1000000ULL);
     file::utils::Exit();
 
     return 0;
