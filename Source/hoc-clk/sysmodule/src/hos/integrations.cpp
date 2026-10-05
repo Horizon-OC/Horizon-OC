@@ -38,8 +38,8 @@ namespace hos {
             Handle saltysd;
 
             for (int i = 0; i < 67; i++) {
-                if (R_SUCCEEDED(svcConnectToNamedPort(&saltysd, "InjectServ"))) {
-                    svcCloseHandle(saltysd);
+                if (R_SUCCEEDED(svc::ConnectToNamedPort(&saltysd, "InjectServ"))) {
+                    svc::CloseHandle(saltysd);
                     break;
                 }
                 if (i == 66)
@@ -48,8 +48,8 @@ namespace hos {
             }
 
             for (int i = 0; i < 67; i++) {
-                if (R_SUCCEEDED(svcConnectToNamedPort(&saltysd, "InjectServ"))) {
-                    svcCloseHandle(saltysd);
+                if (R_SUCCEEDED(svc::ConnectToNamedPort(&saltysd, "InjectServ"))) {
+                    svc::CloseHandle(saltysd);
                     return true;
                 }
                 svc::SleepThread(1'000'000);
@@ -74,8 +74,8 @@ namespace hos {
                 return;
             SaltySD_GetSharedMemoryHandle(&gRemoteSharedMemory);
             SaltySD_Term();
-            shmemLoadRemote(&gSharedMemory, gRemoteSharedMemory, 0x1000, Perm_Rw);
-            if (!shmemMap(&gSharedMemory))
+            shmem::LoadRemote(&gSharedMemory, gRemoteSharedMemory, 0x1000, Perm_Rw);
+            if (!shmem::Map(&gSharedMemory))
                 gSharedMemoryUsed = true;
         }
 
@@ -111,7 +111,7 @@ namespace hos {
         }
 
         if (!gNxFps) {
-            uintptr_t base = (uintptr_t)shmemGetAddr(&gSharedMemory);
+            uintptr_t base = (uintptr_t)shmem::GetAddr(&gSharedMemory);
             SearchSharedMemoryBlock(base);
         }
 
@@ -133,7 +133,7 @@ namespace hos {
         }
 
         if (!gNxFps) {
-            uintptr_t base = (uintptr_t)shmemGetAddr(&gSharedMemory);
+            uintptr_t base = (uintptr_t)shmem::GetAddr(&gSharedMemory);
             SearchSharedMemoryBlock(base);
         }
 
