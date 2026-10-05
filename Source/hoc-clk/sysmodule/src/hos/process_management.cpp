@@ -43,18 +43,18 @@ namespace hos {
     void InitializeProcessManagement() {
         Result rc = 0;
 
-        rc = pmdmntInitialize();
+        rc = pmdmnt::Initialize();
         ASSERT_RESULT_OK(rc, "pmdmntInitialize");
 
-        rc = pminfoInitialize();
+        rc = pminfo::Initialize();
         ASSERT_RESULT_OK(rc, "pminfoInitialize");
 
-        rc = pdmqryInitialize();
+        rc = pdmqry::Initialize();
         ASSERT_RESULT_OK(rc, "pdmqryInitialize");
 
-        Service *pdmqrySrv = pdmqryGetServiceSession();
-        serviceClone(pdmqrySrv, &pdmqryClone);
-        serviceClose(pdmqrySrv);
+        Service *pdmqrySrv = pdmqry::GetServiceSession();
+        service::Clone(pdmqrySrv, &pdmqryClone);
+        service::Close(pdmqrySrv);
         memcpy(pdmqrySrv, &pdmqryClone, sizeof(Service));
     }
 
@@ -62,7 +62,7 @@ namespace hos {
         Result rc = 0;
         u64 pid = 0;
         do {
-            rc = pmdmntGetProcessId(&pid, Qlaunch);
+            rc = pmdmnt::GetProcessId(&pid, Qlaunch);
             svc::SleepThread(50 * 1000000ULL);  // 50ms
         } while (R_FAILED(rc));
     }
@@ -77,14 +77,14 @@ namespace hos {
         u64 TIDnow;
         u64 PIDnow;
 
-        Result rc = pmdmntGetApplicationProcessId(&PIDnow);
+        Result rc = pmdmnt::GetApplicationProcessId(&PIDnow);
         if (R_FAILED(rc))
             return rc;
-        rc = pmdmntGetProgramId(&TIDnow, PIDnow);
+        rc = pmdmnt::GetProgramId(&TIDnow, PIDnow);
         if (R_FAILED(rc))
             return rc;
 
-        rc = pdmqryGetAvailablePlayEventRange(&total_entries, &start_entry_index, &end_entry_index);
+        rc = pdmqry::GetAvailablePlayEventRange(&total_entries, &start_entry_index, &end_entry_index);
         if (R_FAILED(rc))
             return rc;
         if (total_entries == last_total_entries) {
@@ -98,7 +98,7 @@ namespace hos {
         s32 start_entry = end_entry_index - 15;
         if (start_entry < 0)
             start_entry = 0;
-        rc = pdmqryQueryPlayEvent(start_entry, events, sizeof(events) / sizeof(events[0]), &out);
+        rc = pdmqry::QueryPlayEvent(start_entry, events, sizeof(events) / sizeof(events[0]), &out);
         if (R_FAILED(rc))
             return rc;
         if (out == 0)
@@ -140,7 +140,7 @@ namespace hos {
         Result rc = 0;
         u64 pid = 0;
         u64 tid = 0;
-        rc = pmdmntGetApplicationProcessId(&pid);
+        rc = pmdmnt::GetApplicationProcessId(&pid);
 
         if (rc == IsQlaunch) {
             return Qlaunch;
@@ -148,7 +148,7 @@ namespace hos {
 
         ASSERT_RESULT_OK(rc, "pmdmntGetApplicationProcessId");
 
-        rc = pminfoGetProgramId(&tid, pid);
+        rc = pminfo::GetProgramId(&tid, pid);
 
         if (rc == IsQlaunch) {
             return Qlaunch;
@@ -160,9 +160,9 @@ namespace hos {
     }
 
     void ExitProcessManagement() {
-        pmdmntExit();
-        pminfoExit();
-        pdmqryExit();
+        pmdmnt::Exit();
+        pminfo::Exit();
+        pdmqry::Exit();
     }
 
 }  // namespace hos
