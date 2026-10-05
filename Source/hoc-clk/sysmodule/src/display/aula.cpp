@@ -21,6 +21,7 @@
 #include "common.hpp"
 #include <switch.hpp>
 
+using namespace nx;
 // I *think* HOS changes this in some ways, so look into it more
 
 namespace display {
@@ -32,7 +33,7 @@ namespace display {
         DSI(DSI_TRIGGER) = DSI_TRIGGER_HOST;
 
         if (wait)
-            nx::svc::SleepThread(wait * 1000);  // usleep-equivalant
+            svc::SleepThread(wait * 1000);  // usleep-equivalant
     }
 
     void SetDisplayColorMode(AulaColorMode mode) {

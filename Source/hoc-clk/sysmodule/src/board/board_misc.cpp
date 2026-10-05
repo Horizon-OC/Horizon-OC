@@ -30,6 +30,8 @@
 #include <hocclk.h>
 #include <switch.hpp>
 
+using namespace nx;
+
 namespace board {
 
     Thread miscThread;
@@ -52,7 +54,7 @@ namespace board {
             }
 
             fanLevel = static_cast<u8>(rotationDuty);
-            nx::svc::SleepThread(300'000'000);
+            svc::SleepThread(300'000'000);
         }
     }
 

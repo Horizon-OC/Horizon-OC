@@ -31,6 +31,8 @@
 #include "board_freq.hpp"
 #include "board_volt.hpp"
 
+using namespace nx;
+
 namespace board {
 
     GpuVoltData voltData = {};
@@ -657,7 +659,7 @@ namespace board {
             constexpr u32 KNOWN_GOOD_WAR_FREQUENCY = 1'785'000'000;
             u32 hz = board::GetHz(HocClkModule_CPU);
             board::SetHz(HocClkModule_CPU, KNOWN_GOOD_WAR_FREQUENCY);
-            nx::svc::SleepThread(5'000'000);
+            svc::SleepThread(5'000'000);
             board::SetHz(HocClkModule_CPU, hz);
         }
 

@@ -22,6 +22,8 @@
 #include <sys/stat.h>
 #include <switch.hpp>
 
+using namespace nx;
+
 namespace hos {
 
     namespace {
@@ -42,7 +44,7 @@ namespace hos {
                 }
                 if (i == 66)
                     return false;
-                nx::svc::SleepThread(1'000'000);
+                svc::SleepThread(1'000'000);
             }
 
             for (int i = 0; i < 67; i++) {
@@ -50,7 +52,7 @@ namespace hos {
                     svcCloseHandle(saltysd);
                     return true;
                 }
-                nx::svc::SleepThread(1'000'000);
+                svc::SleepThread(1'000'000);
             }
 
             return false;

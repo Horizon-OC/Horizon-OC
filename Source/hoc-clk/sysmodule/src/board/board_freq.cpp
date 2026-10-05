@@ -44,6 +44,8 @@
 #include <lockable_mutex.h>
 #include <switch.hpp>
 
+using namespace nx;
+
 namespace board {
     static u32 currentInjectedHz = 0;
     static u32 gMarikoGm20bCutoff = 1228800000;
@@ -119,7 +121,7 @@ namespace board {
 
             /* Voltage bug workaround. */
             if (module == HocClkModule_CPU) {
-                nx::svc::SleepThread(300'000);
+                svc::SleepThread(300'000);
                 ClkrstSetHz(session, pcvHz);
             }
 
@@ -128,7 +130,7 @@ namespace board {
             PcvSetHz(GetPcvModule(module), pcvHz);
 
             if (module == HocClkModule_CPU) {
-                nx::svc::SleepThread(300'000);
+                svc::SleepThread(300'000);
                 PcvSetHz(GetPcvModule(module), pcvHz);
             }
         }

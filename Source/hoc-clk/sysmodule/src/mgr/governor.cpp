@@ -19,6 +19,8 @@
 #include "governor.hpp"
 #include <hocclk/clock_manager.h>
 
+using namespace nx;
+
 namespace mgr {
 
 #define DOWN_HOLD_TICKS_DEFAULT 10 // 50 ms at 5ms poll – how long to hold while ramping down
@@ -140,7 +142,7 @@ namespace mgr {
                 cpuLastHz = 0;
                 gpuDownHoldRemaining = 0;
                 gpuLastHz = 0;
-                nx::svc::SleepThread(pollNs);
+                svc::SleepThread(pollNs);
                 continue;
             }
 
@@ -302,14 +304,14 @@ namespace mgr {
                             if (++vrrTick > 50) {
                                 vrrTick = 0;
                                 board::SetHz(HocClkModule_Display, maxDisplay);
-                                nx::svc::SleepThread(50'000'000);
+                                svc::SleepThread(50'000'000);
                             }
                         }
                     }
                 }
             }
 
-            nx::svc::SleepThread(pollNs);
+            svc::SleepThread(pollNs);
         }
     }
 

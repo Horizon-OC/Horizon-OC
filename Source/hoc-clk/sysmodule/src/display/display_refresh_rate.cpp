@@ -23,6 +23,8 @@
 #include "display_refresh_rate.hpp"
 #include <switch.hpp>
 
+using namespace nx;
+
 namespace display {
 #define DSI_CLOCK_HZ 234000000llu
 #define NVDISP_GET_MODE2 0x803C021B
@@ -143,7 +145,7 @@ namespace display {
 #define MIPI_DCS_PRIV_SM_SET_ELVSS 0xB1
 
         dsi[DSI_VIDEO_MODE_CONTROL] = true;
-        nx::svc::SleepThread(20000000);
+        svc::SleepThread(20000000);
 
         dsi[DSI_WR_DATA] = MIPI_DSI_DCS_LONG_WRITE | (5 << 8);
         dsi[DSI_WR_DATA] = 0x5A5A5AE2;
@@ -163,7 +165,7 @@ namespace display {
         dsi[DSI_TRIGGER] = 0;
 
         dsi[DSI_VIDEO_MODE_CONTROL] = false;
-        nx::svc::SleepThread(20000000);
+        svc::SleepThread(20000000);
     }
     void SetDockedState(bool isDocked) {
         g_config.isDocked = isDocked;
@@ -494,11 +496,11 @@ namespace display {
         if (!g_config.displaySync) {
             g_wasRetroSuperTurnedOff = false;
         } else if (g_wasRetroSuperTurnedOff) {
-            nx::svc::SleepThread(2000000000);
+            svc::SleepThread(2000000000);
             g_wasRetroSuperTurnedOff = false;
         }
 
-        nx::svc::SleepThread(1000000000);
+        svc::SleepThread(1000000000);
 
         uint32_t fd = 0;
         if (nvOpen(&fd, "/dev/nvdisp-disp0")) {
@@ -694,7 +696,7 @@ namespace display {
                             _getDockedHighestRefreshRate(0);
                             g_canChangeRefreshRateDocked = true;
                         } else {
-                            nx::svc::SleepThread(1000000000);
+                            svc::SleepThread(1000000000);
                             return false;
                         }
                     } else {

@@ -30,6 +30,7 @@
 #include "../file/file_utils.hpp"
 #include "process_management.hpp"
 
+using namespace nx;
 
 namespace hos {
 
@@ -62,7 +63,7 @@ namespace hos {
         u64 pid = 0;
         do {
             rc = pmdmntGetProcessId(&pid, Qlaunch);
-            nx::svc::SleepThread(50 * 1000000ULL);  // 50ms
+            svc::SleepThread(50 * 1000000ULL);  // 50ms
         } while (R_FAILED(rc));
     }
 

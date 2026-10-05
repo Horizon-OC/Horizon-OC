@@ -97,8 +97,8 @@ namespace board {
             rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
             if (R_SUCCEEDED(rc)) {
                 if (state == PscPmState_ReadyAwaken) {
-                    i2c::wdt::ResetWdtEnableState();
-                    i2c::wdt::Pet();
+                    HocI2c::wdt::ResetWdtEnableState();
+                    HocI2c::wdt::Pet();
 
                     if(board::GetSocType() == HocClkSocType_Mariko && 
                        file::config::GetConfigValue(HocClkConfigValue_CPUDVFSMode) == CPUDVFSMode_Modify) {
@@ -117,7 +117,7 @@ namespace board {
 
                     s_isAwake = true;
                 } else if (state == PscPmState_ReadySleep) {
-                    i2c::wdt::Disarm();
+                    HocI2c::wdt::Disarm();
 
                     ResetToStockMem();
                     ResetToStockCpu();
@@ -127,7 +127,7 @@ namespace board {
 
                     s_isAwake = false;
                 } else if (state == PscPmState_ReadyShutdown) {
-                    i2c::wdt::Disarm();
+                    HocI2c::wdt::Disarm();
 
                     ResetToStockMem();
                     ResetToStockCpu();
@@ -326,7 +326,7 @@ namespace board {
         pscPmModuleClose(&s_pscModule);
         pscmExit();
 
-        i2c::wdt::Disarm();
+        HocI2c::wdt::Disarm();
     }
 
     HocClkSocType GetSocType() {

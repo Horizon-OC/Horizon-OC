@@ -41,6 +41,7 @@
 #define INNER_HEAP_SIZE 0x40000
 
 extern "C" {
+using namespace nx;
 void virtmemSetup(void);
 
 extern std::uint32_t __start__;
@@ -86,43 +87,43 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    if (R_FAILED(smInitialize())) {
+    if (R_FAILED(sm::Initialize())) {
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
 
-    Result rc = setsysInitialize();
+    Result rc = setsys::Initialize();
     if (R_SUCCEEDED(rc)) {
         SetSysFirmwareVersion fw;
-        rc = setsysGetFirmwareVersion(&fw);
+        rc = setsys::GetFirmwareVersion(&fw);
         if (R_SUCCEEDED(rc))
-            hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
-        setsysExit();
+            hosversion::Set(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
+        setsys::Exit();
     }
-
+    
     // rc = fanInitialize();
     // if (R_FAILED(rc))
     //     diagAbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
 
-    rc = i2cInitialize();
+    rc = i2c::Initialize();
     if (R_FAILED(rc))
-        diagAbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
+        diag::AbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
 }
 
 void __appExit(void) {
     // CloseFanControllerThread();
     // fanExit();
-    i2cExit();
-    setsysExit();
-    fsdevUnmountAll();
-    fsExit();
-    smExit();
+    i2c::Exit();
+    setsys::Exit();
+    fsdev::UnmountAll();
+    fs::Exit();
+    sm::Exit();
 }
 }
 
 int main(int argc, char **argv) {
     Result rc = file::utils::Initialize();
     if (R_FAILED(rc)) {
-        fatalThrow(rc);
+        fatal::Throw(rc);
         return 1;
     }
     file::config::Initialize();
@@ -156,7 +157,7 @@ int main(int argc, char **argv) {
     board::Exit();
     file::config::Exit();
     file::utils::LogLine("Exiting hoc-clk");
-    nx::svc::SleepThread(1000000ULL);
+    svc::SleepThread(1000000ULL);
     file::utils::Exit();
 
     return 0;

@@ -48,6 +48,8 @@
 #include "../hos/clkrst_ext.hpp"
 #include <switch.hpp>
 
+using namespace nx;
+
 #define HOSPPC_HAS_BOOST (hosversionAtLeast(7, 0, 0))
 
 namespace mgr {
@@ -810,7 +812,7 @@ namespace mgr {
         else
             gContext.resolutionHeight = 0;  // N/A
 
-        gContext.isWdtEnabled = i2c::wdt::IsWdtEnabled();
+        gContext.isWdtEnabled = HocI2c::wdt::IsWdtEnabled();
 
         return hasChanged;
     }
@@ -915,7 +917,7 @@ namespace mgr {
     }
 
     void WaitForNextTick() {
-        i2c::wdt::Pet();
-        nx::svc::SleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
+        HocI2c::wdt::Pet();
+        svc::SleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
     }
 }  // namespace mgr

@@ -43,6 +43,7 @@
 #include <ipc_server.h>
 #include <lockable_mutex.h>
 
+using namespace nx;
 
 namespace board {
 
@@ -75,7 +76,7 @@ namespace board {
                     gpu_load_array[i++ % gpu_samples_average] = temp;
                     gpuLoad = std::accumulate(&gpu_load_array[0], &gpu_load_array[gpu_samples_average], 0) / gpu_samples_average;
                 }
-                nx::svc::SleepThread(16'666'000);  // wait a bit (this is the perfect amount of time to keep the reading accurate)
+                svc::SleepThread(16'666'000);  // wait a bit (this is the perfect amount of time to keep the reading accurate)
             } while (true);
     }
 
