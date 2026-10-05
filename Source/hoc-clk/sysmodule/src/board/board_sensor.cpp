@@ -41,7 +41,7 @@
 #include "../tsensor/bq24193.hpp"
 #include "../tsensor/soctherm.hpp"
 #include "board.hpp"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 
 

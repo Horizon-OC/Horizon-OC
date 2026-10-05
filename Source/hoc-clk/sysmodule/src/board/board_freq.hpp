@@ -33,7 +33,7 @@
 
 #include "../file/errors.hpp"
 #include "../hos/apm_ext.h"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 
 

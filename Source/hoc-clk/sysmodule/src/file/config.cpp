@@ -44,7 +44,7 @@
 #include "errors.hpp"
 #include "file_utils.hpp"
 #include <initializer_list>
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 #include <sys/stat.h>
 #include <sys/types.h>

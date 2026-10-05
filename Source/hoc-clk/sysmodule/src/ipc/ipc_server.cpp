@@ -26,18 +26,20 @@
 
 #include <string.h>
 
-#include "ipc_server.h"
+#include "ipc_server.hpp"
+
+using namespace nx;
 
 Result ipcServerInit(IpcServer *server, const char *name, u32 max_sessions) {
     if (max_sessions < 1 || max_sessions > (MAX_WAIT_OBJECTS - 1)) {
         return MAKERESULT(Module_Libnx, LibnxError_BadInput);
     }
 
-    server->srvName = smEncodeName(name);
+    server->srvName = sm::EncodeName(name);
     server->max = max_sessions + 1;
     server->count = 0;
 
-    Result rc = smRegisterService(&server->handles[0], server->srvName, false, max_sessions);
+    Result rc = sm::RegisterService(&server->handles[0], server->srvName, false, max_sessions);
     if (R_SUCCEEDED(rc)) {
         server->count = 1;
     }
@@ -46,10 +48,10 @@ Result ipcServerInit(IpcServer *server, const char *name, u32 max_sessions) {
 
 Result ipcServerExit(IpcServer *server) {
     for (u32 i = 0; i < server->count; i++) {
-        svcCloseHandle(server->handles[i]);
+        svc::CloseHandle(server->handles[i]);
     }
     server->count = 0;
-    return smUnregisterService(server->srvName);
+    return sm::UnregisterService(server->srvName);
 }
 
 static Result _ipcServerAddSession(IpcServer *server, Handle session) {
@@ -67,7 +69,7 @@ static Result _ipcServerDeleteSession(IpcServer *server, u32 index) {
         return MAKERESULT(Module_Libnx, LibnxError_BadInput);
     }
 
-    svcCloseHandle(server->handles[index]);
+    svc::CloseHandle(server->handles[index]);
 
     for (u32 j = index; j < (server->count - 1); j++) {
         server->handles[j] = server->handles[j + 1];
@@ -77,15 +79,15 @@ static Result _ipcServerDeleteSession(IpcServer *server, u32 index) {
 }
 
 static Result _ipcServerParseRequest(IpcServerRequest *r) {
-    u8 *base = armGetTls();
+    u8 *base = (u8*)armGetTls();
 
-    r->hipc = hipcParseRequest(base);
+    r->hipc = hipc::ParseRequest(base);
     r->data.cmdId = 0;
     r->data.size = 0;
     r->data.ptr = NULL;
 
     if (r->hipc.meta.type == CmifCommandType_Request) {
-        IpcServerRawHeader *header = cmifGetAlignedDataStart(r->hipc.data.data_words, base);
+        IpcServerRawHeader *header = (IpcServerRawHeader*)cmif::GetAlignedDataStart(r->hipc.data.data_words, base);
         size_t dataSize = r->hipc.meta.num_data_words * 4;
 
         if (!header || dataSize < sizeof(IpcServerRawHeader) || header->magic != CMIF_IN_HEADER_MAGIC) {
@@ -103,11 +105,11 @@ static Result _ipcServerParseRequest(IpcServerRequest *r) {
 }
 
 static void _ipcServerPrepareResponse(Result rc, void *data, size_t dataSize) {
-    u8 *base = armGetTls();
+    u8 *base = (u8*)arm::GetTls();
     HipcRequest hipc =
-        hipcMakeRequestInline(base, .type = CmifCommandType_Request, .num_data_words = (sizeof(IpcServerRawHeader) + dataSize + 0x10) / 4, );
+        hipcMakeRequestInline(base, .type = CmifCommandType_Request, .num_data_words = (u32)(sizeof(IpcServerRawHeader) + dataSize + 0x10) / 4, );
 
-    IpcServerRawHeader *rawHeader = cmifGetAlignedDataStart(hipc.data_words, base);
+    IpcServerRawHeader *rawHeader = (IpcServerRawHeader*)cmif::GetAlignedDataStart(hipc.data_words, base);
     rawHeader->magic = CMIF_OUT_HEADER_MAGIC;
     rawHeader->result = rc;
 
@@ -118,9 +120,9 @@ static void _ipcServerPrepareResponse(Result rc, void *data, size_t dataSize) {
 
 static Result _ipcServerProcessNewSession(IpcServer *server) {
     Handle session;
-    Result rc = svcAcceptSession(&session, server->handles[0]);
+    Result rc = svc::AcceptSession(&session, server->handles[0]);
     if (R_SUCCEEDED(rc) && R_FAILED(rc = _ipcServerAddSession(server, session))) {
-        svcCloseHandle(session);
+        svc::CloseHandle(session);
     }
     return rc;
 }
@@ -132,7 +134,7 @@ static Result _ipcServerProcessSession(IpcServer *server, IpcServerRequestHandle
     u8 data[IPC_SERVER_EXT_RESPONSE_MAX_DATA_SIZE];
     bool close = false;
 
-    Result rc = svcReplyAndReceive(&unusedIndex, &server->handles[handleIndex], 1, 0, UINT64_MAX);
+    Result rc = svc::ReplyAndReceive(&unusedIndex, &server->handles[handleIndex], 1, 0, UINT64_MAX);
     if (R_SUCCEEDED(rc)) {
         rc = _ipcServerParseRequest(&r);
     }
@@ -166,9 +168,9 @@ static Result _ipcServerProcessSession(IpcServer *server, IpcServerRequestHandle
 
 Result ipcServerProcess(IpcServer *server, IpcServerRequestHandler handler, void *userdata) {
     s32 handleIndex = -1;
-    Result rc = svcWaitSynchronization(&handleIndex, server->handles, server->count, UINT64_MAX);
+    Result rc = svc::WaitSynchronization(&handleIndex, server->handles, server->count, UINT64_MAX);
 
-    if (R_SUCCEEDED(rc) && (handleIndex < 0 || handleIndex >= server->count)) {
+    if (R_SUCCEEDED(rc) && (handleIndex < 0 || handleIndex >= (s32)server->count)) {
         rc = MAKERESULT(Module_Libnx, LibnxError_NotFound);
     }
 

@@ -40,7 +40,7 @@
 #include "../soc/pllmb.hpp"
 #include "board.hpp"
 #include "board_name.hpp"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 #include <switch.hpp>
 

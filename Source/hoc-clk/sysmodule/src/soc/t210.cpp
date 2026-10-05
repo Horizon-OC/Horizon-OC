@@ -177,9 +177,9 @@ static u32 _actmon_dev_get_count_avg(actmon_dev_t dev) {
 static inline Result _svcQueryMemoryMappingFallback(u64 *virtaddr, u64 physaddr, u64 size) {
     if (hosversionAtLeast(10, 0, 0)) {
         u64 out_size;
-        return svcQueryMemoryMapping(virtaddr, &out_size, physaddr, size);
+        return svc::QueryMemoryMapping(virtaddr, &out_size, physaddr, size);
     } else {
-        return svcLegacyQueryIoMapping(virtaddr, physaddr, size);
+        return svc::LegacyQueryIoMapping(virtaddr, physaddr, size);
     }
 }
 

@@ -37,7 +37,7 @@
 #include "../hos/apm_ext.h"
 #include "../mgr/clock_manager.hpp"
 #include "ipc_service.hpp"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 namespace ipcService {
 

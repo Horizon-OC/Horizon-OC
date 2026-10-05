@@ -31,6 +31,7 @@ extern "C" {
 #endif
 
 #include <switch.h>
+#include <switch.hpp>
 
 #define IPC_SERVER_EXT_RESPONSE_MAX_DATA_SIZE (0x100 - 0x10 - sizeof(IpcServerRawHeader))
 

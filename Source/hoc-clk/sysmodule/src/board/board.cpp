@@ -46,7 +46,7 @@
 #include "board_load.hpp"
 #include "board_misc.hpp"
 #include "board_volt.hpp"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 #include "../mapping/mem_map.hpp"
 #include "../soc/dram_mrr.hpp"

@@ -30,7 +30,7 @@
 
 #include "../hos/apm_ext.h"
 #include "file_utils.hpp"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 
 extern "C" void __libnx_init_time(void);

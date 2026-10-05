@@ -40,7 +40,7 @@
 #include "../hos/apm_ext.h"
 #include "board.hpp"
 #include "board_misc.hpp"
-#include <ipc_server.h>
+#include <ipc_server.hpp>
 #include <lockable_mutex.h>
 
 using namespace nx;
