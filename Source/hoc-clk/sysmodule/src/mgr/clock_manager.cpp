@@ -27,7 +27,7 @@
 #include <crc32.h>
 #include <cstdio>
 #include <cstring>
-#include <i2c.h>
+#include <i2c.hpp>
 
 #include "../board/board.hpp"
 #include "../display/aula.hpp"

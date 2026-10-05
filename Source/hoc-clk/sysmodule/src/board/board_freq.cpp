@@ -25,11 +25,11 @@
  */
 
 #include <hocclk.h>
-#include <i2c.h>
-#include <max17050.h>
+#include <i2c.hpp>
+#include <max17050.hpp>
 #include <switch.h>
 #include <t210.hpp>
-#include <tmp451.h>
+#include <tmp451.hpp>
 
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"

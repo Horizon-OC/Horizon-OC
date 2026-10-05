@@ -17,8 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "i2c.h"
-#include "tmp451.h"
+#include "i2c.hpp"
+#include "tmp451.hpp"
+#include <switch.hpp>
+
+using namespace nx;
 
 #define TMP451_WAIT_NS 1000000000UL
 
@@ -50,14 +53,14 @@ static Result _tmp451_get_temp(u8 reg, u8 dec_reg, s32 *out) {
 }
 
 static void _tmp451_update() {
-    u64 ticks = armGetSystemTick();
-    if (armTicksToNs(ticks - g_update_ticks) <= TMP451_WAIT_NS) {
+    u64 ticks = arm::GetSystemTick();
+    if (arm::TicksToNs(ticks - g_update_ticks) <= TMP451_WAIT_NS) {
         return;
     }
 
     g_update_ticks = ticks;
 
-    if (!serviceIsActive(&g_i2c_session.s)) {
+    if (!service::IsActive(&g_i2c_session.s)) {
         return;
     }
 
@@ -66,18 +69,18 @@ static void _tmp451_update() {
 }
 
 Result tmp451Initialize(void) {
-    Result rc = i2cInitialize();
+    Result rc = i2c::Initialize();
 
     if (R_SUCCEEDED(rc)) {
-        rc = i2cOpenSession(&g_i2c_session, I2cDevice_Tmp451);
+        rc = i2c::OpenSession(&g_i2c_session, I2cDevice_Tmp451);
     }
 
     return rc;
 }
 
 void tmp451Exit(void) {
-    i2csessionClose(&g_i2c_session);
-    i2cExit();
+    i2csession::Close(&g_i2c_session);
+    i2c::Exit();
 }
 
 s32 tmp451TempPcb(void) {

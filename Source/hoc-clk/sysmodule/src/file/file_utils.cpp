@@ -24,9 +24,9 @@
  * --------------------------------------------------------------------------
  */
 
-#include <i2c.h>
-#include <max17050.h>
-#include <tmp451.h>
+#include <i2c.hpp>
+#include <max17050.hpp>
+#include <tmp451.hpp>
 
 #include "../hos/apm_ext.h"
 #include "file_utils.hpp"

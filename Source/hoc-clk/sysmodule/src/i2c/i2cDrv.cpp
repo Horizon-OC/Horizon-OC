@@ -28,14 +28,14 @@ Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
     } __attribute__((packed)) cmd;
 
     I2cSession _session;
-    Result res = i2cOpenSession(&_session, dev);
+    Result res = i2c::OpenSession(&_session, dev);
     if (res)
         return res;
 
     cmd.reg = reg;
     cmd.val = val;
-    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
-    i2csessionClose(&_session);
+    res = i2csession::SendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    i2csession::Close(&_session);
     return res;
 }
 
@@ -48,19 +48,19 @@ Result I2cRead_OutU8(I2cDevice dev, u8 reg, u8 *out) {
     } __attribute__((packed)) rec;
 
     I2cSession _session;
-    Result res = i2cOpenSession(&_session, dev);
+    Result res = i2c::OpenSession(&_session, dev);
     if (res)
         return res;
 
     cmd.reg = reg;
-    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    res = i2csession::SendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
     if (res) {
-        i2csessionClose(&_session);
+        i2csession::Close(&_session);
         return res;
     }
 
-    res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-    i2csessionClose(&_session);
+    res = i2csession::ReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
+    i2csession::Close(&_session);
     if (res) {
         return res;
     }
@@ -78,19 +78,19 @@ Result I2cRead_OutU16(I2cDevice dev, u8 reg, u16 *out) {
     } __attribute__((packed)) rec;
 
     I2cSession _session;
-    Result res = i2cOpenSession(&_session, dev);
+    Result res = i2c::OpenSession(&_session, dev);
     if (res)
         return res;
 
     cmd.reg = reg;
-    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    res = i2csession::SendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
     if (res) {
-        i2csessionClose(&_session);
+        i2csession::Close(&_session);
         return res;
     }
 
-    res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-    i2csessionClose(&_session);
+    res = i2csession::ReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
+    i2csession::Close(&_session);
     if (res) {
         return res;
     }

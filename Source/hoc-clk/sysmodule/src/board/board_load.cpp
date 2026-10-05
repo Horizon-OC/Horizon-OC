@@ -27,14 +27,14 @@
 #include <algorithm>
 #include <battery.h>
 #include <hocclk.h>
-#include <i2c.h>
+#include <i2c.hpp>
 #include <math.h>
-#include <max17050.h>
+#include <max17050.hpp>
 #include <minIni.h>
 #include <numeric>
 #include <switch.h>
 #include <t210.hpp>
-#include <tmp451.h>
+#include <tmp451.hpp>
 #include <switch.hpp>
 
 #include "../hos/apm_ext.h"

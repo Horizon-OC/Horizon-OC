@@ -316,11 +316,11 @@ namespace mgr {
     }
 
     void StartThreads() {
-        threadCreate(&governorTHREAD, GovernorThread, nullptr, NULL, 0x2000, 0x3F, -2);
-        threadStart(&governorTHREAD);
+        thread::Create(&governorTHREAD, GovernorThread, nullptr, NULL, 0x2000, 0x3F, -2);
+        thread::Start(&governorTHREAD);
     }
 
     void ExitThreads() {
-        threadClose(&governorTHREAD);
+        thread::Close(&governorTHREAD);
     }
 }  // namespace mgr

@@ -26,13 +26,13 @@
 
 #include <battery.h>
 #include <hocclk.h>
-#include <i2c.h>
-#include <max17050.h>
+#include <i2c.hpp>
+#include <max17050.hpp>
 #include <notification.h>
 #include <pwm.h>
 #include <registers.h>
 #include <switch.h>
-#include <tmp451.h>
+#include <tmp451.hpp>
 
 #include "../display/display_refresh_rate.hpp"
 #include "../file/file_utils.hpp"

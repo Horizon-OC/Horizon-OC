@@ -27,11 +27,11 @@
 #include <battery.h>
 #include <cmath>
 #include <hocclk.h>
-#include <i2c.h>
-#include <max17050.h>
+#include <i2c.hpp>
+#include <max17050.hpp>
 #include <pwm.h>
 #include <switch.h>
-#include <tmp451.h>
+#include <tmp451.hpp>
 
 #include "../file/config.hpp"
 #include "../hos/apm_ext.h"

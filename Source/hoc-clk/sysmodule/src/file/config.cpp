@@ -29,13 +29,13 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include <i2c.h>
+#include <i2c.hpp>
 #include <map>
-#include <max17050.h>
+#include <max17050.hpp>
 #include <minIni.h>
 #include <sstream>
 #include <string>
-#include <tmp451.h>
+#include <tmp451.hpp>
 #include <unistd.h>
 
 #include "../board/board.hpp"

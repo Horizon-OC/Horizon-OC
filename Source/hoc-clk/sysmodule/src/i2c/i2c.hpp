@@ -25,15 +25,7 @@
  */
 
 #pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <switch.h>
+#include <switch.hpp>
 
 Result i2csessionExtRegReceive(I2cSession *s, u8 in, void *out, u8 out_size);
 
-#ifdef __cplusplus
-}
-#endif
