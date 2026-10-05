@@ -468,7 +468,7 @@ namespace mgr {
                 cpuVmin += cpuDvfsOffset;
             }
 
-            board::ApplyCpuMinVolt(cpuVmin);
+            board::ApplyCpuMinVolt(cpuVmin, false);
         }
     }
 
@@ -484,7 +484,7 @@ namespace mgr {
         }
 
         if (IsCpuDvfsEnabled()) {
-            board::ApplyCpuMinVolt(0);
+            board::ApplyCpuMinVolt(0, false);
         }
     }
 
@@ -684,7 +684,7 @@ namespace mgr {
             }
 
             if (IsCpuDvfsEnabled()) {
-                board::ApplyCpuMinVolt(0);
+                board::ApplyCpuMinVolt(0, false);
             }
             WaitForNextTick();
         }

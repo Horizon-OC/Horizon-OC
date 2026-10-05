@@ -61,7 +61,7 @@ namespace board {
     u32 GetMinimumGpuVmin(u32 freqMhz, u32 bracket);
 
     void InitializeCpuLut();
-    void ApplyCpuMinVolt(u32 vmin);
+    void ApplyCpuMinVolt(u32 vmin, bool force);
     u32 GetMinimumCpuVmin(u32 freqMhz, u32 bracket);
 
 }  // namespace board

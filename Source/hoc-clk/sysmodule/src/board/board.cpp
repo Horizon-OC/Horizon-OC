@@ -51,7 +51,8 @@
 #include "../mapping/mem_map.hpp"
 #include "../soc/dram_mrr.hpp"
 #include "../i2c/max77620_wdt.hpp"
-
+#include "../mgr/clock_manager.hpp"
+#include "../file/config.hpp"
 namespace board {
 
     u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr;
@@ -95,15 +96,45 @@ namespace board {
             u32 flags;
             rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
             if (R_SUCCEEDED(rc)) {
-                if (state == PscPmState_Awake) {
+                if (state == PscPmState_ReadyAwaken) {
                     i2c::wdt::ResetWdtEnableState();
                     i2c::wdt::Pet();
+
+                    if(board::GetSocType() == HocClkSocType_Mariko && 
+                       file::config::GetConfigValue(HocClkConfigValue_CPUDVFSMode) == CPUDVFSMode_Modify) {
+                        s32 cpuDvfsOffset = file::config::GetConfigValue(HocClkConfigValue_CPUDVFSOffset);
+                        cpuDvfsOffset = std::max(cpuDvfsOffset, -80);
+                        u32 cpuVmin = GetMinimumCpuVmin(mgr::GetNearestOverrideHz(HocClkModule_MEM) / 1000000, GetCpuSpeedoBracket());
+
+                        if (cpuVmin) {
+                            cpuVmin += cpuDvfsOffset;
+                        }
+                        
+                        ApplyCpuMinVolt(cpuVmin, true);
+                    }
+
+                    file::utils::LogLine("[brd]: Ready to awaken");
+
                     s_isAwake = true;
                 } else if (state == PscPmState_ReadySleep) {
                     i2c::wdt::Disarm();
+
+                    ResetToStockMem();
+                    ResetToStockCpu();
+                    ApplyCpuMinVolt(0, true);
+
+                    file::utils::LogLine("[brd]: Ready to sleep");
+
                     s_isAwake = false;
                 } else if (state == PscPmState_ReadyShutdown) {
                     i2c::wdt::Disarm();
+
+                    ResetToStockMem();
+                    ResetToStockCpu();
+                    ApplyCpuMinVolt(0, true);
+
+                    file::utils::LogLine("[brd]: Ready to shutdown");
+
                     s_isAwake = false;
                 }
 
@@ -254,6 +285,8 @@ namespace board {
 
         rc = threadStart(&s_pscThread);
         ASSERT_RESULT_OK(rc, "threadStart");
+
+        s_isAwake = true;
     }
 
     void Exit() {
@@ -343,6 +376,10 @@ namespace board {
 
     u8 GetCpuSpeedoBracket() {
         return cpuSpeedoBracket;
+    }
+
+    bool IsAwake() {
+        return s_isAwake;
     }
 
 }  // namespace board

@@ -61,5 +61,5 @@ namespace board {
     bool IsDram8GB();
     void SetDisplayRefreshDockedState(bool docked);
     FuseData *GetFuseData();
-    
+    bool IsAwake();
 }  // namespace board

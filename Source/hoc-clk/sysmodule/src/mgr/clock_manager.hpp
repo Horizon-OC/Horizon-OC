@@ -66,6 +66,8 @@ namespace mgr {
 
     void ApplyGpuFreqVoltRequest(u32 voltage, u32 hz);
 
+    u32 GetNearestOverrideHz(HocClkModule module);
+
     void Tick();
     void WaitForNextTick();
 }  // namespace mgr

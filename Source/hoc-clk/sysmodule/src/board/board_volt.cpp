@@ -640,7 +640,7 @@ namespace board {
             return mv <= PmicVmin ? 0 : (mv - PmicVmin) / PmicStep;
         }
 
-        u32 GetLutVolt(u32 code) {
+        [[maybe_unused]] u32 GetLutVolt(u32 code) {
             return code * PmicStep + PmicVmin;
         }
 
@@ -652,14 +652,17 @@ namespace board {
             VolatileCopyDwords(cpuVoltData.table, cpuVoltData.lut, LutSize);
         }
 
-        /* todo debug edge cases of this. */
+        /* TODO: Dynamically get this from the PCV LUT */
         void UnstuckFreqWar() {
+            constexpr u32 KNOWN_GOOD_WAR_FREQUENCY = 1'785'000'000;
             u32 hz = board::GetHz(HocClkModule_CPU);
-            board::SetHz(HocClkModule_CPU, ~0);
+            board::SetHz(HocClkModule_CPU, KNOWN_GOOD_WAR_FREQUENCY);
+            svcSleepThread(5'000'000);
             board::SetHz(HocClkModule_CPU, hz);
         }
 
         void RestoreCpuLut() {
+            cpuVoltData.lastVmin = 0;
             VolatileCopyDwords(cpuVoltData.lut, cpuVoltData.table, LutSize);
             UnstuckFreqWar();
         }
@@ -762,15 +765,21 @@ namespace board {
         return baseVolt;
     }
 
-    void ApplyCpuMinVolt(u32 vmin) {
-        if (!cpuVoltData.initialized || vmin == cpuVoltData.lastVmin) {
-            return;
+    void ApplyCpuMinVolt(u32 vmin, bool force) {
+        if(!force) {
+            if (!cpuVoltData.initialized || (vmin == cpuVoltData.lastVmin)) {
+                return;
+            }
         }
+
+        file::utils::LogLine("[dvfs]: %setting cpu vmin to %dmV", force ? "Forcefully s" : "S", vmin);
 
         if (vmin == 0) {
             RestoreCpuLut();
+            file::utils::LogLine("[dvfs]: Restored LUT");
             return;
         }
+
 
         u32 tmpLut[LutSize];
         std::memcpy(tmpLut, cpuVoltData.table, sizeof(tmpLut));
@@ -780,6 +789,7 @@ namespace board {
         const u32 floored = FloorLutTable(tmpLut, minCode);
         if (floored == 0) {
             RestoreCpuLut();
+            file::utils::LogLine("[dvfs]: Floored, restored LUT");
             return;
         }
 
@@ -794,9 +804,7 @@ namespace board {
 
         VolatileCopyDwords(cpuVoltData.lut, tmpLut, LutSize);
 
-        if (vmin < cpuVoltData.lastVmin) {
-            UnstuckFreqWar();
-        }
+        UnstuckFreqWar();
 
         cpuVoltData.lastVmin = vmin;
     }
