@@ -56,8 +56,6 @@ namespace board {
     u8 GetFuseDramId();
     u8 GetDramID();
     u8 GetGpuSpeedoBracket();
-    u8 GetCpuSpeedoBracket();
-
     bool IsDram8GB();
     void SetDisplayRefreshDockedState(bool docked);
     FuseData *GetFuseData();

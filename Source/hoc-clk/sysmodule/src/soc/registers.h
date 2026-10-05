@@ -525,7 +525,6 @@
 #define CL_DVFS_I2C_STS_0 0x48
 #define CL_DVFS_INTR_STS_0 0x5C
 #define CL_DVFS_I2C_CLK_DIVISOR_REGISTER_0 0x16C
-#define CL_DVFS_OUTPUT_LUT_0 0x200 // Typo in TRM that says 0x20, correct value is 0x200.
 
 #define CLK_SOURCE_EMC 0x19c
 
