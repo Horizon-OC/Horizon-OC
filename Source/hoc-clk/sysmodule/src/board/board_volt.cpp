@@ -666,11 +666,11 @@ namespace board {
             constexpr u32 Shift = 8;
             constexpr u32 Mask  = 0x3F << Shift;
             /* Index is always 0 for us. */
-            constexpr u32 Value = 0;
+            constexpr u32 MinLutIndex = 0;
 
             volatile u32 *reg = reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
 
-            *reg = (*reg & ~Mask) | ((Value << Shift) & Mask);
+            *reg = (*reg & ~Mask) | ((MinLutIndex << Shift) & Mask);
 
             static_cast<void>(*reg);
         }
