@@ -652,12 +652,12 @@ namespace board {
             VolatileCopyDwords(cpuVoltData.table, cpuVoltData.lut, LutSize);
         }
 
-        /* TODO: Dynamically get this from the PCV LUT */
+        /* TODO: Dynamically get this from the PCV LUT? */
         void UnstuckFreqWar() {
-            constexpr u32 KNOWN_GOOD_WAR_FREQUENCY = 1'785'000'000;
             u32 hz = board::GetHz(HocClkModule_CPU);
-            board::SetHz(HocClkModule_CPU, KNOWN_GOOD_WAR_FREQUENCY);
-            svcSleepThread(5'000'000);
+            /* Voltage needs to be above the forced minimum voltage, so we set max for a short time. */
+            /* This frequency is only applied for ~250ms. */
+            board::SetHz(HocClkModule_CPU, ~0);
             board::SetHz(HocClkModule_CPU, hz);
         }
 
