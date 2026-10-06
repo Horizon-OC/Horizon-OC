@@ -656,9 +656,11 @@ namespace board {
         /* TODO: Dynamically get this from the PCV LUT? */
         void UnstuckFreqWar() {
             u32 hz = board::GetHz(HocClkModule_CPU);
-            /* Voltage needs to be above the forced minimum voltage, so we set max for a short time. */
-            /* This frequency is only applied for ~250ms. */
-            board::SetHz(HocClkModule_CPU, ~0);
+            /* Voltage needs to be above the forced minimum voltage, so we set a high frequency (will be capped by pcv) for a short time. */
+            /* This frequency is only applied for ~255ms. */
+            constexpr u32 HighFreqVoltBump = 2091'000'000;
+            board::SetHz(HocClkModule_CPU, HighFreqVoltBump);
+            svcSleepThread(5'000'000);
             board::SetHz(HocClkModule_CPU, hz);
         }
 
