@@ -24,18 +24,49 @@
  * --------------------------------------------------------------------------
  */
 
-#include "i2c.hpp"
-#include <switch.hpp>
+#pragma once
 
-using namespace nx;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define I2C_CMD_SND 0
-#define I2C_CMD_RCV 1
+#include <switch.h>
 
-Result i2csessionExtRegReceive(I2cSession *s, u8 in, void *out, u8 out_size) {
-    u8 cmdlist[5] = { I2C_CMD_SND | (I2cTransactionOption_Start << 6), sizeof(in), in,
+#define IPC_SERVER_EXT_RESPONSE_MAX_DATA_SIZE (0x100 - 0x10 - sizeof(IpcServerRawHeader))
 
-                      I2C_CMD_RCV | (I2cTransactionOption_All << 6), out_size };
+typedef struct {
+    u64 magic;
+    union {
+        u64 cmdId;
+        u64 result;
+    };
+} IpcServerRawHeader;
 
-    return i2csession::ExecuteCommandList(s, out, out_size, cmdlist, sizeof(cmdlist));
+typedef struct {
+    SmServiceName srvName;
+    Handle handles[MAX_WAIT_OBJECTS];
+    u32 max;
+    u32 count;
+} IpcServer;
+
+typedef struct {
+    u64 cmdId;
+    void *ptr;
+    size_t size;
+} IpcServerRequestData;
+
+typedef struct {
+    HipcParsedRequest hipc;
+    IpcServerRequestData data;
+} IpcServerRequest;
+
+typedef Result (*IpcServerRequestHandler)(void *userdata, const IpcServerRequest *r, u8 *out_data, size_t *out_dataSize);
+
+Result ipcServerInit(IpcServer *server, const char *name, u32 max_sessions);
+Result ipcServerExit(IpcServer *server);
+Result ipcServerProcess(IpcServer *server, IpcServerRequestHandler handler, void *userdata);
+Result ipcServerParseCommand(const IpcServerRequest *r, size_t *out_datasize, void **out_data, u64 *out_cmd);
+
+#ifdef __cplusplus
 }
+#endif

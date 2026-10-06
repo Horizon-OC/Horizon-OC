@@ -27,7 +27,7 @@
 #include <crc32.h>
 #include <cstdio>
 #include <cstring>
-#include <i2c.hpp>
+#include <i2c.h>
 
 #include "../board/board.hpp"
 #include "../display/aula.hpp"
@@ -45,10 +45,7 @@
 #include "clock_manager.hpp"
 #include "governor.hpp"
 #include "../i2c/max77620_wdt.hpp"
-#include "../hos/clkrst_ext.hpp"
-#include <switch.hpp>
 
-using namespace nx;
 
 #define HOSPPC_HAS_BOOST (hosversionAtLeast(7, 0, 0))
 
@@ -812,7 +809,7 @@ namespace mgr {
         else
             gContext.resolutionHeight = 0;  // N/A
 
-        gContext.isWdtEnabled = HocI2c::wdt::IsWdtEnabled();
+        gContext.isWdtEnabled = i2c::wdt::IsWdtEnabled();
 
         return hasChanged;
     }
@@ -871,7 +868,6 @@ namespace mgr {
         }
 
         mgr::StartThreads();
-
     }
 
     void Exit() {
@@ -917,7 +913,7 @@ namespace mgr {
     }
 
     void WaitForNextTick() {
-        HocI2c::wdt::Pet();
-        svc::SleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
+        i2c::wdt::Pet();
+        svcSleepThread(file::config::GetConfigValue(HocClkConfigValue_PollingIntervalMs) * 1000000ULL);
     }
 }  // namespace mgr

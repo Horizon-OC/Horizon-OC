@@ -24,8 +24,15 @@
  * --------------------------------------------------------------------------
  */
 
-#pragma once
-#include <switch.hpp>
+#include "i2c.h"
 
-Result i2csessionExtRegReceive(I2cSession *s, u8 in, void *out, u8 out_size);
+#define I2C_CMD_SND 0
+#define I2C_CMD_RCV 1
 
+Result i2csessionExtRegReceive(I2cSession *s, u8 in, void *out, u8 out_size) {
+    u8 cmdlist[5] = { I2C_CMD_SND | (I2cTransactionOption_Start << 6), sizeof(in), in,
+
+                      I2C_CMD_RCV | (I2cTransactionOption_All << 6), out_size };
+
+    return i2csessionExecuteCommandList(s, out, out_size, cmdlist, sizeof(cmdlist));
+}

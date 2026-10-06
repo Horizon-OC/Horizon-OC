@@ -15,9 +15,6 @@
  *
  */
 #include "i2cDrv.h"
-#include <switch.hpp>
-
-using namespace nx;
 
 Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
     // ams::fatal::srv::StopSoundTask::StopSound()
@@ -28,14 +25,14 @@ Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val) {
     } __attribute__((packed)) cmd;
 
     I2cSession _session;
-    Result res = i2c::OpenSession(&_session, dev);
+    Result res = i2cOpenSession(&_session, dev);
     if (res)
         return res;
 
     cmd.reg = reg;
     cmd.val = val;
-    res = i2csession::SendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
-    i2csession::Close(&_session);
+    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    i2csessionClose(&_session);
     return res;
 }
 
@@ -48,19 +45,19 @@ Result I2cRead_OutU8(I2cDevice dev, u8 reg, u8 *out) {
     } __attribute__((packed)) rec;
 
     I2cSession _session;
-    Result res = i2c::OpenSession(&_session, dev);
+    Result res = i2cOpenSession(&_session, dev);
     if (res)
         return res;
 
     cmd.reg = reg;
-    res = i2csession::SendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
     if (res) {
-        i2csession::Close(&_session);
+        i2csessionClose(&_session);
         return res;
     }
 
-    res = i2csession::ReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-    i2csession::Close(&_session);
+    res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
+    i2csessionClose(&_session);
     if (res) {
         return res;
     }
@@ -78,19 +75,19 @@ Result I2cRead_OutU16(I2cDevice dev, u8 reg, u16 *out) {
     } __attribute__((packed)) rec;
 
     I2cSession _session;
-    Result res = i2c::OpenSession(&_session, dev);
+    Result res = i2cOpenSession(&_session, dev);
     if (res)
         return res;
 
     cmd.reg = reg;
-    res = i2csession::SendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
+    res = i2csessionSendAuto(&_session, &cmd, sizeof(cmd), I2cTransactionOption_All);
     if (res) {
-        i2csession::Close(&_session);
+        i2csessionClose(&_session);
         return res;
     }
 
-    res = i2csession::ReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
-    i2csession::Close(&_session);
+    res = i2csessionReceiveAuto(&_session, &rec, sizeof(rec), I2cTransactionOption_All);
+    i2csessionClose(&_session);
     if (res) {
         return res;
     }
@@ -136,7 +133,7 @@ u32 I2c_BuckConverter_GetMvOut(const I2c_BuckConverter_Domain *domain) {
             return 0u;
 
         // Wait 1us
-        svc::SleepThread(1E3);
+        svcSleepThread(1E3);
 
         if (!domain->por_val || val != domain->por_val)
             break;
@@ -152,7 +149,7 @@ u32 I2c_BuckConverter_GetUvOut(const I2c_BuckConverter_Domain *domain) {
             return 0u;
 
         // Wait 1us
-        svc::SleepThread(1E3);
+        svcSleepThread(1E3);
 
         if (!domain->por_val || val != domain->por_val)
             break;
@@ -175,7 +172,7 @@ Result I2c_BuckConverter_SetMvOut(const I2c_BuckConverter_Domain *domain, u32 mv
         return res;
 
     // 5ms Ramp delay
-    svc::SleepThread(5E6);
+    svcSleepThread(5E6);
     u8 new_val;
     res = I2cRead_OutU8(domain->device, domain->reg, &new_val);
     if (R_FAILED(res))

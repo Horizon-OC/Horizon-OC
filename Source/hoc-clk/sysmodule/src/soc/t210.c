@@ -17,15 +17,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "t210.hpp"
-#include <hocclk.h>
-#include <switch.hpp>
-
-using namespace nx;
+#include "t210.h"
 
 #define WAIT_NS 1000000000UL
 
-#define usleep(x) (svc::SleepThread(1000UL * x))
+#define usleep(x) svcSleepThread(1000UL * x)
 
 #define GPU_TRIM_SYS_GPCPLL_COEFF 0x4
 #define GPU_TRIM_SYS_GPCPLL(x) (*(volatile u32 *)(g_gpu_base + 0x137000ul + (x)))
@@ -177,9 +173,9 @@ static u32 _actmon_dev_get_count_avg(actmon_dev_t dev) {
 static inline Result _svcQueryMemoryMappingFallback(u64 *virtaddr, u64 physaddr, u64 size) {
     if (hosversionAtLeast(10, 0, 0)) {
         u64 out_size;
-        return svc::QueryMemoryMapping(virtaddr, &out_size, physaddr, size);
+        return svcQueryMemoryMapping(virtaddr, &out_size, physaddr, size);
     } else {
-        return svc::LegacyQueryIoMapping(virtaddr, physaddr, size);
+        return svcLegacyQueryIoMapping(virtaddr, physaddr, size);
     }
 }
 

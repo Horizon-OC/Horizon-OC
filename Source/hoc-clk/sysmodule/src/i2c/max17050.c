@@ -22,8 +22,8 @@
  *
  */
 
-#include "i2c.hpp"
-#include "max17050.hpp"
+#include "i2c.h"
+#include "max17050.h"
 
 #define MAX17050_WAIT_NS 1000000000UL
 

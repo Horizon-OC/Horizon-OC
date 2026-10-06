@@ -27,11 +27,11 @@
 #include <battery.h>
 #include <cmath>
 #include <hocclk.h>
-#include <i2c.hpp>
-#include <max17050.hpp>
+#include <i2c.h>
+#include <max17050.h>
 #include <pwm.h>
 #include <switch.h>
-#include <tmp451.hpp>
+#include <tmp451.h>
 
 #include "../file/config.hpp"
 #include "../hos/apm_ext.h"
@@ -41,7 +41,7 @@
 #include "../tsensor/bq24193.hpp"
 #include "../tsensor/soctherm.hpp"
 #include "board.hpp"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
 
 
@@ -53,7 +53,7 @@ namespace board {
         u32 gDramMr4Tick = DramMr4PollDivisor;
         s32 gDramMr4Millis = 30000; /* 4x refresh default */
 
-        [[maybe_unused]] s32 PollDramMr4TempMilli() {
+        s32 PollDramMr4TempMilli() {
             u8 mr4 = 0;
             if (!soc::ReadRamMr4(&mr4))
                 return 0; /* stock exosphere */

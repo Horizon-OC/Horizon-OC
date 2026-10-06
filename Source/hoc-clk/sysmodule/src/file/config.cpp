@@ -29,13 +29,13 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-#include <i2c.hpp>
+#include <i2c.h>
 #include <map>
-#include <max17050.hpp>
+#include <max17050.h>
 #include <minIni.h>
 #include <sstream>
 #include <string>
-#include <tmp451.hpp>
+#include <tmp451.h>
 #include <unistd.h>
 
 #include "../board/board.hpp"
@@ -44,7 +44,7 @@
 #include "errors.hpp"
 #include "file_utils.hpp"
 #include <initializer_list>
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
 #include <sys/stat.h>
 #include <sys/types.h>

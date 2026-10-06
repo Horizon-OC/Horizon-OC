@@ -47,7 +47,7 @@
 
 /* Is this a watchdog or a watchcat, that is the question */
 
-namespace HocI2c::wdt {
+namespace i2c::wdt {
 
     static bool isWdtEnabled = false;
 
@@ -128,7 +128,7 @@ namespace HocI2c::wdt {
         const bool watchdogEnabled = file::config::GetConfigValue(HocClkConfigValue_Watchdog);
 
         if (watchdogEnabled) {
-            Arm(HocI2c::wdt::MAX77620_WDT_2S);
+            Arm(i2c::wdt::MAX77620_WDT_2S);
             Result rc = update_bits(MAX77620_REG_CNFGGLBL3, MAX77620_WDTC_MASK, MAX77620_WDTC_KICK);
             ASSERT_RESULT_OK(rc, "update_bits");
         } else {
@@ -136,4 +136,4 @@ namespace HocI2c::wdt {
         }
     }
 
-} // namespace HocI2c::wdt
+} // namespace i2c::wdt

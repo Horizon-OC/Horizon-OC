@@ -25,11 +25,10 @@
  */
 
 #include <cstring>
-#include <i2c.hpp>
-#include <max17050.hpp>
+#include <i2c.h>
+#include <max17050.h>
 #include <switch.h>
-#include <switch.hpp>
-#include <tmp451.hpp>
+#include <tmp451.h>
 
 #include "../file/config.hpp"
 #include "../file/errors.hpp"
@@ -38,11 +37,8 @@
 #include "../hos/apm_ext.h"
 #include "../mgr/clock_manager.hpp"
 #include "ipc_service.hpp"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
-
-using namespace nx;
-
 namespace ipcService {
 
     namespace {
@@ -274,7 +270,7 @@ namespace ipcService {
 
     void Initialize() {
         std::int32_t priority;
-        Result rc = svc::GetThreadPriority(&priority, CUR_THREAD_HANDLE);
+        Result rc = svcGetThreadPriority(&priority, CUR_THREAD_HANDLE);
         ASSERT_RESULT_OK(rc, "svcGetThreadPriority");
         rc = ipcServerInit(&gServer, HOCCLK_IPC_SERVICE_NAME, 42);
         ASSERT_RESULT_OK(rc, "ipcServerInit");
@@ -285,7 +281,7 @@ namespace ipcService {
 
     void Exit() {
         SetRunning(false);
-        Result rc = thread::Close(&gThread);
+        Result rc = threadClose(&gThread);
         ASSERT_RESULT_OK(rc, "threadClose");
         rc = ipcServerExit(&gServer);
         ASSERT_RESULT_OK(rc, "ipcServerExit");
@@ -300,11 +296,11 @@ namespace ipcService {
         gRunning = running;
 
         if (running) {
-            Result rc = thread::Start(&gThread);
+            Result rc = threadStart(&gThread);
             ASSERT_RESULT_OK(rc, "threadStart");
         } else {
-            svc::CancelSynchronization(gThread.handle);
-            thread::WaitForExit(&gThread);
+            svcCancelSynchronization(gThread.handle);
+            threadWaitForExit(&gThread);
         }
     }
 

@@ -24,13 +24,13 @@
  * --------------------------------------------------------------------------
  */
 
-#include <i2c.hpp>
-#include <max17050.hpp>
-#include <tmp451.hpp>
+#include <i2c.h>
+#include <max17050.h>
+#include <tmp451.h>
 
 #include "../hos/apm_ext.h"
 #include "file_utils.hpp"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
 
 extern "C" void __libnx_init_time(void);
@@ -108,7 +108,7 @@ namespace file::utils {
 
         // Debug UART log
         if (g_uart_enabled) {
-            svc::OutputDebugString(buff, len);
+            svcOutputDebugString(buff, len);
         }
 
         if (g_log_enabled) {
@@ -188,27 +188,27 @@ namespace file::utils {
 
     void InitializeAsync() {
         Thread initThread = { 0 };
-        thread::Create(&initThread, InitializeThreadFunc, NULL, NULL, 0x4000, 0x15, 0);
-        thread::Start(&initThread);
+        threadCreate(&initThread, InitializeThreadFunc, NULL, NULL, 0x4000, 0x15, 0);
+        threadStart(&initThread);
     }
 
     Result Initialize() {
         Result rc = 0;
 
         if (R_SUCCEEDED(rc)) {
-            rc = time::Initialize();
+            rc = timeInitialize();
         }
 
         __libnx_init_time();
-        time::Exit();
+        timeExit();
         SetBootTime();
 
         if (R_SUCCEEDED(rc)) {
-            rc = fs::Initialize();
+            rc = fsInitialize();
         }
 
         if (R_SUCCEEDED(rc)) {
-            rc = fsdev::MountSdmc();
+            rc = fsdevMountSdmc();
         }
 
         if (R_SUCCEEDED(rc)) {
@@ -230,8 +230,8 @@ namespace file::utils {
         g_log_enabled = false;
         g_uart_enabled = false;
 
-        fsdev::UnmountAll();
-        fs::Exit();
+        fsdevUnmountAll();
+        fsExit();
     }
 
 }  // namespace file::utils

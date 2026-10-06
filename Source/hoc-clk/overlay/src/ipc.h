@@ -26,13 +26,13 @@
 
 #pragma once
 
-#include <hocclk.h>
-
 #if defined(__cplusplus)
     #include "cpp_util.hpp"
 
 extern "C" {
 #endif
+
+#include <hocclk.h>
 
 #include <hocclk/client/ipc.h>
 

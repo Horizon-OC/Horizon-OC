@@ -19,11 +19,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <switch.h>
-#include <hocclk.h>
-#include "display_refresh_rate.hpp"
-#include <switch.hpp>
 
-using namespace nx;
+#include "display_refresh_rate.hpp"
 
 namespace display {
 #define DSI_CLOCK_HZ 234000000llu
@@ -145,7 +142,7 @@ namespace display {
 #define MIPI_DCS_PRIV_SM_SET_ELVSS 0xB1
 
         dsi[DSI_VIDEO_MODE_CONTROL] = true;
-        svc::SleepThread(20000000);
+        svcSleepThread(20000000);
 
         dsi[DSI_WR_DATA] = MIPI_DSI_DCS_LONG_WRITE | (5 << 8);
         dsi[DSI_WR_DATA] = 0x5A5A5AE2;
@@ -165,7 +162,7 @@ namespace display {
         dsi[DSI_TRIGGER] = 0;
 
         dsi[DSI_VIDEO_MODE_CONTROL] = false;
-        svc::SleepThread(20000000);
+        svcSleepThread(20000000);
     }
     void SetDockedState(bool isDocked) {
         g_config.isDocked = isDocked;
@@ -241,9 +238,9 @@ namespace display {
         uint32_t fd = fd_in;
 
         if (!fd)
-            nv::Open(&fd, "/dev/nvdisp-disp1");
+            nvOpen(&fd, "/dev/nvdisp-disp1");
         NvdcModeDB2 db2 = { 0 };
-        int rc = nv::Ioctl(fd, NVDISP_GET_MODE_DB2, &db2);
+        int rc = nvIoctl(fd, NVDISP_GET_MODE_DB2, &db2);
 
         if (rc == 0) {
             for (size_t i = 0; i < db2.num_modes; i++) {
@@ -266,7 +263,7 @@ namespace display {
             highestRefreshRate = g_dockedRefreshRates[numRates - 1];
 
         NvdcMode2 display_b = { 0 };
-        rc = nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b);
+        rc = nvIoctl(fd, NVDISP_GET_MODE2, &display_b);
 
         struct dpaux_read_0x100 {
             uint32_t cmd;
@@ -284,7 +281,7 @@ namespace display {
             } set;
         } dpaux = { 6, 0x100, 0x10 };
 
-        rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+        rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
         if (rc == 0) {
             g_dockedLinkRate = dpaux.set.link_rate;
             // if (display_b.hActive == 1920 && display_b.vActive == 1080 && highestRefreshRate > 75 && dpaux.set.link_rate < 20 && )
@@ -292,7 +289,7 @@ namespace display {
         }
 
         if (!fd_in)
-            nv::Close(fd);
+            nvClose(fd);
         g_dockedHighestRefreshRate = highestRefreshRate;
     }
 
@@ -320,8 +317,8 @@ namespace display {
             } DPCD;
         } dpaux = { 6, 0, 0x10 };
 
-        int rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
-        nv::Close(fd);
+        int rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+        nvClose(fd);
         if (rc != 0x75c)
             return false;
 
@@ -382,19 +379,19 @@ namespace display {
             return false;
 
         uint32_t fd = 0;
-        if (nv::Open(&fd, "/dev/nvdisp-disp1")) {
+        if (nvOpen(&fd, "/dev/nvdisp-disp1")) {
             return false;
         }
 
         NvdcMode2 display_b = { 0 };
-        int rc = nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b);
+        int rc = nvIoctl(fd, NVDISP_GET_MODE2, &display_b);
         if (rc != 0) {
-            nv::Close(fd);
+            nvClose(fd);
             return false;
         }
 
         if (!display_b.pclkKHz) {
-            nv::Close(fd);
+            nvClose(fd);
             return false;
         }
 
@@ -457,7 +454,7 @@ namespace display {
         }
 
         if (refreshRateNow == g_dockedRefreshRates[itr]) {
-            nv::Close(fd);
+            nvClose(fd);
             return true;
         }
 
@@ -479,13 +476,13 @@ namespace display {
                 display_b.bitsPerPixel = 24;
             }
 
-            rc = nv::Ioctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
+            rc = nvIoctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
             if (rc == 0) {
-                rc = nv::Ioctl(fd, NVDISP_SET_MODE2, &display_b);
+                rc = nvIoctl(fd, NVDISP_SET_MODE2, &display_b);
             }
         }
 
-        nv::Close(fd);
+        nvClose(fd);
         return true;
     }
 
@@ -496,31 +493,31 @@ namespace display {
         if (!g_config.displaySync) {
             g_wasRetroSuperTurnedOff = false;
         } else if (g_wasRetroSuperTurnedOff) {
-            svc::SleepThread(2000000000);
+            svcSleepThread(2000000000);
             g_wasRetroSuperTurnedOff = false;
         }
 
-        svc::SleepThread(1000000000);
+        svcSleepThread(1000000000);
 
         uint32_t fd = 0;
-        if (nv::Open(&fd, "/dev/nvdisp-disp0")) {
+        if (nvOpen(&fd, "/dev/nvdisp-disp0")) {
             return false;
         }
 
         NvdcMode2 display_b = { 0 };
-        int rc = nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b);
+        int rc = nvIoctl(fd, NVDISP_GET_MODE2, &display_b);
         if (rc != 0) {
-            nv::Close(fd);
+            nvClose(fd);
             return false;
         }
 
         if (!display_b.pclkKHz) {
-            nv::Close(fd);
+            nvClose(fd);
             return false;
         }
 
         if ((display_b.vActive == 1280 && display_b.hActive == 720) == false) {
-            nv::Close(fd);
+            nvClose(fd);
             return false;
         }
 
@@ -566,14 +563,14 @@ namespace display {
         display_b.vBackPorch = g_handheldTimingsRETRO[itr].vBackPorch;
         display_b.pclkKHz = g_handheldTimingsRETRO[itr].pixelClock_kHz;
 
-        rc = nv::Ioctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
+        rc = nvIoctl(fd, NVDISP_VALIDATE_MODE2, &display_b);
         if (rc == 0) {
             for (size_t i = 0; i < 5; i++) {
-                nv::Ioctl(fd, NVDISP_SET_MODE2, &display_b);
+                nvIoctl(fd, NVDISP_SET_MODE2, &display_b);
             }
         }
 
-        nv::Close(fd);
+        nvClose(fd);
         return true;
     }
 
@@ -606,8 +603,8 @@ namespace display {
                 } DPCD;
             } dpaux = { 6, 0, 0x10 };
 
-            int rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
-            nv::Close(fd);
+            int rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+            nvClose(fd);
 
             if (rc != 0) {
                 if (!g_config.isRetroSUPER) {
@@ -640,15 +637,15 @@ namespace display {
             value = ((temp.PLLD_DIVN / temp.PLLD_DIVM) * 10) / 4;
 
             if (value != 0 && value != 80) {
-                if (!nv::Open(&fd, "/dev/nvdisp-disp0")) {
+                if (!nvOpen(&fd, "/dev/nvdisp-disp0")) {
                     NvdcMode2 display_b = { 0 };
-                    if (nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
+                    if (nvIoctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
                         uint64_t h_total = display_b.hActive + display_b.hFrontPorch + display_b.hSyncWidth + display_b.hBackPorch;
                         uint64_t v_total = display_b.vActive + display_b.vFrontPorch + display_b.vSyncWidth + display_b.vBackPorch;
                         uint64_t pixelClock = display_b.pclkKHz * 1000 + 999;
                         value = (u32)(pixelClock / (h_total * v_total));
                     }
-                    nv::Close(fd);
+                    nvClose(fd);
                 } else {
                     return false;
                 }
@@ -672,7 +669,7 @@ namespace display {
 
                 if (!g_canChangeRefreshRateDocked) {
                     uint32_t fd = 0;
-                    if (!nv::Open(&fd, "/dev/nvdisp-disp1")) {
+                    if (!nvOpen(&fd, "/dev/nvdisp-disp1")) {
                         struct dpaux_read_0x100 {
                             uint32_t cmd;
                             uint32_t addr;
@@ -689,14 +686,14 @@ namespace display {
                             } set;
                         } dpaux = { 6, 0x100, 0x10 };
 
-                        int rc = nv::Ioctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
-                        nv::Close(fd);
+                        int rc = nvIoctl(fd, NVDISP_GET_PANEL_DATA, &dpaux);
+                        nvClose(fd);
 
                         if (rc == 0) {
                             _getDockedHighestRefreshRate(0);
                             g_canChangeRefreshRateDocked = true;
                         } else {
-                            svc::SleepThread(1000000000);
+                            svcSleepThread(1000000000);
                             return false;
                         }
                     } else {
@@ -708,11 +705,11 @@ namespace display {
                     return true;
                 }
                 uint32_t fd = 0;
-                if (!nv::Open(&fd, "/dev/nvdisp-disp1")) {
+                if (!nvOpen(&fd, "/dev/nvdisp-disp1")) {
                     NvdcMode2 display_b = { 0 };
-                    if (nv::Ioctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
+                    if (nvIoctl(fd, NVDISP_GET_MODE2, &display_b) == 0) {
                         if (!display_b.pclkKHz) {
-                            nv::Close(fd);
+                            nvClose(fd);
                             return false;
                         }
 
@@ -728,7 +725,7 @@ namespace display {
                     } else {
                         value = 60;
                     }
-                    nv::Close(fd);
+                    nvClose(fd);
                 } else {
                     value = 60;
                 }

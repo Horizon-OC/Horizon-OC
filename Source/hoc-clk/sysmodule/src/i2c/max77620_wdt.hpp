@@ -22,7 +22,7 @@
 #include "i2cDrv.h"
 #include "../file/errors.hpp"
 
-namespace HocI2c::wdt {
+namespace i2c::wdt {
 
     typedef enum {
         MAX77620_WDT_2S   = 0, /* ~2   seconds */
@@ -38,4 +38,4 @@ namespace HocI2c::wdt {
 
     void ResetWdtEnableState();
     bool IsWdtEnabled();
-} // namespace HocI2c::wdt
+} // namespace i2c::wdt

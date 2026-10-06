@@ -20,9 +20,6 @@
 #include "integrations.hpp"
 #include "process_management.hpp"
 #include <sys/stat.h>
-#include <switch.hpp>
-
-using namespace nx;
 
 namespace hos {
 
@@ -38,21 +35,21 @@ namespace hos {
             Handle saltysd;
 
             for (int i = 0; i < 67; i++) {
-                if (R_SUCCEEDED(svc::ConnectToNamedPort(&saltysd, "InjectServ"))) {
-                    svc::CloseHandle(saltysd);
+                if (R_SUCCEEDED(svcConnectToNamedPort(&saltysd, "InjectServ"))) {
+                    svcCloseHandle(saltysd);
                     break;
                 }
                 if (i == 66)
                     return false;
-                svc::SleepThread(1'000'000);
+                svcSleepThread(1'000'000);
             }
 
             for (int i = 0; i < 67; i++) {
-                if (R_SUCCEEDED(svc::ConnectToNamedPort(&saltysd, "InjectServ"))) {
-                    svc::CloseHandle(saltysd);
+                if (R_SUCCEEDED(svcConnectToNamedPort(&saltysd, "InjectServ"))) {
+                    svcCloseHandle(saltysd);
                     return true;
                 }
-                svc::SleepThread(1'000'000);
+                svcSleepThread(1'000'000);
             }
 
             return false;
@@ -74,8 +71,8 @@ namespace hos {
                 return;
             SaltySD_GetSharedMemoryHandle(&gRemoteSharedMemory);
             SaltySD_Term();
-            shmem::LoadRemote(&gSharedMemory, gRemoteSharedMemory, 0x1000, Perm_Rw);
-            if (!shmem::Map(&gSharedMemory))
+            shmemLoadRemote(&gSharedMemory, gRemoteSharedMemory, 0x1000, Perm_Rw);
+            if (!shmemMap(&gSharedMemory))
                 gSharedMemoryUsed = true;
         }
 
@@ -111,7 +108,7 @@ namespace hos {
         }
 
         if (!gNxFps) {
-            uintptr_t base = (uintptr_t)shmem::GetAddr(&gSharedMemory);
+            uintptr_t base = (uintptr_t)shmemGetAddr(&gSharedMemory);
             SearchSharedMemoryBlock(base);
         }
 
@@ -133,7 +130,7 @@ namespace hos {
         }
 
         if (!gNxFps) {
-            uintptr_t base = (uintptr_t)shmem::GetAddr(&gSharedMemory);
+            uintptr_t base = (uintptr_t)shmemGetAddr(&gSharedMemory);
             SearchSharedMemoryBlock(base);
         }
 

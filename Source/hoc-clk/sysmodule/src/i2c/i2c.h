@@ -15,10 +15,25 @@
  *
  */
 
-#include <hocclk.h>
+/* --------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * <p-sam@d3vs.net>, <natinusala@gmail.com>, <m4x@m4xw.net>
+ * wrote this file. As long as you retain this notice you can do whatever you
+ * want with this stuff. If you meet any of us some day, and you think this
+ * stuff is worth it, you can buy us a beer in return.  - The sys-clk authors
+ * --------------------------------------------------------------------------
+ */
+
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <switch.h>
 
-namespace hos::clkrst {
-    Result SetMinimumVoltageClockRate(ClkrstSession *session, u32 hz);
-    Result GetDvfsTable(ClkrstSession *session, u32 *out_rate_table, s32 in_rate_count, u32 *out_voltage_table, s32 in_voltage_count, s32 *out_count);
-} // namespace hos::clkrst
+Result i2csessionExtRegReceive(I2cSession *s, u8 in, void *out, u8 out_size);
+
+#ifdef __cplusplus
+}
+#endif

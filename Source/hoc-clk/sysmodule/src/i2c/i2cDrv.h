@@ -6,7 +6,7 @@
 #pragma once
 
 #include <switch.h>
-#include <hocclk.h>
+
 // To use i2c service, sm and i2c should be intialized via smInitialize() and i2cInitialize().
 
 Result I2cSet_U8(I2cDevice dev, u8 reg, u8 val);

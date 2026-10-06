@@ -26,13 +26,13 @@
 
 #include <battery.h>
 #include <hocclk.h>
-#include <i2c.hpp>
-#include <max17050.hpp>
+#include <i2c.h>
+#include <max17050.h>
 #include <notification.h>
 #include <pwm.h>
 #include <registers.h>
 #include <switch.h>
-#include <tmp451.hpp>
+#include <tmp451.h>
 
 #include "../display/display_refresh_rate.hpp"
 #include "../file/file_utils.hpp"
@@ -46,7 +46,7 @@
 #include "board_load.hpp"
 #include "board_misc.hpp"
 #include "board_volt.hpp"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
 #include "../mapping/mem_map.hpp"
 #include "../soc/dram_mrr.hpp"
@@ -97,8 +97,8 @@ namespace board {
             rc = pscPmModuleGetRequest(&s_pscModule, &state, &flags);
             if (R_SUCCEEDED(rc)) {
                 if (state == PscPmState_ReadyAwaken) {
-                    HocI2c::wdt::ResetWdtEnableState();
-                    HocI2c::wdt::Pet();
+                    i2c::wdt::ResetWdtEnableState();
+                    i2c::wdt::Pet();
 
                     if(board::GetSocType() == HocClkSocType_Mariko && 
                        file::config::GetConfigValue(HocClkConfigValue_CPUDVFSMode) == CPUDVFSMode_Modify) {
@@ -117,7 +117,7 @@ namespace board {
 
                     s_isAwake = true;
                 } else if (state == PscPmState_ReadySleep) {
-                    HocI2c::wdt::Disarm();
+                    i2c::wdt::Disarm();
 
                     ResetToStockMem();
                     ResetToStockCpu();
@@ -127,7 +127,7 @@ namespace board {
 
                     s_isAwake = false;
                 } else if (state == PscPmState_ReadyShutdown) {
-                    HocI2c::wdt::Disarm();
+                    i2c::wdt::Disarm();
 
                     ResetToStockMem();
                     ResetToStockCpu();
@@ -326,7 +326,7 @@ namespace board {
         pscPmModuleClose(&s_pscModule);
         pscmExit();
 
-        HocI2c::wdt::Disarm();
+        i2c::wdt::Disarm();
     }
 
     HocClkSocType GetSocType() {

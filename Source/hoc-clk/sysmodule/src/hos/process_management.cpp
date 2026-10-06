@@ -30,7 +30,6 @@
 #include "../file/file_utils.hpp"
 #include "process_management.hpp"
 
-using namespace nx;
 
 namespace hos {
 
@@ -43,18 +42,18 @@ namespace hos {
     void InitializeProcessManagement() {
         Result rc = 0;
 
-        rc = pmdmnt::Initialize();
+        rc = pmdmntInitialize();
         ASSERT_RESULT_OK(rc, "pmdmntInitialize");
 
-        rc = pminfo::Initialize();
+        rc = pminfoInitialize();
         ASSERT_RESULT_OK(rc, "pminfoInitialize");
 
-        rc = pdmqry::Initialize();
+        rc = pdmqryInitialize();
         ASSERT_RESULT_OK(rc, "pdmqryInitialize");
 
-        Service *pdmqrySrv = pdmqry::GetServiceSession();
-        service::Clone(pdmqrySrv, &pdmqryClone);
-        service::Close(pdmqrySrv);
+        Service *pdmqrySrv = pdmqryGetServiceSession();
+        serviceClone(pdmqrySrv, &pdmqryClone);
+        serviceClose(pdmqrySrv);
         memcpy(pdmqrySrv, &pdmqryClone, sizeof(Service));
     }
 
@@ -62,8 +61,8 @@ namespace hos {
         Result rc = 0;
         u64 pid = 0;
         do {
-            rc = pmdmnt::GetProcessId(&pid, Qlaunch);
-            svc::SleepThread(50 * 1000000ULL);  // 50ms
+            rc = pmdmntGetProcessId(&pid, Qlaunch);
+            svcSleepThread(50 * 1000000ULL);  // 50ms
         } while (R_FAILED(rc));
     }
 
@@ -77,14 +76,14 @@ namespace hos {
         u64 TIDnow;
         u64 PIDnow;
 
-        Result rc = pmdmnt::GetApplicationProcessId(&PIDnow);
+        Result rc = pmdmntGetApplicationProcessId(&PIDnow);
         if (R_FAILED(rc))
             return rc;
-        rc = pmdmnt::GetProgramId(&TIDnow, PIDnow);
+        rc = pmdmntGetProgramId(&TIDnow, PIDnow);
         if (R_FAILED(rc))
             return rc;
 
-        rc = pdmqry::GetAvailablePlayEventRange(&total_entries, &start_entry_index, &end_entry_index);
+        rc = pdmqryGetAvailablePlayEventRange(&total_entries, &start_entry_index, &end_entry_index);
         if (R_FAILED(rc))
             return rc;
         if (total_entries == last_total_entries) {
@@ -98,7 +97,7 @@ namespace hos {
         s32 start_entry = end_entry_index - 15;
         if (start_entry < 0)
             start_entry = 0;
-        rc = pdmqry::QueryPlayEvent(start_entry, events, sizeof(events) / sizeof(events[0]), &out);
+        rc = pdmqryQueryPlayEvent(start_entry, events, sizeof(events) / sizeof(events[0]), &out);
         if (R_FAILED(rc))
             return rc;
         if (out == 0)
@@ -140,7 +139,7 @@ namespace hos {
         Result rc = 0;
         u64 pid = 0;
         u64 tid = 0;
-        rc = pmdmnt::GetApplicationProcessId(&pid);
+        rc = pmdmntGetApplicationProcessId(&pid);
 
         if (rc == IsQlaunch) {
             return Qlaunch;
@@ -148,7 +147,7 @@ namespace hos {
 
         ASSERT_RESULT_OK(rc, "pmdmntGetApplicationProcessId");
 
-        rc = pminfo::GetProgramId(&tid, pid);
+        rc = pminfoGetProgramId(&tid, pid);
 
         if (rc == IsQlaunch) {
             return Qlaunch;
@@ -160,9 +159,9 @@ namespace hos {
     }
 
     void ExitProcessManagement() {
-        pmdmnt::Exit();
-        pminfo::Exit();
-        pdmqry::Exit();
+        pmdmntExit();
+        pminfoExit();
+        pdmqryExit();
     }
 
 }  // namespace hos

@@ -16,18 +16,15 @@
  */
 
 #include <switch.h>
-#include <switch.hpp>
 
 #include "../file/file_utils.hpp"
-
-using namespace nx;
 
 Result QueryMemoryMapping(u64 *virtaddr, u64 physaddr, u64 size) {
     if (hosversionAtLeast(10, 0, 0)) {
         u64 out_size;
-        return svc::QueryMemoryMapping(virtaddr, &out_size, physaddr, size);
+        return svcQueryMemoryMapping(virtaddr, &out_size, physaddr, size);
     } else {
-        return svc::LegacyQueryIoMapping(virtaddr, physaddr, size);
+        return svcLegacyQueryIoMapping(virtaddr, physaddr, size);
     }
 }
 

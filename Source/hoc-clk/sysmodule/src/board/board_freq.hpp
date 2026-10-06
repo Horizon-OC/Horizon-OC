@@ -26,14 +26,14 @@
 
 #pragma once
 #include <hocclk.h>
-#include <i2c.hpp>
-#include <max17050.hpp>
+#include <i2c.h>
+#include <max17050.h>
 #include <switch.h>
-#include <tmp451.hpp>
+#include <tmp451.h>
 
 #include "../file/errors.hpp"
 #include "../hos/apm_ext.h"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
 
 

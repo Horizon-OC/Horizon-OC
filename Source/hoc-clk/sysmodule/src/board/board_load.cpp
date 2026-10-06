@@ -27,23 +27,21 @@
 #include <algorithm>
 #include <battery.h>
 #include <hocclk.h>
-#include <i2c.hpp>
+#include <i2c.h>
 #include <math.h>
-#include <max17050.hpp>
+#include <max17050.h>
 #include <minIni.h>
 #include <numeric>
 #include <switch.h>
-#include <t210.hpp>
-#include <tmp451.hpp>
-#include <switch.hpp>
+#include <t210.h>
+#include <tmp451.h>
 
 #include "../hos/apm_ext.h"
 #include "board.hpp"
 #include "board_misc.hpp"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
 
-using namespace nx;
 
 namespace board {
 
@@ -76,7 +74,7 @@ namespace board {
                     gpu_load_array[i++ % gpu_samples_average] = temp;
                     gpuLoad = std::accumulate(&gpu_load_array[0], &gpu_load_array[gpu_samples_average], 0) / gpu_samples_average;
                 }
-                svc::SleepThread(16'666'000);  // wait a bit (this is the perfect amount of time to keep the reading accurate)
+                svcSleepThread(16'666'000);  // wait a bit (this is the perfect amount of time to keep the reading accurate)
             } while (true);
     }
 

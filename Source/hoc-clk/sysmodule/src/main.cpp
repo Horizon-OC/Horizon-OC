@@ -28,7 +28,7 @@
 #include <cstring>
 #include <malloc.h>
 #include <switch.h>
-#include <switch.hpp>
+
 #include "board/board.hpp"
 #include "file/config.hpp"
 #include "file/errors.hpp"
@@ -41,7 +41,6 @@
 #define INNER_HEAP_SIZE 0x40000
 
 extern "C" {
-using namespace nx;
 void virtmemSetup(void);
 
 extern std::uint32_t __start__;
@@ -87,43 +86,43 @@ void __libnx_initheap(void) {
 }
 
 void __appInit(void) {
-    if (R_FAILED(sm::Initialize())) {
+    if (R_FAILED(smInitialize())) {
         fatalThrow(MAKERESULT(Module_Libnx, LibnxError_InitFail_SM));
     }
 
-    Result rc = setsys::Initialize();
+    Result rc = setsysInitialize();
     if (R_SUCCEEDED(rc)) {
         SetSysFirmwareVersion fw;
-        rc = setsys::GetFirmwareVersion(&fw);
+        rc = setsysGetFirmwareVersion(&fw);
         if (R_SUCCEEDED(rc))
-            hosversion::Set(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
-        setsys::Exit();
+            hosversionSet(MAKEHOSVERSION(fw.major, fw.minor, fw.micro));
+        setsysExit();
     }
-    
+
     // rc = fanInitialize();
     // if (R_FAILED(rc))
     //     diagAbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
 
-    rc = i2c::Initialize();
+    rc = i2cInitialize();
     if (R_FAILED(rc))
-        diag::AbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
+        diagAbortWithResult(MAKERESULT(Module_Libnx, LibnxError_ShouldNotHappen));
 }
 
 void __appExit(void) {
     // CloseFanControllerThread();
     // fanExit();
-    i2c::Exit();
-    setsys::Exit();
-    fsdev::UnmountAll();
-    fs::Exit();
-    sm::Exit();
+    i2cExit();
+    setsysExit();
+    fsdevUnmountAll();
+    fsExit();
+    smExit();
 }
 }
 
 int main(int argc, char **argv) {
     Result rc = file::utils::Initialize();
     if (R_FAILED(rc)) {
-        fatal::Throw(rc);
+        fatalThrow(rc);
         return 1;
     }
     file::config::Initialize();
@@ -157,7 +156,7 @@ int main(int argc, char **argv) {
     board::Exit();
     file::config::Exit();
     file::utils::LogLine("Exiting hoc-clk");
-    svc::SleepThread(1000000ULL);
+    svcSleepThread(1000000ULL);
     file::utils::Exit();
 
     return 0;

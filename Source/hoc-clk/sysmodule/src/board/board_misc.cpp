@@ -27,10 +27,6 @@
 #include <cmath>
 #include <pwm.h>
 #include <switch.h>
-#include <hocclk.h>
-#include <switch.hpp>
-
-using namespace nx;
 
 namespace board {
 
@@ -54,7 +50,7 @@ namespace board {
             }
 
             fanLevel = static_cast<u8>(rotationDuty);
-            svc::SleepThread(300'000'000);
+            svcSleepThread(300'000'000);
         }
     }
 

@@ -25,11 +25,11 @@
  */
 
 #include <hocclk.h>
-#include <i2c.hpp>
-#include <max17050.hpp>
+#include <i2c.h>
+#include <max17050.h>
 #include <switch.h>
-#include <t210.hpp>
-#include <tmp451.hpp>
+#include <t210.h>
+#include <tmp451.h>
 
 #include "../display/display_refresh_rate.hpp"
 #include "../file/config.hpp"
@@ -40,11 +40,8 @@
 #include "../soc/pllmb.hpp"
 #include "board.hpp"
 #include "board_name.hpp"
-#include <ipc_server.hpp>
+#include <ipc_server.h>
 #include <lockable_mutex.h>
-#include <switch.hpp>
-
-using namespace nx;
 
 namespace board {
     static u32 currentInjectedHz = 0;
@@ -70,18 +67,18 @@ namespace board {
 
     PcvModuleId GetPcvModuleId(HocClkModule hocclkModule) {
         PcvModuleId pcvModuleId;
-        Result rc = nx::pcv::GetModuleId(&pcvModuleId, GetPcvModule(hocclkModule));
+        Result rc = pcvGetModuleId(&pcvModuleId, GetPcvModule(hocclkModule));
         ASSERT_RESULT_OK(rc, "pcvGetModuleId");
 
         return pcvModuleId;
     }
 
     void ClkrstSetHz(ClkrstSession &session, u32 hz) {
-        ASSERT_RESULT_OK(nx::clkrst::SetClockRate(&session, hz), "clkrstSetClockRate");
+        ASSERT_RESULT_OK(clkrstSetClockRate(&session, hz), "clkrstSetClockRate");
     }
 
     void PcvSetHz(PcvModule moduleID, u32 hz) {
-        ASSERT_RESULT_OK(nx::pcv::SetClockRate(moduleID, hz), "pcvSetClockRate");
+        ASSERT_RESULT_OK(pcvSetClockRate(moduleID, hz), "pcvSetClockRate");
     }
 
     void HandleCpuUv() {
@@ -115,22 +112,22 @@ namespace board {
 
         if (HOSSVC_HAS_CLKRST) {
             ClkrstSession session = {};
-            rc = nx::clkrst::OpenSession(&session, GetPcvModuleId(module), 3);
+            rc = clkrstOpenSession(&session, GetPcvModuleId(module), 3);
             ASSERT_RESULT_OK(rc, "clkrstOpenSession");
             ClkrstSetHz(session, pcvHz);
 
             /* Voltage bug workaround. */
             if (module == HocClkModule_CPU) {
-                svc::SleepThread(300'000);
+                svcSleepThread(300'000);
                 ClkrstSetHz(session, pcvHz);
             }
 
-            nx::clkrst::CloseSession(&session);
+            clkrstCloseSession(&session);
         } else {
             PcvSetHz(GetPcvModule(module), pcvHz);
 
             if (module == HocClkModule_CPU) {
-                svc::SleepThread(300'000);
+                svcSleepThread(300'000);
                 PcvSetHz(GetPcvModule(module), pcvHz);
             }
         }

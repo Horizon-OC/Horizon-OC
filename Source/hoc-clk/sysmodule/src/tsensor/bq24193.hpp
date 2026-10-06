@@ -17,7 +17,7 @@
  *
  */
 
-#include <i2c.hpp>
+#include <i2c.h>
 
 #include "../board/board.hpp"
 #include "../i2c/i2cDrv.h"

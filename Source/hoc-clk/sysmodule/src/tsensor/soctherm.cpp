@@ -30,7 +30,6 @@
 #include "soctherm.hpp"
 #include "tsensor_common.hpp"
 
-using namespace nx;
 
 namespace tsensor {
 
@@ -506,7 +505,7 @@ namespace tsensor {
         }
 
         /* Wait for HW recalibration */
-        svc::SleepThread(25'000);
+        svcSleepThread(25'000);
 
         temps.cpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) >> 16);
         temps.gpu = TranslateTemp(ReadReg(socthermVa, SENSOR_TEMP1) & SENSOR_TEMP1_GPU_TEMP_MASK);
@@ -529,7 +528,7 @@ namespace tsensor {
 
         WriteReg(carVa, CAR_CLK_SOURCE_TSENSOR, CAR_CLK_SOURCE_TSENSOR_VAL);
         SetBits(carVa, CAR_CLK_OUT_ENB_V, 0x10);
-        svc::SleepThread(2000);
+        svcSleepThread(2000);
 
         TSensorSharedCalib sharedCal = {};
         CalcSharedCal(&tfuse, &sharedCal, fuseVa);
