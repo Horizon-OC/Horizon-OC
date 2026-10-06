@@ -743,7 +743,7 @@ namespace board {
     void InitializeCpuLut() {
         InitializeLutPtr();
         CacheCpuLut();
-        cpuVoltData.outputCfg = *reinterpret_cast<volatile u32*>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
+        cpuVoltData.outputCfg = *reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
 
         cpuVoltData.initialized = true;
     }
