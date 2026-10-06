@@ -152,9 +152,6 @@
     "JEDEC.": "JEDEC.",
 
     "CPU Boost Clock": "Частота буста",
-    "Auto CPU RAM OC": "Буст CPU → Разг. RAM",
-    "Auto CPU RAM OC CPU clock": "Буст CPU: частота CPU",
-    "Auto CPU RAM OC Threshold": "Буст CPU: порог RAM",
     "Overwrite Boost Mode": "Перезаписать буст",
     "CPU UV": "Андервольт CPU",
     "CPU Unlock": "Разблокировка CPU",

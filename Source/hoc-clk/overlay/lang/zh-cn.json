@@ -149,9 +149,6 @@
     "RAM-Timing tBreak": "内存时序切换阈值",
 
     "CPU Boost Clock": "CPU加速频率",
-    "Auto CPU RAM OC": "高内存频率自动提频CPU",
-    "Auto CPU RAM OC CPU clock": "自动提频CPU频率",
-    "Auto CPU RAM OC Threshold": "自动提频触发阈值",
     "Overwrite Boost Mode": "接管系统CPU调度",
     "CPU UV": "CPU降压",
     "CPU Unlock": "CPU解锁",

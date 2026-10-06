@@ -79,10 +79,6 @@ typedef enum {
     HocClkConfigValue_MarikoMiddleFreqs,
     HocClkConfigValue_LiveGpuVoltage,
 
-    HocClkConfigValue_AutoRAMCPUOverclock,
-    HocClkConfigValue_AutoRamCpuCpuOCFreq,
-    HocClkConfigValue_AutoRamCpuRamOCThreshold,
-
     HocClkConfigValue_Watchdog,
 
     KipConfigValue_custRev,
@@ -343,12 +339,6 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
         case HocClkConfigValue_LiveGpuVoltage:
             return pretty ? "GPU Voltage Request" : "gpu_voltage_request";
 
-        case HocClkConfigValue_AutoRAMCPUOverclock:
-            return pretty ? "Auto High RAM CPU OC" : "auto_high_ram_cpu_oc";
-        case HocClkConfigValue_AutoRamCpuCpuOCFreq:
-            return pretty ? "Auto High RAM CPU OC Freq" : "auto_ram_cpu_cpu_oc_freq";
-        case HocClkConfigValue_AutoRamCpuRamOCThreshold:
-            return pretty ? "Auto High RAM CPU OC RAM Threshold" : "auto_ram_cpu_ram_oc_threshold";
         case HocClkConfigValue_Watchdog:
             return pretty ? "Watchcat" : "watchdog"; // More dignified
         // KIP config values
@@ -617,12 +607,6 @@ static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
         case HocClkConfigValue_GPUDVFSMode:
         case HocClkConfigValue_CPUDVFSMode:
             return 1ULL;
-        case HocClkConfigValue_AutoRAMCPUOverclock:
-            return 0ULL;
-        case HocClkConfigValue_AutoRamCpuCpuOCFreq:
-            return 1683000ULL;
-        case HocClkConfigValue_AutoRamCpuRamOCThreshold:
-            return 2666000ULL;
         case HocClkConfigValue_ThermalThrottleThreshold:
             return 70ULL;
         case HocClkConfigValue_CpuGovernorMinimumFreq:
@@ -669,7 +653,6 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case HocClkConfigValue_GPUSchedulingMethod:
         case HocClkConfigValue_MarikoMiddleFreqs:
         case HocClkConfigValue_LiveGpuVoltage:
-        case HocClkConfigValue_AutoRAMCPUOverclock:
         case HocClkConfigValue_Watchdog:
             return (input & 0x1) == input;
 
@@ -821,8 +804,6 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case HocClkConfigValue_MemoryFrequencyMeasurementMode:
         case HocClkConfigValue_RamDisplayUnit:
         case HocClkConfigValue_AulaDisplayColorPreset:
-        case HocClkConfigValue_AutoRamCpuCpuOCFreq:
-        case HocClkConfigValue_AutoRamCpuRamOCThreshold:
         case KipConfigValue_PcvDebugVerbosity:
             return true;
         case HocClkConfigValue_BatteryChargeCurrent:

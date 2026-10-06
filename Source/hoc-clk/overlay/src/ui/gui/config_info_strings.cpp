@@ -457,24 +457,6 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "The clock used for the CPU in \"boost mode\"",
                 "Default: 1785 MHz"
             };
-        case HocClkConfigValue_AutoRAMCPUOverclock:
-            return {
-                "When enabled, automatically raises the CPU clock to the configured OC frequency when RAM clock meets or exceeds the threshold to meet the increased voltage requirement.",
-                "Default: ON"
-            };
-
-        case HocClkConfigValue_AutoRamCpuCpuOCFreq:
-            return {
-                "The CPU clock (in MHz) applied when Auto High RAM CPU OC is enabled and the RAM threshold is met.",
-                "Default: 1683 MHz"
-            };
-
-        case HocClkConfigValue_AutoRamCpuRamOCThreshold:
-            return {
-                "The RAM clock threshold (in MHz) at or above which the Auto High RAM CPU OC will activate.",
-                "Default: 2133MHz"
-            };
-
         case HocClkConfigValue_OverwriteBoostMode:
             return {
                 "If enabled, profiles can override the boost mode setting",

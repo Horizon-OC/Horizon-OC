@@ -558,8 +558,6 @@ namespace mgr {
             prepareBoostExit = false;
         }
 
-        u32 ramTargetHz = GetNearestOverrideHz(HocClkModule_MEM);
-
         bool returnRaw = false;  // Return a value scaled to MHz instead of raw value
         for (unsigned int module = 0; module < HocClkModule_EnumMax; module++) {
             u32 oldHz = board::GetHz((HocClkModule)module);  // Get Old hz (used primarily for DVFS Logic)
@@ -608,20 +606,9 @@ namespace mgr {
             if (noGPU && module == HocClkModule_GPU)
                 continue;
 
-            u32 autoCpuOcHz = 0;
-            if (module == HocClkModule_CPU && file::config::GetConfigValue(HocClkConfigValue_AutoRAMCPUOverclock) && !isBoost &&
-                !mgr::isCpuGovernorEnabled && (board::GetSocType() == HocClkSocType_Mariko)) {
-                u32 threshold = (u32)file::config::GetConfigValue(HocClkConfigValue_AutoRamCpuRamOCThreshold) * 1000;
-                if (ramTargetHz >= threshold)
-                    autoCpuOcHz = (u32)file::config::GetConfigValue(HocClkConfigValue_AutoRamCpuCpuOCFreq) * 1000;
-            }
-
-            if (targetHz || autoCpuOcHz) {
+            if (targetHz) {
                 maxHz = GetMaxAllowedHz((HocClkModule)module, gContext.profile);
-                nearestHz = targetHz ? GetNearestHz((HocClkModule)module, targetHz, maxHz) : 0;
-
-                if (autoCpuOcHz > nearestHz)
-                    nearestHz = GetNearestHz(HocClkModule_CPU, autoCpuOcHz, maxHz);
+                nearestHz = GetNearestHz((HocClkModule)module, targetHz, maxHz);
 
                 if (nearestHz != gContext.freqs[module]) {
                     file::utils::LogLine("[mgr] %s clock set : %u.%u MHz (target = %u.%u MHz)", board::GetModuleName((HocClkModule)module, true),

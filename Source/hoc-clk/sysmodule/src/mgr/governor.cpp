@@ -182,15 +182,6 @@ namespace mgr {
 
                     if (++cpuTick > 50) {
                         minHz = file::config::GetConfigValue(HocClkConfigValue_CpuGovernorMinimumFreq);
-                        if (file::config::GetConfigValue(HocClkConfigValue_AutoRAMCPUOverclock)) {
-                            u32 ramHz = mgr::gContext.freqs[HocClkModule_MEM];
-                            u32 threshold = (u32)file::config::GetConfigValue(HocClkConfigValue_AutoRamCpuRamOCThreshold) * 1000;
-                            if (ramHz >= threshold) {
-                                u32 overrideHz = (u32)file::config::GetConfigValue(HocClkConfigValue_AutoRamCpuCpuOCFreq) * 1000;
-                                if (overrideHz > minHz)
-                                    minHz = overrideHz;
-                            }
-                        }
                         cpuTick = 0;
                     }
 
