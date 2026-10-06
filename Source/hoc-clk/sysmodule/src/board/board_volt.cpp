@@ -619,6 +619,7 @@ namespace board {
             volatile u32 *lut  = nullptr;
             u32 table[LutSize] = {};
             u32 lastVmin       = 0;
+            u32 outputCfg      = 0;
             bool initialized   = false;
         } cpuVoltData;
     }
@@ -661,9 +662,27 @@ namespace board {
             board::SetHz(HocClkModule_CPU, hz);
         }
 
+        void AdjustMinLutIndex() {
+            constexpr u32 Shift = 8;
+            constexpr u32 Mask  = 0x3F << Shift;
+            /* Index is always 0 for us. */
+            constexpr u32 Value = 0;
+
+            volatile u32 *reg = reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
+
+            *reg = (*reg & ~Mask) | ((Value << Shift) & Mask);
+
+            static_cast<void>(*reg);
+        }
+
+        void RestoreMinLutIndex() {
+            *reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0) = cpuVoltData.outputCfg;
+        }
+
         void RestoreCpuLut() {
             cpuVoltData.lastVmin = 0;
             VolatileCopyDwords(cpuVoltData.lut, cpuVoltData.table, LutSize);
+            RestoreMinLutIndex();
             UnstuckFreqWar();
         }
 
@@ -724,6 +743,7 @@ namespace board {
     void InitializeCpuLut() {
         InitializeLutPtr();
         CacheCpuLut();
+        cpuVoltData.outputCfg = *reinterpret_cast<volatile u32*>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
 
         cpuVoltData.initialized = true;
     }
@@ -802,6 +822,7 @@ namespace board {
         PadLutTail(tmpLut, valid);
 
         VolatileCopyDwords(cpuVoltData.lut, tmpLut, LutSize);
+        AdjustMinLutIndex();
 
         UnstuckFreqWar();
 
