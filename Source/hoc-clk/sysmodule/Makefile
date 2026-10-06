@@ -39,7 +39,7 @@ DEFINES	:=	-DDISABLE_IPC -DKIP_VERSION=$(KIP_VERSION) -DCUST_REV=$(CUST_REV) -DT
 
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -Wall -Os \
+CFLAGS	:=	-g -Wall -Os -flto=auto \
             -ffast-math -ffunction-sections -fdata-sections -fno-asynchronous-unwind-tables -fno-unwind-tables \
             $(ARCH) $(DEFINES)
 
@@ -48,7 +48,7 @@ CFLAGS	+=	$(INCLUDE) -D__SWITCH__
 CXXFLAGS    := $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++23
 
 ASFLAGS	:=	-g $(ARCH)
-LDFLAGS    =    -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map) -Wl,-wrap,__cxa_throw -Wl,-wrap,_Unwind_Resume -Wl,-wrap,__gxx_personality_v0
+LDFLAGS    =    -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Os -flto=auto -Wl,-Map,$(notdir $*.map) -Wl,-wrap,__cxa_throw -Wl,-wrap,_Unwind_Resume -Wl,-wrap,__gxx_personality_v0
 
 LIBS	:= $(foreach lib,$(LIBNAMES),-l$(lib)) -lnx
 

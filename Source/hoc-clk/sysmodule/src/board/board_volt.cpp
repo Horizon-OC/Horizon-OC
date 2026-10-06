@@ -780,7 +780,6 @@ namespace board {
             return;
         }
 
-
         u32 tmpLut[LutSize];
         std::memcpy(tmpLut, cpuVoltData.table, sizeof(tmpLut));
 
