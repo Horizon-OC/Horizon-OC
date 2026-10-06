@@ -17,11 +17,16 @@ include $(DEVKITPRO)/libnx/switch_rules
 # INCLUDES is a list of directories containing header files
 # EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
 #---------------------------------------------------------------------------------
+rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
 TARGET		:=	horizon-oc-overlay
 BUILD		:=	build
 OUTDIR		:=	out
 RESOURCES	:=	res
-SOURCES		:=	src src/ui/gui src/ui/elements ../common/src ../common/src/client
+CSOURCES	:=	$(call rwildcard,src/,*.c) $(call rwildcard,../common/src/,*.c)
+CPPSOURCES	:=	$(call rwildcard,src/,*.cpp) $(call rwildcard,../common/src/,*.cpp)
+SSOURCES	:=	$(call rwildcard,src/,*.s) $(call rwildcard,../common/src/,*.s)
+SOURCES		:=	$(sort $(dir $(CSOURCES) $(CPPSOURCES) $(SSOURCES)))
 DATA		:=	data ../assets
 INCLUDES	:=	../common/include
 EXEFS_SRC	:=	exefs_src

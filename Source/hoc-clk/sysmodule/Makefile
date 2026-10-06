@@ -17,12 +17,18 @@ include $(DEVKITPRO)/libnx/switch_rules
 # INCLUDES is a list of directories containing header files
 # EXEFS_SRC is the optional input directory containing data copied into exefs, if anything this normally should only contain "main.npdm".
 #---------------------------------------------------------------------------------
+
+rwildcard = $(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
 TARGET		:=	hoc-clk
 CONFIG_DIR	:=	horizon-oc
 BUILD		:=	build
 OUTDIR		:=	out
 RESOURCES	:=	res
-SOURCES		:=	src src/hos src/i2c src/ipc src/board src/display src/tsensor src/mgr src/file src/soc src/mapping src/pwr src/util
+CSOURCES	:=	$(call rwildcard,src/,*.c) $(call rwildcard,../common/src/,*.c)
+CPPSOURCES	:=	$(call rwildcard,src/,*.cpp) $(call rwildcard,../common/src/,*.cpp)
+SSOURCES	:=	$(call rwildcard,src/,*.s) $(call rwildcard,../common/src/,*.s)
+SOURCES		:=	$(sort $(dir $(CSOURCES) $(CPPSOURCES) $(SSOURCES)))
 DATA		:=	data
 INCLUDES	:=	../common/include src/hos src/soc src/i2c src/util src/pwr src/ipc
 EXEFS_SRC	:=	exefs_src
