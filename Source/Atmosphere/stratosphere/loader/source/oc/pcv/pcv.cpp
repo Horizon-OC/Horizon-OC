@@ -82,6 +82,7 @@ namespace ams::ldr::hoc::pcv {
             u32 max;
             u32 panic;
             bool value_required = false;
+            const char *name = "unnamed";
 
             Result Check() {
                 if (!value_required && !value) {
@@ -147,26 +148,28 @@ namespace ams::ldr::hoc::pcv {
         }
 
         Validator validators[] = {
-            { C.eristaCpuBoostClock, 1020'000, 2397'000, panic::Cpu, true },
-            { C.marikoCpuBoostClock, 1020'000, 2805'000, panic::Cpu, true },
-            { C.eristaCpuMaxVolt,        1000,     1260, panic::Cpu,      },
-            { C.marikoCpuMaxVolt,        1000,     1235, panic::Cpu,      },
-            { eristaCpuDvfsMaxFreq,  1785'000, 2397'000, panic::Cpu,      },
-            { marikoCpuDvfsMaxFreq,  1785'000, 2805'000, panic::Cpu,      },
-            { C.commonEmcMemVolt,     912'500, 1350'000, panic::Emc,      }, /* Official vmax for the RAMs is 1400-1500mV */
-            { C.eristaEmcMaxClock,   1600'000, 2600'000, panic::Emc,      },
-            { C.marikoEmcMaxClock,   1600'000, 3500'000, panic::Emc,      },
-            { C.marikoEmcVddqVolt,    400'000,  750'000, panic::Emc,      },
-            { C.marikoSocVmax,           1000,     1200, panic::Emc,      },
-            { eristaGpuDvfsMaxFreq,   768'000, 1152'000, panic::Gpu,      },
-            { marikoGpuDvfsMaxFreq,   768'000, 1574'400, panic::Gpu,      },
-            { C.marikoGpuVmax,            800,      995, panic::Gpu,      }, /* Official GPU vMax is 1050mV */
+            { C.eristaCpuBoostClock, 1020'000, 2397'000, panic::Cpu, true, "eristaCpuBoostClock" },
+            { C.marikoCpuBoostClock, 1020'000, 2805'000, panic::Cpu, true, "marikoCpuBoostClock" },
+            { C.eristaCpuMaxVolt,        1000,     1260, panic::Cpu, false, "eristaCpuMaxVolt"    },
+            { C.marikoCpuMaxVolt,        1000,     1235, panic::Cpu, false, "marikoCpuMaxVolt"    },
+            { eristaCpuDvfsMaxFreq,  1785'000, 2397'000, panic::Cpu, false, "eristaCpuDvfsMaxFreq"},
+            { marikoCpuDvfsMaxFreq,  1785'000, 2805'000, panic::Cpu, false, "marikoCpuDvfsMaxFreq"},
+            { C.commonEmcMemVolt,     912'500, 1350'000, panic::Emc, false, "commonEmcMemVolt"    }, /* Official vmax for the RAMs is 1400-1500mV */
+            { C.eristaEmcMaxClock,   1600'000, 2600'000, panic::Emc, false, "eristaEmcMaxClock"   },
+            { C.marikoEmcMaxClock,   1600'000, 3500'000, panic::Emc, false, "marikoEmcMaxClock"   },
+            { C.marikoEmcVddqVolt,    400'000,  750'000, panic::Emc, false, "marikoEmcVddqVolt"   },
+            { C.marikoSocVmax,           1000,     1200, panic::Emc, false, "marikoSocVmax"       },
+            { eristaGpuDvfsMaxFreq,   768'000, 1152'000, panic::Gpu, false, "eristaGpuDvfsMaxFreq"},
+            { marikoGpuDvfsMaxFreq,   768'000, 1574'400, panic::Gpu, false, "marikoGpuDvfsMaxFreq"},
+            { C.marikoGpuVmax,            800,      995, panic::Gpu, false, "marikoGpuVmax"       }, /* Official GPU vMax is 1050mV */
         };
 
         for (auto &v : validators) {
             if (R_FAILED(v.Check())) {
+                LOGGING("Validation FAIL: %s value=%u min=%u max=%u", v.name, static_cast<u32>(v.value), v.min, v.max);
                 panic::SmcError(v.panic);
                 CRASH("Validation FAIL");
+
             }
         }
     }

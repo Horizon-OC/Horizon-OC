@@ -48,6 +48,8 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         R_TRY(SharedClkBusInstallHooks(data));
 
+        R_TRY(LutWriterInstallHooks(data));
+
 #if HOC_UART_LOG
         R_TRY(ForceVebosityInstallHooks(data));
 #endif
@@ -90,6 +92,10 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "Bus Freq Reloc",    &BusFreqReloc,          1,          &BusFreqRelocPatternFn      },
             { "SOC Volt Asm",      &SocVoltAsm,            1,          &SocVoltPatternFn           },
             { "SOC Volt Limit",    &SocVoltLimit,          1, nullptr,  SocVoltLimitOfficial       },
+            { "CPU Lut Max Asm",   &CpuLutMaxAsm,          1,          &CpuLutAsmPatternFn         },
+            { "CPU Lut Max Asm2",  &CpuLutMaxAsm2,         1,          &CpuLutAsmPatternFn2        },
+            { "CPU Lut Writer",    &LutWriterFind,         1,          &LutWriterPatternFn         },
+
             /* Debugging patches */
             #if HOC_UART_LOG
             { "NvLog Redirect",    &NvLogUartRedirect,     1,          &NvLogVsnprintfPatternFn,   0, 0, true },

@@ -825,4 +825,5 @@ namespace file::kip {
     void MigrateKipData(u32 custRev, u32 version);
     void SetKipData();
     void GetKipData();
+    bool IsKipLoaded();
 }  // namespace file::kip

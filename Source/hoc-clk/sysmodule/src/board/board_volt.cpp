@@ -611,13 +611,14 @@ namespace board {
     }
 
     namespace {
-        constexpr size_t LutSize = 33;
+        constexpr size_t MaxPotentialLutSize = 64;
+        size_t LutSize = 33;
         constexpr u32 PmicVmin   = 250;
         constexpr u32 PmicStep   = 5;
 
         struct {
             volatile u32 *lut  = nullptr;
-            u32 table[LutSize] = {};
+            u32 table[MaxPotentialLutSize] = {};
             u32 lastVmin       = 0;
             u32 outputCfg      = 0;
             bool initialized   = false;
@@ -742,11 +743,13 @@ namespace board {
         }
     }
 
-    void InitializeCpuLut() {
+    void InitializeCpuLut(bool kip) {
         InitializeLutPtr();
         CacheCpuLut();
         cpuVoltData.outputCfg = *reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
-
+        if(kip) {
+            LutSize = 63; /* Account for patched LUT by KIP */
+        }
         cpuVoltData.initialized = true;
     }
 
@@ -786,7 +789,6 @@ namespace board {
 
         return baseVolt;
     }
-
     void ApplyCpuMinVolt(u32 vmin, bool force) {
         if(!force) {
             if (!cpuVoltData.initialized || (vmin == cpuVoltData.lastVmin)) {
@@ -830,5 +832,4 @@ namespace board {
 
         cpuVoltData.lastVmin = vmin;
     }
-
 }

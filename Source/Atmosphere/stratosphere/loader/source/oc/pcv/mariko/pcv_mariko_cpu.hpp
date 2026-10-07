@@ -23,8 +23,27 @@
 #pragma once
 
 #include "../pcv.hpp"
+#include "../pcv_asm.hpp"
+#include "../pcv_hook.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
+
+    extern u32 *nsoStart;
+
+    /* Maybe a cleaner way to do this? */
+    inline bool LutWriterPatternFn(u32 *ptr) {
+        if (_asm::IsOp(*ptr, _asm::op::AndImm64, _asm::field::Rd, _asm::field::Rn, _asm::field::Immr, _asm::field::Imm6)
+            && _asm::Get(*ptr, _asm::field::Immr) == 61 && _asm::Get(*ptr, _asm::field::Imm6) == 7)
+            return true;
+        if (_asm::IsOp(*ptr, _asm::op::AndImm32, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12)
+            && _asm::Get(*ptr, _asm::field::Imm12) == 0x747)
+            return true;
+        return false;
+    }
+
+    HOOK_PAYLOAD_FN void CpuLutWriterExpandImpl(u64 param);
+    Result LutWriterFind(u32 *ptr);
+    Result LutWriterInstallHooks(HookPayloadData *data);
 
     constexpr cvb_entry_t CpuCvbTableDefault[] = {
         {  204000, {  721589, -12695, 27 }, {         } },
@@ -63,10 +82,22 @@ namespace ams::ldr::hoc::pcv::mariko {
     /* Refer to customize.cpp for more information */
     static const u32 allowedCpuMaxFrequencies[] = { 1'963'500, 2'091'000, 2'193'000, 2'295'000, 2'397'000, 2'499'000, 2'601'000, 2'703'000, 2'805'000 };
 
-
     Result CpuFreqVdd(u32 *ptr);
     Result CpuVoltDVFS(u32 *ptr);
     Result CpuVoltThermals(u32 *ptr);
     Result CpuVoltDfll(u32 *ptr);
+    Result CpuLutMaxAsm(u32* ptr);
+    Result CpuLutMaxAsm2(u32* ptr);
 
+    ALWAYS_INLINE bool CpuLutAsmPatternFn(u32* ptr) {
+        /* Check if it is a DSB ST, a common indication of CL-DVFS related functions */
+        return *ptr == _asm::Dsb(_asm::barrier::St);
+    }
+
+    ALWAYS_INLINE bool CpuLutAsmPatternFn2(u32* ptr) {
+        /* Note: We are doing multiple checks here as it is the cleanest method      */
+        return _asm::IsOp(*ptr, _asm::op::MovzW, _asm::field::Rd, _asm::field::Imm16, _asm::field::Hw)
+        && _asm::Get(*ptr, _asm::field::Imm16) == 0xC0FF
+        && _asm::Get(*ptr, _asm::field::Hw) == 0;
+    }
 }

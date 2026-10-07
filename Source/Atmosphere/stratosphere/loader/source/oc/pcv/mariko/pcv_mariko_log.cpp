@@ -231,6 +231,8 @@ namespace ams::ldr::hoc::pcv::mariko {
                 R_DISCARD(INSTALL_IMPL_HOOK(forceVerbosityCache.sites[i], ForceVerbosityImpl));
             }
         }
+
+        R_SUCCEED();
     }
 #endif
 

@@ -23,6 +23,7 @@
 #include "../../oc_common.hpp"
 #include "../pcv_common.hpp"
 #include "../pcv_asm.hpp"
+#include "../pcv_hook.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
 
@@ -34,6 +35,9 @@ namespace ams::ldr::hoc::pcv::mariko {
             uintptr_t originalFnCallback;
             u32 table[BusFreqTableCount][EmcDvfsTableEntryCount]; /* Original bus table size: 32. */
         } busData;
+        struct {
+            uintptr_t orig; /* ClDvfsLut64ExpandImpl to CLDVFS LUT writer trampoline. */
+        } lut64;
 #if HOC_UART_LOG
         u32 verbosityLevel;
 #endif

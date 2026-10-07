@@ -173,21 +173,28 @@ namespace file::kip {
     }
 
     bool IsKipLoaded() {
-        constexpr u32 ExpectedMagic = 0x686F634D;
-        constexpr uintptr_t LoadMagicAddress = 0x4003DC00;
-        u32 iramValue = {};
+        static bool ran = false;
+        static bool loaded = false;
+        if(!ran) {
+            constexpr u32 ExpectedMagic = 0x686F634D;
+            constexpr uintptr_t LoadMagicAddress = 0x4003DC00;
+            u32 iramValue = {};
 
-        SmcCopyFromIram(&iramValue, LoadMagicAddress, sizeof(iramValue));
+            SmcCopyFromIram(&iramValue, LoadMagicAddress, sizeof(iramValue));
 
-        if (iramValue == ExpectedMagic) {
-            iramValue = 0;
-            SmcCopyToIram(LoadMagicAddress, &iramValue, sizeof(iramValue));
-            return true;
+            if (iramValue == ExpectedMagic) {
+                iramValue = 0;
+                SmcCopyToIram(LoadMagicAddress, &iramValue, sizeof(iramValue));
+                loaded = true;
+            } else {
+                hos::WriteNotification("Kip is not loaded!");
+                file::utils::LogLine("Kip was not loaded!");
+                loaded = false;
+            }
+            ran = true;
         }
 
-        hos::WriteNotification("Kip is not loaded!");
-        file::utils::LogLine("Kip was not loaded!");
-        return false;
+        return loaded;
     }
 
     // I know this is very hacky, but the config system in the sysmodule doesn't really support writing

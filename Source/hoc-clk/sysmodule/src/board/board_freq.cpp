@@ -121,7 +121,6 @@ namespace board {
                 svcSleepThread(300'000);
                 ClkrstSetHz(session, pcvHz);
             }
-
             clkrstCloseSession(&session);
         } else {
             PcvSetHz(GetPcvModule(module), pcvHz);

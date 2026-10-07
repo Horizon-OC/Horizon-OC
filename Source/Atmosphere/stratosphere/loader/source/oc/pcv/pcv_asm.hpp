@@ -66,6 +66,7 @@ namespace ams::ldr::hoc::pcv::_asm {
         constexpr Descriptor Sh    {22,  1};
         constexpr Descriptor Shift {22,  2};  /* ADD/SUB (shifted register) shift type */
         constexpr Descriptor Imm6  {10,  6};  /* ADD/SUB (shifted register) shift amount */
+        constexpr Descriptor Immr  {16,  6};  /* UBFM immr */
 
         constexpr Descriptor Imm16 { 5, 16};  /* MOVZ/MOVK/MOVN immediate */
         constexpr Descriptor Imm12 {10, 12};  /* ADD/SUB (immediate) */
@@ -77,6 +78,8 @@ namespace ams::ldr::hoc::pcv::_asm {
 
         constexpr Descriptor Off1  {10, 12, 0};  /* LDRB/STRB */
         constexpr Descriptor Off4  {10, 12, 2};  /* 32-bit LDR/STR */
+
+        constexpr Descriptor Barrier { 8, 4};  /* DSB/DMB option (CRm) */
         constexpr Descriptor Off8  {10, 12, 3};  /* 64-bit LDR/STR */
 
         constexpr Descriptor PairOff8  {15, 7, 3};  /* X pairs */
@@ -114,6 +117,9 @@ namespace ams::ldr::hoc::pcv::_asm {
         constexpr u32 MovnW         = 0x12800000;
 
         constexpr u32 AddShifted64  = 0x8B000000;
+        constexpr u32 AndImm32      = 0x12000000;
+        constexpr u32 AndImm64      = 0x92400000;
+        constexpr u32 Ubfm32        = 0x53000000; /* UBFIZ/UBFX/LSL aliases */
         constexpr u32 OrrShifted32  = 0x2A000000;
         constexpr u32 OrrShifted64  = 0xAA000000;
         constexpr u32 SubsShifted32 = 0x6B000000;
@@ -140,6 +146,18 @@ namespace ams::ldr::hoc::pcv::_asm {
 
         constexpr u32 Adrp          = 0x90000000;
         constexpr u32 Svc           = 0xD4000001;
+
+        constexpr u32 Dsb           = 0xD503309F; /* DSB, option cleared */
+        constexpr u32 Dmb           = 0xD50330BF; /* DMB, option cleared */
+        constexpr u32 Isb           = 0xD5033FDF; /* ISB SY (only valid option) */
+    }
+
+    /* Barrier options (CRm). */
+    namespace barrier {
+        constexpr u32 Sy = 0xFu, St = 0xEu, Ld = 0xDu;
+        constexpr u32 Ish = 0xBu, Ishst = 0xAu, Ishld = 0x9u;
+        constexpr u32 Nsh = 0x7u, Nshst = 0x6u, Nshld = 0x5u;
+        constexpr u32 Osh = 0x3u, Oshst = 0x2u, Oshld = 0x1u;
     }
 
     constexpr u32 Get(u32 ins, field::Descriptor f) {
@@ -215,6 +233,14 @@ namespace ams::ldr::hoc::pcv::_asm {
         const s64 delta = static_cast<s64>(target & ~static_cast<uintptr_t>(0xFFF)) - static_cast<s64>(pc & ~static_cast<uintptr_t>(0xFFF));
         const u32 imm21 = static_cast<u32>((delta >> 12) & 0x1FFFFF);
         return Set(Set(ins, field::ImmAdrpHi, imm21 >> 2), field::ImmAdrpLo, imm21 & 0x3u);
+    }
+
+    constexpr u32 Dsb(u32 opt) {
+        return Encode(op::Dsb, {field::Barrier, opt});
+    }
+
+    constexpr u32 Dmb(u32 opt) {
+        return Encode(op::Dmb, {field::Barrier, opt});
     }
 
     constexpr u32 MovReg64(u32 rd, u32 rm) {

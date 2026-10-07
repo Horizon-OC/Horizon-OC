@@ -59,8 +59,10 @@ namespace board {
     void PcvHijackGpuVolts(u32 vmin);
     void PcvHijackGpuFrequency(u32 voltage, u32 hz);
     u32 GetMinimumGpuVmin(u32 freqMhz, u32 bracket);
-
-    void InitializeCpuLut();
+    void ClDvfsSetOutputCfg(u8 safe, u8 max, u8 min);
+    void LogOutputCfg(const char *tag);
+    void SetSafeToMaxAndRelock();
+    void InitializeCpuLut(bool kip);
     void ApplyCpuMinVolt(u32 vmin, bool force);
     u32 GetMinimumCpuVmin(u32 freqMhz, u32 bracket);
 

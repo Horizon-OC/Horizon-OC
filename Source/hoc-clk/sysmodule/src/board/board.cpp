@@ -53,6 +53,8 @@
 #include "../i2c/max77620_wdt.hpp"
 #include "../mgr/clock_manager.hpp"
 #include "../file/config.hpp"
+#include "../file/kip.hpp"
+
 namespace board {
 
     u64 clkVirtAddr, dsiVirtAddr, apbVirtAddr, fuseVirtAddr;
@@ -271,7 +273,7 @@ namespace board {
         display::Initialize(&cfg);
 
         CacheDfllData();
-        InitializeCpuLut();
+        InitializeCpuLut(file::kip::IsKipLoaded());
         CacheGpuVoltTable();
 
         rc = pscmInitialize();
