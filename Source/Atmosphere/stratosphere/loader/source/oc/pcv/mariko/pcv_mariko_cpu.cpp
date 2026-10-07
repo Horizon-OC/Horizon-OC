@@ -261,8 +261,6 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* Probably a cleaner way to do this?*/
         u32 *prod = strb + 2;
         const u32 rd = _asm::Get(*prod, _asm::field::Rd);
-        const u32 off = static_cast<u32>(prod - nsoStart) * 4;
-        const u32 old = *prod;
         if (_asm::IsOp(*prod, _asm::op::Ubfm32, _asm::field::Rd, _asm::field::Rn, _asm::field::Immr, _asm::field::Imm6)) {
             /* replacement must carry LSL#16 to make up for ubfiz's remoal */
             const u32 nw = _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, rd}, {_asm::field::Imm16, 0x3F}, {_asm::field::Hw, 1});
@@ -299,7 +297,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         const u32 last = lut[31];
         lut[62] = last;
         lut[63] = last;
-        
+
         for (int i = 30; i >= 0; --i) {
             const u32 a = lut[i];
             const u32 b = lut[i + 1]; /* dst 2*(i+1) > src i+1 */
