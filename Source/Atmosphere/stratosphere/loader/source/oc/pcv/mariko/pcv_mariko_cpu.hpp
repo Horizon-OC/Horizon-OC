@@ -88,7 +88,8 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result CpuVoltDfll(u32 *ptr);
     Result CpuLutMaxAsm(u32* ptr);
     Result CpuLutMaxAsm2(u32* ptr);
-
+    Result CpuLutDvcoRateCfg(u32* ptr);
+    
     ALWAYS_INLINE bool CpuLutAsmPatternFn(u32* ptr) {
         /* Check if it is a DSB ST, a common indication of CL-DVFS related functions */
         return *ptr == _asm::Dsb(_asm::barrier::St);
@@ -99,5 +100,11 @@ namespace ams::ldr::hoc::pcv::mariko {
         return _asm::IsOp(*ptr, _asm::op::MovzW, _asm::field::Rd, _asm::field::Imm16, _asm::field::Hw)
         && _asm::Get(*ptr, _asm::field::Imm16) == 0xC0FF
         && _asm::Get(*ptr, _asm::field::Hw) == 0;
+    }
+
+    ALWAYS_INLINE bool CpuLutDvcoRateCfgPatternFn(u32* ptr) {
+        /* Again, cleaner to ensure we are on the correct instruction here */
+        return _asm::IsOp(*ptr, _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
+        && _asm::Get(*ptr, _asm::field::Off8) == 0x248;
     }
 }

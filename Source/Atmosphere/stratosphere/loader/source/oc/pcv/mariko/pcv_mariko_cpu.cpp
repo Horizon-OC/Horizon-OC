@@ -273,8 +273,8 @@ namespace ams::ldr::hoc::pcv::mariko {
             PATCH_OFFSET(prod, nw); /* movz wD,#0x3F */
         }
         
-        /* Set SAFE to entry 32 */
-        PATCH_OFFSET(ptr + 1, _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, _asm::Get(ptr[1], _asm::field::Rd)}, {_asm::field::Imm16, 0x20}));
+        /* Set SAFE to entry 31 */
+        PATCH_OFFSET(ptr + 1, _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, _asm::Get(ptr[1], _asm::field::Rd)}, {_asm::field::Imm16, 0x1F}));
 
         R_SUCCEED();
     }
@@ -352,6 +352,101 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         const u32 rd = _asm::Get(ptr[2], _asm::field::Rd);
         PATCH_OFFSET(ptr + 2, _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, rd}, {_asm::field::Imm16, 0x3F})); /* movz wD,#0x3F */
+
+        R_SUCCEED();
+    }
+
+
+    /* FW 20.4.0
+      71000571dc 01 01 00 d0     adrp       param_2=>aCldvfssetdvcor,aSSRequestedDKh+0x1f    = "ClDvfsSetDvcoRateMin"
+                                                                                             = " %s divider %#x diff %d\n"
+      71000571e0 21 40 27 91     add        param_2=>aCldvfssetdvcor,param_2,#0x9d0          = "ClDvfsSetDvcoRateMin"
+      71000571e4 c3 9f ff 97     bl         nn::pcv::NvLog                                   undefined NvLog(char * fmt, ...)
+                             loc_71000571E8                                  XREF[1]:     71000571b4(j)  
+      71000571e8 69 aa 42 a9     ldp        x9,x10,[x19, #0x28]
+      71000571ec 4a fd 41 d3     lsr        x10,x10,#0x1
+      71000571f0 68 26 41 f9     ldr        x8,[x19, #0x248]                                 Anchor
+      71000571f4 0b 0d 0a cb     sub        x11,x8,x10, LSL #0x3                             Target
+      71000571f8 6b 4e 01 f9     str        x11,[x19, #0x298]                                Verify1
+      71000571fc 2c 0d 40 f9     ldr        x12,[x9, #0x18]                                  Verify2
+      7100057200 7f 01 0c eb     cmp        x11,x12
+      7100057204 6b 81 8c 9a     csel       x11,x11,x12,hi
+      7100057208 6b 4e 01 f9     str        x11,[x19, #0x298]
+      710005720c 2b c9 40 f9     ldr        x11,[x9, #0x190]
+      7100057210 6b 52 01 f9     str        x11,[x19, #0x2a0]
+      7100057214 8b 00 00 b4     cbz        x11,loc_7100057224
+      7100057218 f4 4f 41 a9     ldp        x20,x19,[sp, #local_10]
+      710005721c fd 7b c2 a8     ldp        x29=>local_20,x30,[sp], #0x20
+      7100057220 c0 03 5f d6     ret
+                             loc_7100057224                                  XREF[1]:     7100057214(j)  
+      7100057224 08 15 0a 8b     add        x8,x8,x10, LSL #0x5                              Target
+      7100057228 2a 55 81 b9     ldrsw      x10,[x9, #0x154]                                 Anchor
+      710005722c 68 52 01 f9     str        x8,[x19, #0x2a0]                                 Verify1
+
+    */
+
+    Result CpuLutDvcoRateCfg(u32* ptr) {
+        /* Anchor via scanning to prevent ordering issues */
+        u32 *sub = _asm::ScanAssembly(ptr + 1, 4,
+            _asm::Encode(_asm::op::SubShifted64, {_asm::field::Rd, 0}, {_asm::field::Rn, 0}, {_asm::field::Rm, 0},
+                          {_asm::field::Shift, 0}, {_asm::field::Imm6, 3}),
+            _asm::field::Rd, _asm::field::Rn, _asm::field::Rm);
+        R_UNLESS(sub != nullptr, ldr::ResultInvalidDvcoRateConfig());
+
+        /* Verify */
+        R_UNLESS(_asm::IsOp(sub[1], _asm::op::StrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
+            && _asm::Get(sub[1], _asm::field::Off8) == 0x298, ldr::ResultInvalidDvcoRateConfig());
+
+        /* 22.x uses pre-index ldr x?,[x?,#0x18]! here (0xF8418D6D class). */
+        const bool isLdr18 = _asm::IsOp(sub[2], _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
+            && _asm::Get(sub[2], _asm::field::Off8) == 0x18;
+        const bool isLdrPre18 = _asm::IsOp(sub[2], _asm::op::LdrPreImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Imm9)
+            && _asm::Get(sub[2], _asm::field::Imm9) == 0x18;
+        R_UNLESS(isLdr18 || isLdrPre18, ldr::ResultInvalidDvcoRateConfig());
+
+        /* Patch the target */
+        PATCH_OFFSET(sub, _asm::Encode(_asm::op::SubShifted64,
+            {_asm::field::Rd, _asm::Get(*sub, _asm::field::Rd)},
+            {_asm::field::Rn, _asm::Get(*sub, _asm::field::Rn)},
+            {_asm::field::Rm, _asm::Get(*sub, _asm::field::Rm)},
+            {_asm::field::Shift, 0}, {_asm::field::Imm6, 4}));
+
+        /* Search for the second anchor */
+        u32* ldrsw = _asm::ScanAssembly(sub, 20,
+            _asm::Encode(_asm::op::LdrsWImm64, {_asm::field::Rt, 0}, {_asm::field::Rn, 0}, {_asm::field::Off4, 0x154}),
+            _asm::field::Rt, _asm::field::Rn);
+
+        R_UNLESS(ldrsw != nullptr, ldr::ResultInvalidDvcoRateConfig());
+
+        /* Validate the str #0x2a0 */
+        auto isCorrectStr = [](u32 w) {
+            return _asm::IsOp(w, _asm::op::StrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
+                && _asm::Get(w, _asm::field::Off8) == 0x2a0;
+        };
+        R_UNLESS(isCorrectStr(ldrsw[1]) || isCorrectStr(ldrsw[2]), ldr::ResultInvalidDvcoRateConfig());
+
+        /* Validate the target in both directuins */
+        /* Due to codegen difference */
+        u32 *add = nullptr;
+        if (_asm::IsOp(ldrsw[-1], _asm::op::AddShifted64, _asm::field::Rd, _asm::field::Rn, _asm::field::Rm, _asm::field::Shift, _asm::field::Imm6)
+            && _asm::Get(ldrsw[-1], _asm::field::Shift) == 0
+            && _asm::Get(ldrsw[-1], _asm::field::Imm6) == 5) {
+                add = ldrsw - 1;
+            }
+        else if (_asm::IsOp(ldrsw[1], _asm::op::AddShifted64, _asm::field::Rd, _asm::field::Rn, _asm::field::Rm, _asm::field::Shift, _asm::field::Imm6)
+            && _asm::Get(ldrsw[1], _asm::field::Shift) == 0
+            && _asm::Get(ldrsw[1], _asm::field::Imm6) == 5) {
+                add = ldrsw + 1;
+            }
+        
+        R_UNLESS(add != nullptr, ldr::ResultInvalidDvcoRateConfig());
+
+        /* Patch the second target */
+        PATCH_OFFSET(add, _asm::Encode(_asm::op::AddShifted64,
+            {_asm::field::Rd, _asm::Get(*add, _asm::field::Rd)},
+            {_asm::field::Rn, _asm::Get(*add, _asm::field::Rn)},
+            {_asm::field::Rm, _asm::Get(*add, _asm::field::Rm)},
+            {_asm::field::Shift, 0}, {_asm::field::Imm6, 6}));
 
         R_SUCCEED();
     }

@@ -95,7 +95,7 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidForceVerbosityPattern, 1032);
     R_DEFINE_ERROR_RESULT(InvalidCpuLutMaxAsmPattern,   1033);
     R_DEFINE_ERROR_RESULT(InvalidCpuLutHook,            1034);
-
+    R_DEFINE_ERROR_RESULT(InvalidDvcoRateConfig,        1035);
 }
 
 namespace ams::ldr::hoc {

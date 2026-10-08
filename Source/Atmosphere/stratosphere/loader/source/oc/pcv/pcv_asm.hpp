@@ -78,6 +78,7 @@ namespace ams::ldr::hoc::pcv::_asm {
 
         constexpr Descriptor Off1  {10, 12, 0};  /* LDRB/STRB */
         constexpr Descriptor Off4  {10, 12, 2};  /* 32-bit LDR/STR */
+        constexpr Descriptor Imm9  {12,  9};  /* pre/post-index offset */
 
         constexpr Descriptor Barrier { 8, 4};  /* DSB/DMB option (CRm) */
         constexpr Descriptor Off8  {10, 12, 3};  /* 64-bit LDR/STR */
@@ -117,6 +118,7 @@ namespace ams::ldr::hoc::pcv::_asm {
         constexpr u32 MovnW         = 0x12800000;
 
         constexpr u32 AddShifted64  = 0x8B000000;
+        constexpr u32 SubShifted64  = 0xCB000000;
         constexpr u32 AndImm32      = 0x12000000;
         constexpr u32 AndImm64      = 0x92400000;
         constexpr u32 Ubfm32        = 0x53000000; /* UBFIZ/UBFX/LSL aliases */
@@ -130,8 +132,10 @@ namespace ams::ldr::hoc::pcv::_asm {
         constexpr u32 LdrbImm       = 0x39400000;
         constexpr u32 StrbImm       = 0x39000000;
         constexpr u32 LdrImm32      = 0xB9400000;
+        constexpr u32 LdrsWImm64    = 0xB9800000; /* LDRSW x, 32-bit mem, Off4-scaled */
         constexpr u32 StrImm32      = 0xB9000000;
         constexpr u32 LdrImm64      = 0xF9400000;
+        constexpr u32 LdrPreImm64   = 0xF8400C00; /* LDR (pre-index): bits 11:10 fixed */
         constexpr u32 StrImm64      = 0xF9000000;
 
         constexpr u32 StpImm64      = 0xA9000000;

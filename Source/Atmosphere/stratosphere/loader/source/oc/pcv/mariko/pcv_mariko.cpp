@@ -95,6 +95,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "CPU Lut Max Asm",   &CpuLutMaxAsm,          1,          &CpuLutAsmPatternFn         },
             { "CPU Lut Max Asm2",  &CpuLutMaxAsm2,         1,          &CpuLutAsmPatternFn2        },
             { "CPU Lut Writer",    &LutWriterFind,         1,          &LutWriterPatternFn         },
+            { "CPU Dvco Rate Cfg", &CpuLutDvcoRateCfg,     1,          &CpuLutDvcoRateCfgPatternFn },
 
             /* Debugging patches */
             #if HOC_UART_LOG

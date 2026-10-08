@@ -659,7 +659,7 @@ namespace board {
             u32 hz = board::GetHz(HocClkModule_CPU);
             /* Voltage needs to be above the forced minimum voltage, so we set a high frequency (will be capped by pcv) for a short time. */
             /* This frequency is only applied for ~255ms. */
-            constexpr u32 HighFreqVoltBump = 2091'000'000;
+            constexpr u32 HighFreqVoltBump = 1963'000'000;
             board::SetHz(HocClkModule_CPU, HighFreqVoltBump);
             svcSleepThread(5'000'000);
             board::SetHz(HocClkModule_CPU, hz);
@@ -737,6 +737,8 @@ namespace board {
         }
 
         void PadLutTail(u32 *lut, u32 validCount) {
+            if (validCount == 0)
+                return;
             for (u32 i = validCount; i < LutSize; ++i) {
                 lut[i] = lut[validCount - 1];
             }
@@ -744,13 +746,21 @@ namespace board {
     }
 
     void InitializeCpuLut(bool kip) {
-        InitializeLutPtr();
-        CacheCpuLut();
-        cpuVoltData.outputCfg = *reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
         if(kip) {
             LutSize = 63; /* Account for patched LUT by KIP */
         }
+        
+        InitializeLutPtr();
+
+        CacheCpuLut();
+        
+        cpuVoltData.outputCfg = *reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
+
         cpuVoltData.initialized = true;
+
+        for(u32 i = 0; i < LutSize; i++) {
+            file::utils::LogLine("[dvfs] CPU Real LUT %d: %dmV", i, GetLutVolt(*(u32*)(cldvfs + CL_DVFS_LUT_TABLE_0 + (i * sizeof(u32)))));
+        }
     }
 
     /* TODO: Verify table on consoles */
@@ -804,7 +814,7 @@ namespace board {
             return;
         }
 
-        u32 tmpLut[LutSize];
+        u32 tmpLut[MaxPotentialLutSize];
         std::memcpy(tmpLut, cpuVoltData.table, sizeof(tmpLut));
 
         const u32 minCode = std::min(GetLutCode(vmin), tmpLut[LutSize - 1]);
