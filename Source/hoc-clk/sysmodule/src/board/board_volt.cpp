@@ -758,7 +758,7 @@ namespace board {
 
         cpuVoltData.initialized = true;
 
-        for(u32 i = 0; i < LutSize; i++) {
+        for(u32 i = 0; i < LutSize + 1; i++) {
             file::utils::LogLine("[dvfs] CPU Real LUT %d: %dmV", i, GetLutVolt(*(u32*)(cldvfs + CL_DVFS_LUT_TABLE_0 + (i * sizeof(u32)))));
         }
     }
