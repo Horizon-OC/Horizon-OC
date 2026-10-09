@@ -96,6 +96,8 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidCpuLutMaxAsmPattern,   1033);
     R_DEFINE_ERROR_RESULT(InvalidCpuLutHook,            1034);
     R_DEFINE_ERROR_RESULT(InvalidDvcoRateConfig,        1035);
+    R_DEFINE_ERROR_RESULT(InvalidVoltCode,              1036);
+    R_DEFINE_ERROR_RESULT(InvalidVoltLutIndex,          1037);
 }
 
 namespace ams::ldr::hoc {

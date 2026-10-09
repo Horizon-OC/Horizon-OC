@@ -194,6 +194,7 @@ namespace ams::ldr::hoc::pcv {
     #define R_SKIP() R_SUCCEED()
 
     // Count 32 / Index 31 is reserved to be empty
+    /* The actual lut table has a size of 33. */
     constexpr size_t DvfsTableEntryCount = 32;
     constexpr size_t DvfsTableEntryLimit = DvfsTableEntryCount - 1;
 
@@ -203,6 +204,9 @@ namespace ams::ldr::hoc::pcv {
 
     // The pcv SoC-voltage DVB table is a fixed 32-entry region. (it doesn't need to be larger)
     constexpr size_t DvbTableCapacity = 32;
+
+    /* Note: According to TRM the lut size is 33, but up to 64 LUT is possible. */
+    constexpr size_t ClDvfsLutSize = 64;
 
     inline uintptr_t g_pcv_cave      = 0;
     inline size_t    g_pcv_cave_size = 0;

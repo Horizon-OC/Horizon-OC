@@ -78,7 +78,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     static_assert(sizeof(cpuVoltagePatchValues) == sizeof(cpuVoltagePatchOffsets), "Invalid cpuVoltagePatch size");
 
     static const u32 cpuVoltThermalData[] = { 620, 1120, 20000, 620, 1120, 70000, 950, 1132, 0, 950, 1227, 0 };
-    
+
     /* Refer to customize.cpp for more information */
     static const u32 allowedCpuMaxFrequencies[] = { 1'963'500, 2'091'000, 2'193'000, 2'295'000, 2'397'000, 2'499'000, 2'601'000, 2'703'000, 2'805'000 };
 
@@ -89,7 +89,7 @@ namespace ams::ldr::hoc::pcv::mariko {
     Result CpuLutMaxAsm(u32* ptr);
     Result CpuLutMaxAsm2(u32* ptr);
     Result CpuLutDvcoRateCfg(u32* ptr);
-    
+
     ALWAYS_INLINE bool CpuLutAsmPatternFn(u32* ptr) {
         /* Check if it is a DSB ST, a common indication of CL-DVFS related functions */
         return *ptr == _asm::Dsb(_asm::barrier::St);
@@ -107,4 +107,5 @@ namespace ams::ldr::hoc::pcv::mariko {
         return _asm::IsOp(*ptr, _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
         && _asm::Get(*ptr, _asm::field::Off8) == 0x248;
     }
+
 }

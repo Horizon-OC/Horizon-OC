@@ -25,17 +25,183 @@
 
 namespace ams::ldr::hoc::pcv::mariko {
 
-    u32 CapCpuClock() {
-        u32 cpuCap = allowedCpuMaxFrequencies[0];
+    namespace {
+        u32 CapCpuClock() {
+            u32 cpuCap = allowedCpuMaxFrequencies[0];
 
-        for (u32 freq : allowedCpuMaxFrequencies) {
-            if (C.marikoCpuMaxClock >= freq) {
-                cpuCap = freq;
-            } else {
-                break;
+            for (u32 freq : allowedCpuMaxFrequencies) {
+                if (C.marikoCpuMaxClock >= freq) {
+                    cpuCap = freq;
+                } else {
+                    break;
+                }
+            }
+            return cpuCap;
+        }
+
+        /* TODO: Reduce code duplication. */
+        cvb_entry_t *GetDvfsTable() {
+            switch (C.tableConf) {
+                case TBREAK_1683: return const_cast<cvb_entry_t *>(C.marikoCpuDvfsTable1683Tbreak);
+                case TBREAK_1581: return const_cast<cvb_entry_t *>(C.marikoCpuDvfsTable1581Tbreak);
+                case EXTREME_TABLE: return const_cast<cvb_entry_t *>(C.marikoCpuDvfsTableExtreme);
+                case DEFAULT_TABLE:
+                default:
+                    return const_cast<cvb_entry_t *>(mariko::CpuCvbTableDefault);
             }
         }
-        return cpuCap;
+
+        /* Todo: Reduce code duplication of this. */
+        Result GetCpuSpeedo(u32 &cpuSpeedo) {
+            constexpr u64 FusePhysicalAddress = 0x7000F000;
+            u64 virtualAddress                = 0;
+            constexpr u64 Size                = 0x1000;
+
+            u64 outSize;
+            /* TODO: use svc::QueryMemoryMapping instead. */
+            R_TRY(svcQueryMemoryMapping(&virtualAddress, &outSize, FusePhysicalAddress, Size));
+
+            constexpr u32 FuseOffset      = 2048;
+            constexpr u32 CpuSpeedoOffset = 0x12C;
+            cpuSpeedo                     = *reinterpret_cast<u32 *>(virtualAddress + FuseOffset + CpuSpeedoOffset);
+
+            R_SUCCEED();
+        }
+
+        u32 CalculateCvbVoltage(cvb_entry_t *entry, u32 speedo, u32 speedoScale) {
+            float speedDiv = static_cast<float>(speedo) / speedoScale;
+            return ((entry->cvb_dfll_param.c2 * speedDiv + entry->cvb_dfll_param.c1) * speedDiv + entry->cvb_dfll_param.c0);
+        }
+
+        u32 DivRoundUp(u32 n, u32 d) {
+            return (n + d - 1) / d;
+        }
+
+        u32 RoundCvbVoltage(u32 mv, u32 vScale, u32 stepUv) {
+            u32 step = (stepUv ? stepUv : 1000) * vScale;
+
+            u32 uv = mv * 1000;
+            uv     = DivRoundUp(uv, step) * stepUv;
+            return uv / 1000;
+        }
+
+        u32 EffVmin() { return C.marikoCpuLowVmin ? C.marikoCpuLowVmin : CpuVminOfficial; }
+        u32 EffVmax() { return C.marikoCpuMaxVolt ? C.marikoCpuMaxVolt : CpuVoltOfficial; }
+
+        u32 ClampVoltage(u32 mv) {
+            return std::clamp(mv, EffVmin(), EffVmax());
+        }
+
+        constexpr u32 PmicBaseMv    = 250;
+        constexpr u32 PmicStepMv    = 5;
+        constexpr u32 PmicVoltCount = 256;
+
+        u32 GetExactVoltCode(u32 mv) {
+            u32 alignMult = mv / PmicStepMv;
+
+            for (u32 i = 0; i < PmicVoltCount; ++i) {
+                u32 regMult = (PmicBaseMv + i * PmicStepMv) / PmicStepMv;
+                if (alignMult == regMult) {
+                    return i;
+                }
+            }
+
+            return UINT32_MAX;
+        }
+
+        u32 GetVoltCode(u32 mv) {
+            u32 alignMult = DivRoundUp(mv, PmicStepMv);
+
+            for (u32 i = 0; i < PmicVoltCount; i++) {
+                u32 regMult = (PmicBaseMv + i * PmicStepMv) / PmicStepMv;
+                if (alignMult <= regMult) {
+                    return i;
+                }
+            }
+
+            return UINT32_MAX;
+        }
+
+        Result BuildLut(u32 *lut, const u32 *voltArray) {
+            const u32 vMin = EffVmin();
+            const u32 vMax = *std::max_element(voltArray, voltArray + ClDvfsLutSize);
+            R_UNLESS(vMin <= vMax, ldr::ResultInvalidCpuMinVolt());
+
+            u32 voltage = vMin;
+            u32 code    = GetExactVoltCode(voltage);
+            R_UNLESS(code != UINT32_MAX, ldr::ResultInvalidVoltCode());
+            lut[0] = code;
+
+            u32 j = 1;
+            for (u32 i = 0; i < ClDvfsLutSize; ++i) {
+                for (;;) {
+                    R_UNLESS(j < ClDvfsLutSize, ldr::ResultInvalidVoltLutIndex());
+
+                    voltage += std::max<u32>(1u, (vMax - voltage) / (ClDvfsLutSize - j));
+                    if (voltage >= voltArray[i]) {
+                        break;
+                    }
+
+                    code = GetVoltCode(voltage);
+                    R_UNLESS(code != UINT32_MAX, ldr::ResultInvalidVoltCode());
+                    if (code != lut[j - 1]) {
+                        lut[j++] = code;
+                    }
+                }
+
+                voltage = (j == ClDvfsLutSize - 1) ? vMax : voltArray[i];
+                code    = GetExactVoltCode(voltage);
+                R_UNLESS(code != UINT32_MAX, ldr::ResultInvalidVoltCode());
+
+                if (code != lut[j - 1]) {
+                    R_UNLESS(j < ClDvfsLutSize, ldr::ResultInvalidVoltLutIndex());
+                    lut[j++] = code;
+                }
+
+                if (voltage >= vMax) {
+                    break;
+                }
+            }
+
+            for (u32 k = j; k < ClDvfsLutSize; ++k) {
+                lut[k] = lut[j - 1];
+            }
+
+            R_SUCCEED();
+        }
+
+        /* Since doing the proper lut creation in pcv is wasteful, we'll do it ourselves */
+        Result FillLutTable(HookPayloadData *data) {
+            /* Step 1: Get the speedo. */
+            u32 cpuSpeedo = 0;
+            R_TRY(GetCpuSpeedo(cpuSpeedo));
+
+            /* Step 2: Select the appropriate table. */
+            cvb_entry_t *table = GetDvfsTable();
+            constexpr u32 SpeedoScale  = 100;
+            constexpr u32 VoltageScale = 1000;
+            constexpr u32 StepUv       = 5000;
+
+            /* Step 3: Fill the voltage array. */
+            u32 voltArray[ClDvfsLutSize]  = {};
+            for (u32 i = 0; i < DvfsTableEntryLimit; ++i) {
+                u32 voltage = CalculateCvbVoltage(&table[i], cpuSpeedo, SpeedoScale);
+                voltage = RoundCvbVoltage(voltage, VoltageScale, StepUv);
+                voltage = ClampVoltage(voltage);
+
+                voltArray[i] = voltage;
+            }
+
+            /* Step 4: Build the lut table. */
+            u32 lut[ClDvfsLutSize] = {};
+            R_TRY(BuildLut(lut, voltArray));
+
+            /* Step 5: Copy it. */
+            std::memcpy(data->lut64.table, lut, sizeof(lut));
+
+            /* Step 6: Finally done. */
+            R_SUCCEED();
+        }
     }
 
     Result CpuFreqVdd(u32 *ptr) {
@@ -291,19 +457,11 @@ namespace ams::ldr::hoc::pcv::mariko {
 
         /* *(param+8) = CLDVFS mapping */
         const u64 base = *reinterpret_cast<u64 *>(param + 8);
-        u32 *lut = reinterpret_cast<u32 *>(base + 0x200);
+        u32 *lut       = reinterpret_cast<u32 *>(base + 0x200);
 
-        /* Expand the LUT in place */
-        const u32 top = lut[32];
-
-        for (int i = 31; i >= 0; --i) {
-            const u32 a = lut[i];
-            const u32 b = lut[i + 1]; /* dst 2*(i+1) > src i+1 */
-            lut[2 * i]     = a;
-            lut[2 * i + 1] = (a + b) >> 1;
+        for (u32 i = 0; i < ClDvfsLutSize; ++i) {
+            lut[i] = data->lut64.table[i];
         }
-
-        lut[63] = top;
         __asm__ volatile("dsb st" ::: "memory");
     }
 
@@ -332,6 +490,8 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     Result LutWriterInstallHooks(HookPayloadData *data) {
         R_UNLESS(lutWriterCache.site != nullptr, ldr::ResultInvalidCpuLutHook());
+
+        R_TRY(FillLutTable(data));
 
         uintptr_t orig = 0;
         R_TRY(INSTALL_IMPL_HOOK_ORIG(lutWriterCache.site, CpuLutWriterExpandImpl, &orig));

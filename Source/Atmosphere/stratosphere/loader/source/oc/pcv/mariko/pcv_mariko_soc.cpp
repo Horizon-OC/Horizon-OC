@@ -35,7 +35,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             R_TRY(svcQueryMemoryMapping(&virtualAddress, &outSize, FusePhysicalAddress, Size));
 
             constexpr u32 FuseOffset      = 2048;
-            constexpr u32 SocSpeedoOffset = 308;
+            constexpr u32 SocSpeedoOffset = 0x134;
             socSpeedo                     = *reinterpret_cast<u32 *>(virtualAddress + FuseOffset + SocSpeedoOffset);
 
             R_SUCCEED();

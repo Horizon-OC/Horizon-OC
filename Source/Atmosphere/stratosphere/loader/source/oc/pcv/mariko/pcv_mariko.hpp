@@ -37,6 +37,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         } busData;
         struct {
             uintptr_t orig; /* ClDvfsLut64ExpandImpl to CLDVFS LUT writer trampoline. */
+            u32 table[ClDvfsLutSize];
         } lut64;
 #if HOC_UART_LOG
         u32 verbosityLevel;
