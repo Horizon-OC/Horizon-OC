@@ -253,8 +253,8 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_UNLESS(ptr - 10 >= nsoStart, ldr::ResultInvalidCpuLutMaxAsmPattern());
 
         /* Search for the STRB */
-        u32* strb = _asm::ScanAssembly(ptr - 10, 10, _asm::Encode(_asm::op::StrbImm, 
-            {_asm::field::Rt, 0}, {_asm::field::Rn, 0}, {_asm::field::Off1, 0x25D}), _asm::field::Rt, 
+        u32* strb = _asm::ScanAssembly(ptr - 10, 10, _asm::Encode(_asm::op::StrbImm,
+            {_asm::field::Rt, 0}, {_asm::field::Rn, 0}, {_asm::field::Off1, 0x25D}), _asm::field::Rt,
             _asm::field::Rn);
         R_UNLESS(strb != nullptr, ldr::ResultInvalidCpuLutMaxAsmPattern());
 
@@ -272,9 +272,9 @@ namespace ams::ldr::hoc::pcv::mariko {
             const u32 nw = _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, rd}, {_asm::field::Imm16, 0x3F});
             PATCH_OFFSET(prod, nw); /* movz wD,#0x3F */
         }
-        
-        /* Set SAFE to entry 31 */
-        PATCH_OFFSET(ptr + 1, _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, _asm::Get(ptr[1], _asm::field::Rd)}, {_asm::field::Imm16, 0x1F}));
+
+        /* Set SAFE to entry 32 */
+        PATCH_OFFSET(ptr + 1, _asm::Encode(_asm::op::MovzW, {_asm::field::Rd, _asm::Get(ptr[1], _asm::field::Rd)}, {_asm::field::Imm16, 32}));
 
         R_SUCCEED();
     }
@@ -294,16 +294,16 @@ namespace ams::ldr::hoc::pcv::mariko {
         u32 *lut = reinterpret_cast<u32 *>(base + 0x200);
 
         /* Expand the LUT in place */
-        const u32 last = lut[31];
-        lut[62] = last;
-        lut[63] = last;
+        const u32 top = lut[32];
 
-        for (int i = 30; i >= 0; --i) {
+        for (int i = 31; i >= 0; --i) {
             const u32 a = lut[i];
             const u32 b = lut[i + 1]; /* dst 2*(i+1) > src i+1 */
             lut[2 * i]     = a;
             lut[2 * i + 1] = (a + b) >> 1;
         }
+
+        lut[63] = top;
         __asm__ volatile("dsb st" ::: "memory");
     }
 
@@ -318,7 +318,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         for (u32 i = 0; i < 8; ++i) {
             if (_asm::IsOp(prog[i], _asm::op::LdrImm64, _asm::field::Rt, _asm::field::Rn, _asm::field::Off8)
                 && _asm::Get(prog[i], _asm::field::Rn) == 0
-                && _asm::Get(prog[i], _asm::field::Off8) == 0x8) { 
+                && _asm::Get(prog[i], _asm::field::Off8) == 0x8) {
                 ok = true;
                 break;
             }
@@ -347,7 +347,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             && _asm::Get(ptr[1], _asm::field::Hw) == 1, ldr::ResultInvalidCpuLutMaxAsmPattern());
 
         /* and x, x, #0xff */
-        R_UNLESS(_asm::IsOp(ptr[2], _asm::op::AndImm32, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) || 
+        R_UNLESS(_asm::IsOp(ptr[2], _asm::op::AndImm32, _asm::field::Rd, _asm::field::Rn, _asm::field::Imm12) ||
             _asm::Get(ptr[2], _asm::field::Imm12) != 7, ldr::ResultInvalidCpuLutMaxAsmPattern());
 
         const u32 rd = _asm::Get(ptr[2], _asm::field::Rd);
@@ -362,7 +362,7 @@ namespace ams::ldr::hoc::pcv::mariko {
                                                                                              = " %s divider %#x diff %d\n"
       71000571e0 21 40 27 91     add        param_2=>aCldvfssetdvcor,param_2,#0x9d0          = "ClDvfsSetDvcoRateMin"
       71000571e4 c3 9f ff 97     bl         nn::pcv::NvLog                                   undefined NvLog(char * fmt, ...)
-                             loc_71000571E8                                  XREF[1]:     71000571b4(j)  
+                             loc_71000571E8                                  XREF[1]:     71000571b4(j)
       71000571e8 69 aa 42 a9     ldp        x9,x10,[x19, #0x28]
       71000571ec 4a fd 41 d3     lsr        x10,x10,#0x1
       71000571f0 68 26 41 f9     ldr        x8,[x19, #0x248]                                 Anchor
@@ -378,7 +378,7 @@ namespace ams::ldr::hoc::pcv::mariko {
       7100057218 f4 4f 41 a9     ldp        x20,x19,[sp, #local_10]
       710005721c fd 7b c2 a8     ldp        x29=>local_20,x30,[sp], #0x20
       7100057220 c0 03 5f d6     ret
-                             loc_7100057224                                  XREF[1]:     7100057214(j)  
+                             loc_7100057224                                  XREF[1]:     7100057214(j)
       7100057224 08 15 0a 8b     add        x8,x8,x10, LSL #0x5                              Target
       7100057228 2a 55 81 b9     ldrsw      x10,[x9, #0x154]                                 Anchor
       710005722c 68 52 01 f9     str        x8,[x19, #0x2a0]                                 Verify1
@@ -438,7 +438,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             && _asm::Get(ldrsw[1], _asm::field::Imm6) == 5) {
                 add = ldrsw + 1;
             }
-        
+
         R_UNLESS(add != nullptr, ldr::ResultInvalidDvcoRateConfig());
 
         /* Patch the second target */

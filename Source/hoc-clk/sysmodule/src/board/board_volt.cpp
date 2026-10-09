@@ -746,19 +746,19 @@ namespace board {
     }
 
     void InitializeCpuLut(bool kip) {
-        if(kip) {
-            LutSize = 63; /* Account for patched LUT by KIP */
+        if (kip) {
+            LutSize = 64; /* Account for patched LUT by KIP */
         }
-        
+
         InitializeLutPtr();
 
         CacheCpuLut();
-        
+
         cpuVoltData.outputCfg = *reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
 
         cpuVoltData.initialized = true;
 
-        for(u32 i = 0; i < LutSize + 1; i++) {
+        for (u32 i = 0; i < LutSize; i++) {
             file::utils::LogLine("[dvfs] CPU Real LUT %d: %dmV", i, GetLutVolt(*(u32*)(cldvfs + CL_DVFS_LUT_TABLE_0 + (i * sizeof(u32)))));
         }
     }
