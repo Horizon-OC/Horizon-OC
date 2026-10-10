@@ -98,6 +98,7 @@ namespace ams::ldr {
     R_DEFINE_ERROR_RESULT(InvalidDvcoRateConfig,        1035);
     R_DEFINE_ERROR_RESULT(InvalidVoltCode,              1036);
     R_DEFINE_ERROR_RESULT(InvalidVoltLutIndex,          1037);
+    R_DEFINE_ERROR_RESULT(InvalidHookCave,              1038);
 }
 
 namespace ams::ldr::hoc {

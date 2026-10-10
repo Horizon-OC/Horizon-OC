@@ -29,6 +29,7 @@
 #include "pcv_mariko_mtc.hpp"
 #include "pcv_mariko_soc.hpp"
 #include "pcv_mariko_log.hpp"
+#include "pcv_mariko_cave.hpp"
 #include "calculate_timings_mariko.hpp"
 
 namespace ams::ldr::hoc::pcv::mariko {
@@ -39,6 +40,8 @@ namespace ams::ldr::hoc::pcv::mariko {
     DEFINE_HOOK_PAYLOAD_PTR(HookPayloadData, m_HookPayloadData);
 
     Result InstallHooks() {
+        R_TRY(CaveInstall());
+
         R_TRY(Hooks().CheckEnabled());
 
         R_TRY(Hooks().CopyPayload());
@@ -96,6 +99,7 @@ namespace ams::ldr::hoc::pcv::mariko {
             { "CPU Lut Max Asm2",  &CpuLutMaxAsm2,         1,          &CpuLutAsmPatternFn2        },
             { "CPU Lut Writer",    &LutWriterFind,         1,          &LutWriterPatternFn         },
             { "CPU Dvco Rate Cfg", &CpuLutDvcoRateCfg,     1,          &CpuLutDvcoRateCfgPatternFn },
+            { "Hook Cave",         &DeadDestructorCaveFind, 0,         &CaveFlagRunPatternFn,      0, 0, true },
 
             /* Debugging patches */
             #if HOC_UART_LOG

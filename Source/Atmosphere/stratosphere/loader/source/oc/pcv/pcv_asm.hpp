@@ -26,6 +26,7 @@ namespace ams::ldr::hoc::pcv::_asm {
 
     constexpr u32 NopIns = 0xD503201F;
     constexpr u32 RetIns = 0xD65F03C0;
+    constexpr u32 BrkIns = 0xD4200000;
 
     constexpr u32 GetField(u32 ins, u8 lsb, u8 width) {
         return (ins >> lsb) & ((1u << width) - 1u);
@@ -292,6 +293,41 @@ namespace ams::ldr::hoc::pcv::_asm {
 
     constexpr bool IsFramePush(u32 ins) {
         return IsFramePushPre(ins) || IsFramePushOffset(ins);
+    }
+
+    constexpr bool IsCondBranch(u32 ins) {
+        return (ins & 0xFF000010u) == op::BCond;
+    }
+
+    constexpr bool IsCompareBranch(u32 ins) {
+        return (ins & 0x7E000000u) == op::Cbz;
+    }
+
+    constexpr bool IsTestBranch(u32 ins) {
+        return (ins & 0x7E000000u) == 0x36000000u;
+    }
+
+    inline u32 *FindFnEnd(u32 *prologue, u32 *limit) {
+        u32 *furthest = prologue;
+        for (u32 *ptr = prologue; ptr < limit; ++ptr) {
+            const u32 ins = *ptr;
+            if (ins == RetIns && ptr >= furthest) {
+                return ptr + 1;
+            }
+
+            s64 delta = 0;
+            if (IsCondBranch(ins) || IsCompareBranch(ins)) {
+                delta = SignExtend(static_cast<u64>(Get(ins, field::Imm19)) << 2, 21);
+            } else if (IsTestBranch(ins)) {
+                delta = SignExtend(static_cast<u64>(GetField(ins, 5, 14)) << 2, 16);
+            }
+
+            if (ptr + (delta >> 2) > furthest) {
+                furthest = ptr + (delta >> 2);
+            }
+        }
+
+        return nullptr;
     }
 
     inline u32 *FindFnPrologue(u32 *ptr, u32 margin, u32 *nsoStart) {

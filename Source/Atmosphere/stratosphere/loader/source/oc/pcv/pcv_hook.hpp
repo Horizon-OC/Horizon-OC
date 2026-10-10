@@ -55,6 +55,7 @@ namespace ams::ldr::hoc::pcv {
 
     constexpr size_t HookPageSize     = 0x1000;
     constexpr size_t PcvDataArenaSize = 0x1000;
+    constexpr size_t HookStubReserve  = 0x80;
 
     inline s64 SignExtend(u64 value, int bits) {
         const int shift = 64 - bits;
@@ -125,6 +126,15 @@ namespace ams::ldr::hoc::pcv {
                 m_used       = 0;
                 m_data       = data;
                 m_data_used  = 0;
+            }
+
+            void SetCave(uintptr_t cave, size_t cave_size) {
+                m_cave      = cave;
+                m_cave_size = cave_size;
+            }
+
+            static size_t RequiredCaveSize() {
+                return util::AlignUp(static_cast<size_t>(__stop_hoc_hookpayload - __start_hoc_hookpayload), sizeof(u32)) + HookStubReserve;
             }
 
             bool IsEnabled() const { return m_cave != 0 && m_cave_size != 0; }
