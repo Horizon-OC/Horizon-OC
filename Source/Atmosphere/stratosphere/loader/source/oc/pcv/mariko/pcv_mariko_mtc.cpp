@@ -235,6 +235,9 @@ namespace ams::ldr::hoc::pcv::mariko {
         const u32 tRFCabStock     = tRFC_values[0] * 2;
         table->dram_timings.t_rfc = tRFCabStock;
 
+        /* dram_timings.rl is used on Erista to calculate specific RL related timings during memory training for a workaround. */
+        /* See fusee or minerva for more details. */
+        /* This is unused on Mariko but we will set it regardless for completion. */
         table->dram_timings.rl = RL;
         table->emc_mrw2        = (table->emc_mrw2 & ~0xFFu) | static_cast<u32>(mrw2);
         table->emc_mrw         = (table->emc_mrw  & ~0x70u) | 0x40; /* nWR */

@@ -26,7 +26,7 @@ namespace ams::ldr::hoc::pcv {
     void HandleLatency(u32 freq);
     u32 GetRlFrequency();
     u32 GetWlFrequency();
-    u32 GetWdqsOn();
+    u32 GetOdtLon();
     u32 CalculateNWr();
     u32 CalculateNTRTP();
     u8 CalculateMrw2();

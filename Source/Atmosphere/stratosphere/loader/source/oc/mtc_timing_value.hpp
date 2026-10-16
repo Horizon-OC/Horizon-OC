@@ -75,6 +75,8 @@ namespace ams::ldr::hoc::pcv {
     /* Round trace routing delay(?) Guessed based on tK1 (ns) */
     const double roundTripDelay = 0.5;
 
+    const double tODTon = 1.5;
+
     inline u32 RL;
     inline u32 WL;
 

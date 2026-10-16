@@ -56,10 +56,8 @@ namespace ams::ldr::hoc::pcv::erista {
             double fullRoundDelay = flyByTime + tDQSCK_max;
 
             /* Read to write turnaround. */
-            /* Nvidia seem to use a 0.25 constant here for tK1, I am 99% certain this is tDQSTA. */
-            /* This still left a mismatch; after some brute forcing I got GET_CYCLE_FLOOR(1.5) - 8 (using a static latency) as the cleanest result. */
-            /* The latency definitely is not WL, but when testing for every latency, it lines up perfectly with wqsOn and wl seems to cancel out? */
-            tR2W = RL + (BL / 2) + CEIL((fullRoundDelay / tCK_avg) + tDQSTA) - GET_CYCLE_FLOOR(1.5) - GetWdqsOn() + tWPRE - (C.t6_tRTW * 3) + finetRTW;
+            /* Switch seemingly uses odt. */
+            tR2W = RL + (BL / 2) + CEIL((fullRoundDelay / tCK_avg) + tDQSTA) - GET_CYCLE_FLOOR(tODTon) - GetOdtLon() + tWPRE - (C.t6_tRTW * 3) + finetRTW;
 
             /* Read data valid: Read command -> data ready to be latched into the registers. */
             rdv  = RL + GET_CYCLE_CEIL(fullRoundDelay) + 18;

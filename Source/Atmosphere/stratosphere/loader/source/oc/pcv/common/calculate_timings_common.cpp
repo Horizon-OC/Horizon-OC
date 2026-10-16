@@ -123,7 +123,7 @@ namespace ams::ldr::hoc::pcv {
         }
     }
 
-    u32 GetWdqsOn() {
+    u32 GetOdtLon() {
         /* Set A. */
         switch (WL) {
             case WL_1333:

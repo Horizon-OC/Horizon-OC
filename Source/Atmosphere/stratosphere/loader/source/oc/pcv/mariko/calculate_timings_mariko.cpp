@@ -86,10 +86,8 @@ namespace ams::ldr::hoc::pcv::mariko {
             tR2P  = CalculateNTRTP();
 
             /* Read to write turnaround. */
-            /* Nvidia seem to use a 0.25 constant here for tK1, I am 99% certain this is tDQSTA. */
-            /* This still left a mismatch; after some brute forcing I got GET_CYCLE_FLOOR(1.5) - 8 (using a static latency) as the cleanest result. */
-            /* The latency definitely is not WL, but when testing for every latency, it lines up perfectly with wqsOn and wl seems to cancel out? */
-            tR2W  = RL + (BL / 2) + CEIL((fullRoundDelay / tCK_avg) + tDQSTA) - GET_CYCLE_FLOOR(1.5) - GetWdqsOn() - (tRTW * 3) + finetRTW;
+            /* Switch seemingly uses odt. */
+            tR2W  = RL + (BL / 2) + CEIL((fullRoundDelay / tCK_avg) + tDQSTA) - GET_CYCLE_FLOOR(tODTon) - GetOdtLon() - (tRTW * 3) + finetRTW;
             tRTM  = FLOOR((10.0 + RL) + (3.502 / tCK_avg)) + GET_CYCLE_FLOOR(7.489);
             tRATM = CEIL((tRTM - 10.0) + (RL * 0.426));
 
