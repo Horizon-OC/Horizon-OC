@@ -531,10 +531,12 @@ namespace mgr {
 
         u32 nearestFreq = GetCurrentNearestFrequency(HocClkModule_MEM);
 
-        if (targetRamHz != nearestFreq) {
+        if (targetRamHz > nearestFreq) {
             ApplyRamOcDvfs(targetRamHz);
-
             board::SetHz(HocClkModule_MEM, targetRamHz);
+        } else if (targetRamHz < nearestFreq) {
+            board::SetHz(HocClkModule_MEM, targetRamHz);
+            ApplyRamOcDvfs(targetRamHz);
         }
     }
 
