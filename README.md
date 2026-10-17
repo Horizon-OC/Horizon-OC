@@ -51,7 +51,7 @@ It enables advanced CPU, GPU, and RAM tuning with user-friendly configuration to
 
    * [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere)
    * [Ultrahand Overlay](https://github.com/ppkantorski/Ultrahand-Overlay)
-2. Download and extract the **Horizon OC Package** to the root of your SD card.
+2. Download and extract **Horizon OC** to the root of your SD card.
 3. If using **Hekate**, edit `hekate_ipl.ini` to include:
 
    ```
