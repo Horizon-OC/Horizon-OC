@@ -181,7 +181,8 @@ Higher clocks are achievable via undervolting or further configuration, refer to
 * 612 → sleep mode
 
 ### GPU clocks (mhz)
-* 1536 → absolute max clock on mariko. Dangerous
+* 1574  → absolute max clock on mariko. Dangerous
+* 1536
 * 1497 → max mariko unsafe clock
 * 1459
 * 1420
