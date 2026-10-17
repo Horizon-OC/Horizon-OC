@@ -85,6 +85,7 @@ Refer to COMPILATION.md
 ---
 
 Higher clocks are achievable via undervolting or further configuration, refer to this table for more details.
+The averages are only for reference. Each ram is different and must be tuned independently. Refer to the guide for more details!
 
 <details>
 <summary><h2 style="display:inline">Clock table</h2></summary>
@@ -96,9 +97,9 @@ Higher clocks are achievable via undervolting or further configuration, refer to
 * 3300
 * 3266
 * 3233
-* 3200 → JEDEC.
+* 3200 → JEDEC, Hynix NEE/x267 Average
 * 3166
-* 3133
+* 3133 → Micron WT:B Average
 * 3100
 * 3066
 * 3033
@@ -107,20 +108,20 @@ Higher clocks are achievable via undervolting or further configuration, refer to
 * 2933 → JEDEC.
 * 2900
 * 2866
-* 2833
+* 2833 → Samsung AA-MGCL Average
 * 2800
 * 2766
-* 2733
+* 2733 → Samsung AM-MGCJ/Micron WT:E Average
 * 2700
-* 2666 → JEDEC.
+* 2666 → JEDEC, Micron WT:F Average
 * 2633
 * 2600
-* 2566
+* 2566 → Samsung AB-MGCL Average
 * 2533
 * 2500
 * 2466
 * 2433
-* 2400 → max on erista, JEDEC.
+* 2400 → max on erista, JEDEC, Hynix NME Average
 * 2366
 * 2333
 * 2300
@@ -133,7 +134,7 @@ Higher clocks are achievable via undervolting or further configuration, refer to
 * 2066
 * 2033
 * 2000
-* 1996 → JEDEC standard
+* 1996 → JEDEC, Erista Average
 * 1966
 * 1933
 * 1900
