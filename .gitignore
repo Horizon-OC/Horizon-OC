@@ -8,3 +8,4 @@ build
 Source/hekate
 dist/*
 !dist/.gitignore
+Status-Monitor-Overlay.ovl*
