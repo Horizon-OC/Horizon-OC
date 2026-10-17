@@ -84,6 +84,8 @@ Refer to COMPILATION.md
 
 ---
 
+Higher clocks are achievable via undervolting or further configuration, refer to this table for more details.
+
 <details>
 <summary><h2 style="display:inline">Clock table</h2></summary>
 
