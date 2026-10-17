@@ -81,6 +81,9 @@ typedef enum {
 
     HocClkConfigValue_Watchdog,
 
+    HocClkConfigValue_FileLogging,
+    HocClkConfigValue_UartLogging,
+
     KipConfigValue_custRev,
     KipConfigValue_KipVersion,
     // KipConfigValue_mtcConf,
@@ -341,6 +344,11 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
 
         case HocClkConfigValue_Watchdog:
             return pretty ? "Watchcat" : "watchdog"; // More dignified
+
+        case HocClkConfigValue_FileLogging:
+            return pretty ? "File Logging" : "file_logging";
+        case HocClkConfigValue_UartLogging:
+            return pretty ? "UART Logging" : "uart_logging";
         // KIP config values
         case KipConfigValue_custRev:
             return pretty ? "Custom Revision" : "kip_cust_rev";
@@ -593,6 +601,8 @@ static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
         case HocClkConfigValue_MemoryFrequencyMeasurementMode:
         case HocClkConfigValue_MarikoMiddleFreqs:
         case HocClkConfigValue_LiveGpuVoltage:
+        case HocClkConfigValue_FileLogging:
+        case HocClkConfigValue_UartLogging:
             return 0ULL;
         case HocClkConfigValue_RamDisplayUnit:
             return (uint64_t)RamDisplayUnit_MHz;
@@ -654,6 +664,9 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case HocClkConfigValue_MarikoMiddleFreqs:
         case HocClkConfigValue_LiveGpuVoltage:
         case HocClkConfigValue_Watchdog:
+        case HocClkConfigValue_FileLogging:
+        case HocClkConfigValue_UartLogging:
+        case KipConfigValue_eristaCpuUnlock:
             return (input & 0x1) == input;
 
         case KipConfigValue_KipVersion:
@@ -790,7 +803,6 @@ static inline uint64_t hocclkValidConfigValue(HocClkConfigValue val, uint64_t in
         case KipConfigValue_g_soc_volt_3266000:
         case KipConfigValue_g_soc_volt_3333000:
         case KipConfigValue_eristaCpuVmin:
-        case KipConfigValue_eristaCpuUnlock:
         case KipConfigValue_t6_tRTW_fine_tune:
         case KipConfigValue_t7_tWTR_fine_tune:
         case KipCrc32:

@@ -30,8 +30,12 @@
 
 #include "../hos/apm_ext.h"
 #include "file_utils.hpp"
+#include "config.hpp"
 #include <ipc_server.h>
 #include <lockable_mutex.h>
+#include <string>
+#include <utility>
+#include <vector>
 
 extern "C" void __libnx_init_time(void);
 
@@ -45,19 +49,24 @@ namespace file::utils {
         std::atomic_bool g_has_initialized = false;
         bool g_log_enabled = false;
         bool g_uart_enabled = false;
+        bool g_flags_resolved = false;
 
-        bool FlagExists(const char *path) {
-            FILE *file = fopen(path, "r");
-            if (file) {
-                fclose(file);
-                return true;
+        constexpr size_t MaxPendingLines = 64;
+        std::vector<std::pair<u64, std::string>> g_pending_lines;
+
+        void EmitLine(u64 secs, const char *buff, int len) {
+            if (g_uart_enabled) {
+                svcOutputDebugString(buff, len);
             }
-            return false;
-        }
 
-        void RefreshFlags() {
-            g_log_enabled = FlagExists(FILE_LOG_FLAG_PATH);
-            g_uart_enabled = FlagExists(FILE_UART_FLAG_PATH);
+            if (g_log_enabled) {
+                FILE *file = fopen(FILE_LOG_FILE_PATH, "a");
+
+                if (file) {
+                    fprintf(file, "[%luls] %s", secs, buff);
+                    fclose(file);
+                }
+            }
         }
 
         void InitializeThreadFunc(void *args) {
@@ -65,6 +74,24 @@ namespace file::utils {
         }
 
     }  // namespace
+
+    void InitializeLogging() {
+        const bool logEnabled  = config::GetConfigValue(HocClkConfigValue_FileLogging);
+        const bool uartEnabled = config::GetConfigValue(HocClkConfigValue_UartLogging);
+
+        std::scoped_lock lock{ g_log_mutex };
+        g_log_enabled  = logEnabled;
+        g_uart_enabled = uartEnabled;
+        g_flags_resolved = true;
+
+        if (g_log_enabled || g_uart_enabled) {
+            for (const auto &[secs, line] : g_pending_lines) {
+                EmitLine(secs, line.c_str(), (int)line.size());
+            }
+        }
+        g_pending_lines.clear();
+        g_pending_lines.shrink_to_fit();
+    }
 
     bool IsInitialized() {
         return g_has_initialized;
@@ -85,7 +112,7 @@ namespace file::utils {
             return;
         }
 
-        if (!g_log_enabled && !g_uart_enabled) {
+        if (g_flags_resolved && !g_log_enabled && !g_uart_enabled) {
             return;
         }
 
@@ -106,22 +133,18 @@ namespace file::utils {
         buff[len++] = '\n';
         buff[len] = '\0';
 
-        // Debug UART log
-        if (g_uart_enabled) {
-            svcOutputDebugString(buff, len);
-        }
+        timespec now = {};
+        clock_gettime(CLOCK_REALTIME, &now);
+        const u64 secs = now.tv_sec - bootTimeS;
 
-        if (g_log_enabled) {
-            FILE *file = fopen(FILE_LOG_FILE_PATH, "a");
-
-            if (file) {
-                timespec now = {};
-                clock_gettime(CLOCK_REALTIME, &now);
-
-                fprintf(file, "[%luls] %s", now.tv_sec - bootTimeS, buff);
-                fclose(file);
+        if (!g_flags_resolved) {
+            if (g_pending_lines.size() < MaxPendingLines) {
+                g_pending_lines.emplace_back(secs, std::string(buff, len));
             }
+            return;
         }
+
+        EmitLine(secs, buff, len);
     }
 
     void WriteContextToCsv(const HocClkContext *context) {
@@ -212,7 +235,6 @@ namespace file::utils {
         }
 
         if (R_SUCCEEDED(rc)) {
-            RefreshFlags();
             g_has_initialized = true;
             LogLine("=== hoc-clk " TARGET_VERSION " ===");
             LogLine("by m4xw, natinusala, p-sam, Souldbminer, Lightos_ and Dominatorul");

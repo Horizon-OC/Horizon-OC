@@ -126,7 +126,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     file::config::Initialize();
-    file::config::Refresh();  // Get config from file
+    file::config::Refresh();
+    file::utils::InitializeLogging();
 
     board::Initialize();
     hos::InitializeProcessManagement();

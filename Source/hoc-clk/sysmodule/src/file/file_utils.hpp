@@ -36,8 +36,6 @@
 
 #define FILE_CONFIG_DIR "/config/" CONFIG_DIR
 #define FILE_CONTEXT_CSV_PATH FILE_CONFIG_DIR "/context.csv"
-#define FILE_LOG_FLAG_PATH FILE_CONFIG_DIR "/log.flag"
-#define FILE_UART_FLAG_PATH FILE_CONFIG_DIR "/uart.flag"
 #define FILE_LOG_FILE_PATH FILE_CONFIG_DIR "/log.txt"
 #define FILE_SETTINGS_PATH FILE_CONFIG_DIR "/settings.ini"
 #define FILE_KIP_DIR FILE_CONFIG_DIR "/kip"
@@ -53,6 +51,7 @@ namespace file::utils {
     bool IsLogEnabled();
     bool IsUartEnabled();
     void InitializeAsync();
+    void InitializeLogging();
     void LogLine(const char *format, ...);
     void WriteContextToCsv(const HocClkContext *context);
 

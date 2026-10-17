@@ -560,6 +560,18 @@ std::vector<std::string> ConfigInfoStrings(HocClkConfigValue val, bool isMariko,
                 "Voltage applies globally across all frequencies.",
                 "\"Reset\" restores default or RAM-stable minimum."
             };
+        case HocClkConfigValue_FileLogging:
+            return {
+                "Write sysmodule logs to log.txt in the config folder.",
+                "Takes effect after a reboot.",
+                "Default: Off"
+            };
+        case HocClkConfigValue_UartLogging:
+            return {
+                "Output sysmodule logs over UART.",
+                "Takes effect after a reboot.",
+                "Default: Off"
+            };
         default:
             return {};
     }
