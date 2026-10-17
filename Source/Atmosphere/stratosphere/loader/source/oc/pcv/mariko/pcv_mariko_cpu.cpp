@@ -394,6 +394,10 @@ namespace ams::ldr::hoc::pcv::mariko {
                 PATCH_OFFSET(&(entry->tune0_high), 0xdfff);
                 PATCH_OFFSET(&(entry->tune1_high), 0x27f07ff);
                 break;
+            case 13:
+                PATCH_OFFSET(&(entry->tune0_high), 0xdfff);
+                PATCH_OFFSET(&(entry->tune1_high), 0x27FF7FF);
+                break;
             default:
                 break;
         }

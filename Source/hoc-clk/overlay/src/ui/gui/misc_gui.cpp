@@ -2364,7 +2364,7 @@ class CpuSubmenuGui : public MiscGui {
         this->listElement->addItem(new CompactCategoryHeader("CPU Settings"));
         if (IsMariko()) {
             addConfigTrackbar(KipConfigValue_marikoCpuUVLow, "CPU Low UV", ValueRange(0, 8, 1));
-            addConfigTrackbar(KipConfigValue_marikoCpuUVHigh, "CPU High UV", ValueRange(0, 12, 1));
+            addConfigTrackbar(KipConfigValue_marikoCpuUVHigh, "CPU High UV", ValueRange(0, 13, 1));
 
             std::vector<NamedValue> marikoTableConf = { // NamedValue("Auto", 0),
                                                         NamedValue("Default", 1), NamedValue("1581MHz Tbreak", 2), NamedValue("1683MHz Tbreak", 3),
