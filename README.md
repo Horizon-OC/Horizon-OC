@@ -243,5 +243,6 @@ The averages are only for reference. Each ram is different and must be tuned ind
 * **q1332348216-glitch, nangongjing1, xinluochenjiang** - Chinese translations
 * **th3-ne0undr5c0r** - French translations
 * **redraz** - Russian translations
+* **Wivi** - Portuguese translations
 * **Niklas080208** - JSON language support for sysmodule notifications.
 * **Nvidia** - [Tegra X1 Technical Reference Manual](https://developer.nvidia.com/embedded/dlc/tegra-x1-technical-reference-manual), soctherm driver, L4T
