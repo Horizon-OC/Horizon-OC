@@ -525,7 +525,7 @@ namespace ams::ldr::hoc::pcv::mariko {
 
     void Get32LutEmcList(std::vector<u32> &emcList) {
         /* No need to reduce outside of 33MHz stepmode. */
-        if (C.stepMode != StepMode_33MHz || emcList.size() <= mariko::MtcTableCountDefault) {
+        if (C.stepMode != StepMode_33MHz || emcList.size() <= DvfsTableEntryLimit) {
             return;
         }
 
