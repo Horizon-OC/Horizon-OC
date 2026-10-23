@@ -202,9 +202,6 @@ namespace ams::ldr::hoc::pcv {
     constexpr size_t EmcDvfsTableEntryCount = 64;
     constexpr size_t EmcDvfsTableEntryLimit = EmcDvfsTableEntryCount - 1;
 
-    // The pcv SoC-voltage DVB table is a fixed 32-entry region. (it doesn't need to be larger)
-    constexpr size_t DvbTableCapacity = 32;
-
     /* Note: According to TRM the lut size is 33, but up to 64 LUT is possible. */
     constexpr size_t ClDvfsLutSize = 64;
 

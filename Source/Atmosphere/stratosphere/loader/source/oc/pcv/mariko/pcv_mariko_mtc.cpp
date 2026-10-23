@@ -301,6 +301,16 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
     }
 
+    void AppendMaxEmc(std::vector<u32> &emcList) {
+        if (emcList.back() != C.marikoEmcMaxClock) {
+            emcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
+        }
+    }
+
+    void TruncateToLutLimit(std::vector<u32> &emcList, size_t limit) {
+        emcList.resize(std::min(emcList.size(), limit));
+    }
+
     void MtcGenerateJedecTable() {
         const u32 jedecFreqs[] = { 1866000, 1996800, 2133000, 2400000, 2666000, 2933000, 3200000 };
         constexpr u32 JedecFreqCount = std::size(jedecFreqs);
@@ -313,11 +323,8 @@ namespace ams::ldr::hoc::pcv::mariko {
             }
         }
 
-        if (newEmcList.back() != C.marikoEmcMaxClock) {
-            newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
-        }
-
-        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
+        AppendMaxEmc(newEmcList);
+        TruncateToLutLimit(newEmcList, EmcDvfsTableEntryLimit);
     }
 
     void MtcGenerate133StepTable() {
@@ -332,11 +339,8 @@ namespace ams::ldr::hoc::pcv::mariko {
             }
         }
 
-        if (newEmcList.back() != C.marikoEmcMaxClock) {
-            newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
-        }
-
-        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
+        AppendMaxEmc(newEmcList);
+        TruncateToLutLimit(newEmcList, EmcDvfsTableEntryLimit);
     }
 
     void MtcGenerate33StepTable() {
@@ -359,11 +363,8 @@ namespace ams::ldr::hoc::pcv::mariko {
             }
         }
 
-        if (newEmcList.back() != C.marikoEmcMaxClock) {
-            newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
-        }
-
-        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
+        AppendMaxEmc(newEmcList);
+        TruncateToLutLimit(newEmcList, EmcDvfsTableEntryLimit);
     }
 
     void MtcGenerateFreqTables() {
@@ -402,15 +403,13 @@ namespace ams::ldr::hoc::pcv::mariko {
             u32 newFreq = EmcClkOSLimit + stepIndex * stepRate;
             newFreq     = (newFreq / RoundHz) * RoundHz;
             if (newFreq > C.marikoEmcMaxClock) {
-                if (newEmcList.back() != C.marikoEmcMaxClock) {
-                    newEmcList.push_back(static_cast<u32>(C.marikoEmcMaxClock));
-                }
+                AppendMaxEmc(newEmcList);
                 break;
             }
             newEmcList.push_back(newFreq);
         }
 
-        newEmcList.resize(std::min(newEmcList.size(), EmcDvfsTableEntryLimit));
+        TruncateToLutLimit(newEmcList, EmcDvfsTableEntryLimit);
     }
 
     Result VerifyMtcTable(MarikoMtcTable *tableStart, u32 expectedFreq) {
@@ -524,6 +523,24 @@ namespace ams::ldr::hoc::pcv::mariko {
         R_SUCCEED();
     }
 
+    void Get32LutEmcList(std::vector<u32> &emcList) {
+        /* No need to reduce outside of 33MHz stepmode. */
+        if (C.stepMode != StepMode_33MHz || emcList.size() <= mariko::MtcTableCountDefault) {
+            return;
+        }
+
+        /* Add every other oc entry. */
+        std::vector<u32> reduced(emcList.begin(), emcList.begin() + mariko::MtcTableCountDefault);
+        for (size_t i = mariko::MtcTableCountDefault; i < emcList.size(); i += 2) {
+            reduced.push_back(emcList[i]);
+        }
+
+        TruncateToLutLimit(reduced, DvfsTableEntryLimit);
+        AppendMaxEmc(reduced);
+
+        emcList = std::move(reduced);
+    }
+
     Result MemFreqDvbTable(u32 *ptr) {
         DvbEntry *default_end = reinterpret_cast<DvbEntry *>(ptr);
         DvbEntry *new_start   = default_end + 1;
@@ -537,9 +554,9 @@ namespace ams::ldr::hoc::pcv::mariko {
             R_SKIP();
         }
 
-        s32 max0    = 1050;
-        s32 max1    = 1025;
-        s32 max2    = 1000;
+        s32 max0 = 1050;
+        s32 max1 = 1025;
+        s32 max2 = 1000;
 
         if (C.marikoSocVmax && C.marikoSocVmax > 1000) {
             max0 = C.marikoSocVmax;
@@ -614,12 +631,15 @@ namespace ams::ldr::hoc::pcv::mariko {
         #undef DVB
         #undef DVB_OC
 
-        const size_t dvbCount = std::min(newEmcList.size(), DvbTableCapacity);
-        DvbEntry emcDvbTableOc[DvbTableCapacity] = {};
+        std::vector<u32> reducedEmcList = newEmcList;
+        Get32LutEmcList(reducedEmcList);
+
+        const size_t dvbCount = std::min(reducedEmcList.size(), DvfsTableEntryCount);
+        DvbEntry emcDvbTableOc[DvfsTableEntryCount] = {};
 
         u32 bracketIndex = 0;
         for (size_t i = 0; i < dvbCount; ++i) {
-            const u32 freq = (i == dvbCount - 1) ? static_cast<u32>(newEmcList.back()) : newEmcList[i];
+            const u32 freq = reducedEmcList[i];
             while (freq >= emcDvbOcTableBrackets[bracketIndex + 1].freq) {
                 ++bracketIndex;
             }
@@ -629,7 +649,7 @@ namespace ams::ldr::hoc::pcv::mariko {
         }
 
         /* Clear the entire 32-entry region */
-        std::memset(mem_dvb_table_head, 0, DvbTableCapacity * sizeof(DvbEntry));
+        std::memset(mem_dvb_table_head, 0, DvfsTableEntryCount * sizeof(DvbEntry));
         std::memcpy(mem_dvb_table_head, emcDvbTableOc, dvbCount * sizeof(DvbEntry));
 
         R_SUCCEED();
