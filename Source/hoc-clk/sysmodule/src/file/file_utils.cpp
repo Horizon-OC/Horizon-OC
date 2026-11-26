@@ -36,6 +36,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "uart.hpp"
+#include <cstring>
 
 extern "C" void __libnx_init_time(void);
 
@@ -53,10 +55,17 @@ namespace file::utils {
 
         constexpr size_t MaxPendingLines = 64;
         std::vector<std::pair<u64, std::string>> g_pending_lines;
+        UartLogPort uartPort = UartLogPort_Svc;
 
         void EmitLine(u64 secs, const char *buff, int len) {
             if (g_uart_enabled) {
-                svcOutputDebugString(buff, len);
+                if(uartPort == UartLogPort_Svc) {
+                    svcOutputDebugString(buff, len);
+                } else {
+                    file::uart::SendUartPacket((void*)(buff), len);
+                    /* wait for drain*/
+                    svcSleepThread((u64)len * 10'000);
+                }
             }
 
             if (g_log_enabled) {
@@ -77,7 +86,19 @@ namespace file::utils {
 
     void InitializeLogging() {
         const bool logEnabled  = config::GetConfigValue(HocClkConfigValue_FileLogging);
+        #ifndef SYSMODULE_DEBUG
         const bool uartEnabled = config::GetConfigValue(HocClkConfigValue_UartLogging);
+        #else
+        #pragma message "DEBUG SYSMODULE - DO NOT RELEASE"
+        const bool uartEnabled = true;
+        #endif
+        uartPort = (UartLogPort)config::GetConfigValue(HocClkConfigValue_UartPort);
+        
+        /* 1MBPS is optimal */
+        if(uartPort != UartLogPort_Svc) {
+            file::uart::InitializeUartLogging((UartPort)(uartPort + 1), 1000000);
+        }
+
 
         std::scoped_lock lock{ g_log_mutex };
         g_log_enabled  = logEnabled;
@@ -128,8 +149,10 @@ namespace file::utils {
         }
         // Leave room for the newline + NUL.
         if ((size_t)len >= sizeof(buff) - 1) {
-            len = sizeof(buff) - 2;
+            len = sizeof(buff) - 3;
         }
+        /* print out CR+LF for UART. Should not affect properly created text editors */
+        buff[len++] = '\r';
         buff[len++] = '\n';
         buff[len] = '\0';
 
@@ -221,7 +244,6 @@ namespace file::utils {
         if (R_SUCCEEDED(rc)) {
             rc = timeInitialize();
         }
-
         __libnx_init_time();
         timeExit();
         SetBootTime();
@@ -236,6 +258,7 @@ namespace file::utils {
 
         if (R_SUCCEEDED(rc)) {
             g_has_initialized = true;
+
             LogLine("=== hoc-clk " TARGET_VERSION " ===");
             LogLine("by m4xw, natinusala, p-sam, Souldbminer, Lightos_ and Dominatorul");
         }
@@ -247,11 +270,12 @@ namespace file::utils {
         if (!g_has_initialized) {
             return;
         }
-
+        if(uartPort != UartLogPort_Svc) {
+            file::uart::CloseUartLogging();
+        }
         g_has_initialized = false;
         g_log_enabled = false;
         g_uart_enabled = false;
-
         fsdevUnmountAll();
         fsExit();
     }

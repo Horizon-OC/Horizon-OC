@@ -812,6 +812,23 @@ class GeneralSettingsSubMenuGui : public MiscGui {
         this->listElement->addItem(new CompactCategoryHeader("Logging"));
         addConfigToggle(HocClkConfigValue_FileLogging, nullptr);
         addConfigToggle(HocClkConfigValue_UartLogging, nullptr);
+        
+        tsl::elm::CustomDrawer *uartPortWarning = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
+            renderer->drawString("\uE150 The Right/Left Joycon ports ", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
+            renderer->drawString("will cause crashes on launch if not", false, x + 20, y + 50, 18, tsl::style::color::ColorText);
+            renderer->drawString("configured correctly!", false, x + 20, y + 70, 18, tsl::style::color::ColorText);
+        });
+        uartPortWarning->setBoundaries(0, 0, tsl::cfg::FramebufferWidth, 90);
+        this->listElement->addItem(uartPortWarning);
+
+        std::vector<NamedValue> UartLogPortValues = {
+            NamedValue("SVC", UartLogPort_Svc),
+            NamedValue("Right Joycon (!)", UartLogPort_JoyconR),
+            NamedValue("Left Joycon (!)", UartLogPort_JoyconL),
+        };
+        addConfigButton(HocClkConfigValue_UartPort, "UART Logging Port", ValueRange(0, 0, 2, "", 0), "UART Logging Port", &thresholdsDisabled, {},
+                        UartLogPortValues, false
+        );
 
         tsl::elm::CustomDrawer *exSetWarning = new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
             renderer->drawString("\uE150 Experimental Settings are incomplete ", false, x + 20, y + 30, 18, tsl::style::color::ColorText);
