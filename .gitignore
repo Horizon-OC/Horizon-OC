@@ -9,3 +9,5 @@ Source/hekate
 dist/*
 !dist/.gitignore
 Status-Monitor-Overlay.ovl*
+/dev
+notes.md
