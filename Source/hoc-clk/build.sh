@@ -4,12 +4,12 @@ set -e
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DIST_DIR="$ROOT_DIR/dist"
 CORES="$(nproc --all)"
-OVERLAY_DEBUG=0
+DEBUG=0
 
 for arg in "$@"; do
     case "$arg" in
         -d|--debug)
-            OVERLAY_DEBUG=1
+            DEBUG=1
             ;;
         "")
             ;;
@@ -23,7 +23,7 @@ echo "*** Compiling hoc-clk ***"
 TITLE_ID="$(grep -oP '"title_id":\s*"0x\K(\w+)' "$ROOT_DIR/sysmodule/perms.json")"
 
 pushd "$ROOT_DIR/sysmodule"
-make -j$CORES
+make -j$CORES SYSMODULE_DEBUG=$DEBUG
 popd > /dev/null
 
 mkdir -p "$DIST_DIR/atmosphere/contents/$TITLE_ID/flags"
@@ -34,7 +34,7 @@ cp -vf "$ROOT_DIR/sysmodule/toolbox.json" "$DIST_DIR/atmosphere/contents/$TITLE_
 echo
 echo "*** Compiling hoc-clk-overlay ***"
 pushd "$ROOT_DIR/overlay"
-make -j$CORES OVERLAY_DEBUG=$OVERLAY_DEBUG
+make -j$CORES OVERLAY_DEBUG=$DEBUG
 popd > /dev/null
 
 mkdir -p "$DIST_DIR/switch/.overlays"
