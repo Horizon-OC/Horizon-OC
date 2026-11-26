@@ -114,20 +114,32 @@ namespace board {
             ClkrstSession session = {};
             rc = clkrstOpenSession(&session, GetPcvModuleId(module), 3);
             ASSERT_RESULT_OK(rc, "clkrstOpenSession");
+            if(module == HocClkModule_CPU) {
+                AdjustMinLutIndex();
+            }
             ClkrstSetHz(session, pcvHz);
-
+            if(module == HocClkModule_CPU) {
+                AdjustMinLutIndex();
+            }
             /* Voltage bug workaround. */
             if (module == HocClkModule_CPU) {
                 svcSleepThread(300'000);
+                AdjustMinLutIndex();
                 ClkrstSetHz(session, pcvHz);
+                AdjustMinLutIndex();
             }
             clkrstCloseSession(&session);
         } else {
+            if(module == HocClkModule_CPU) {
+                AdjustMinLutIndex();
+            }
             PcvSetHz(GetPcvModule(module), pcvHz);
 
             if (module == HocClkModule_CPU) {
                 svcSleepThread(300'000);
+                AdjustMinLutIndex();
                 PcvSetHz(GetPcvModule(module), pcvHz);
+                AdjustMinLutIndex();
             }
         }
         if (file::config::GetConfigValue(HocClkConfigValue_LiveCpuUv) && module == HocClkModule_CPU) {

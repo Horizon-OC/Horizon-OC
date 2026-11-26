@@ -462,7 +462,14 @@ namespace ams::ldr::hoc::pcv::mariko {
         /* *(param+8) = CLDVFS mapping */
         const u64 base = *reinterpret_cast<u64 *>(param + 8);
         u32 *lut       = reinterpret_cast<u32 *>(base + 0x200);
+        u32 *cfg0      = reinterpret_cast<u32 *>(base + 0x20);
+        /* set CFG0 MIN to 31 for safety reasons */
+        constexpr u32 Shift = 8;
+        constexpr u32 Mask  = 0x3F << Shift;
 
+        *cfg0 = (*cfg0 & ~Mask) | ((31 << Shift) & Mask);
+
+         __asm__ volatile("dsb st" ::: "memory"); 
         for (u32 i = 0; i < ClDvfsLutSize; ++i) {
             lut[i] = data->lut64.table[i];
         }
