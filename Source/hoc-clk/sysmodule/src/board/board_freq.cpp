@@ -134,7 +134,9 @@ namespace board {
                 AdjustMinLutIndex();
             }
             PcvSetHz(GetPcvModule(module), pcvHz);
-
+            if(module == HocClkModule_CPU) {
+                AdjustMinLutIndex();
+            }
             if (module == HocClkModule_CPU) {
                 svcSleepThread(300'000);
                 AdjustMinLutIndex();
