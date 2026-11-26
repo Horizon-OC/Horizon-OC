@@ -36,6 +36,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "uart.hpp"
 
 extern "C" void __libnx_init_time(void);
 
@@ -221,7 +222,6 @@ namespace file::utils {
         if (R_SUCCEEDED(rc)) {
             rc = timeInitialize();
         }
-
         __libnx_init_time();
         timeExit();
         SetBootTime();
@@ -233,7 +233,9 @@ namespace file::utils {
         if (R_SUCCEEDED(rc)) {
             rc = fsdevMountSdmc();
         }
-
+        file::uart::InitializeUartLogging(UartPort_JoyConR, 1000000);
+        char pkt[0x1000] = "hello from uart";
+        file::uart::SendUartPacket(pkt, sizeof(pkt));
         if (R_SUCCEEDED(rc)) {
             g_has_initialized = true;
             LogLine("=== hoc-clk " TARGET_VERSION " ===");
@@ -251,7 +253,7 @@ namespace file::utils {
         g_has_initialized = false;
         g_log_enabled = false;
         g_uart_enabled = false;
-
+        file::uart::CloseUartLogging();
         fsdevUnmountAll();
         fsExit();
     }

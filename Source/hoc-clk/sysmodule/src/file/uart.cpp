@@ -1,5 +1,5 @@
-#include <switch.h>
-#include "errors.hpp"
+#include "uart.hpp"
+
 /* probably better to move this elsewhere? */
 /* not all baud rates are allowed, so ensure your exosphere uses correct baud rate as we configure here */
 /* 1M is good (supported 57600, 115200, 1000000 and 3000000), 3M will error out most adapters (trust me, i tried)*/
@@ -9,8 +9,8 @@ namespace file::uart {
         /* buffers must be 0x1000 byte aligned */
         constexpr u32 send_buffer_size = 0x1000;
         constexpr u32 rcv_buffer_size  = 0x1000;
-        alignas(0x1000) u32 send_buffer[0x1000] = { 0 };
-        alignas(0x1000) u32 rcv_buffer[0x1000]  = { 0 }; 
+        alignas(0x1000) char send_buffer[0x1000] = { 0 };
+        alignas(0x1000) char rcv_buffer[0x1000]  = { 0 }; 
     }
 
     Result InitializeUartLogging(UartPort port, u32 baud_rate) {
@@ -34,18 +34,13 @@ namespace file::uart {
     }
 
     void SendUartPacket(void* pkt, u32 pkt_len) {
-        u32 out_sz = 0;
-        uartPortSessionSend(&uartSession, pkt, (size_t)pkt_len, out_sz);
+        u64 out_sz = 0;
+        uartPortSessionSend(&uartSession, pkt, (size_t)pkt_len, &out_sz);
         (void)out_sz;
     }
 
-    Result CloseUartLogging() {
-        Result rc = uartPortSessionClose(&uartSession);
-        ASSERT_RESULT_OK(rc, "uartPortSessionClose");
-
-        rc = uartExit();
-        ASSERT_RESULT_OK(rc, "uartExit");
-        
-        return rc;
+    void CloseUartLogging() {
+        uartPortSessionClose(&uartSession);
+        uartExit();
     }
 }
