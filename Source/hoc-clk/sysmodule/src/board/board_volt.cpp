@@ -30,6 +30,7 @@
 #include "board.hpp"
 #include "board_freq.hpp"
 #include "board_volt.hpp"
+#include "../file/config.hpp"
 
 namespace board {
 
@@ -139,10 +140,11 @@ namespace board {
             return 1581000000;
         } else {
             switch (table) {
-                case 1 ... 2:
-                case 4:
+                case CPU_DEFAULT_TABLE ... CPU_TBREAK_1581:
                     return 1581000000;
-                case 3:
+                case CPU_EXTREME_TABLE:
+                    return 2091000000;
+                case CPU_TBREAK_1683:
                     return 1683000000;
                 default:
                     return 1581000000;
@@ -626,7 +628,6 @@ namespace board {
         } cpuVoltData;
     }
 
-    namespace {
         inline void DataSyncBarrier() {
             __asm__ volatile("dsb sy" ::: "memory");
         }
@@ -670,7 +671,8 @@ namespace board {
             constexpr u32 Shift = 8;
             constexpr u32 Mask  = 0x3F << Shift;
             /* Index is always 0 for us. */
-            constexpr u32 MinLutIndex = 0;
+            u32 tbreak = board::CalculateTbreak(file::config::GetConfigValue(KipConfigValue_tableConf));
+            u32 MinLutIndex = GetLutCode(GetHz(HocClkModule_CPU) >= tbreak ? file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin) : file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin));
 
             volatile u32 *reg = reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
 
@@ -744,7 +746,7 @@ namespace board {
                 lut[i] = lut[validCount - 1];
             }
         }
-    }
+
 
     void InitializeCpuLut(bool kip) {
         if (kip) {
@@ -759,6 +761,12 @@ namespace board {
 
         cpuVoltData.initialized = true;
 
+        for (u32 i = 0; i < LutSize; i++) {
+            file::utils::LogLine("[dvfs] CPU Real LUT %d: %dmV", i, GetLutVolt(*(u32*)(cldvfs + CL_DVFS_LUT_TABLE_0 + (i * sizeof(u32)))));
+        }
+    }
+
+    void PrintCpuLut() {
         for (u32 i = 0; i < LutSize; i++) {
             file::utils::LogLine("[dvfs] CPU Real LUT %d: %dmV", i, GetLutVolt(*(u32*)(cldvfs + CL_DVFS_LUT_TABLE_0 + (i * sizeof(u32)))));
         }
@@ -843,4 +851,5 @@ namespace board {
 
         cpuVoltData.lastVmin = vmin;
     }
+
 }

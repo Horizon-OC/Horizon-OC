@@ -214,6 +214,12 @@ typedef enum UartLogPort {
     UartLogPort_EnumMax,
 } UartLogPort;
 
+typedef enum CpuTableConfig {
+    CPU_DEFAULT_TABLE = 1,
+    CPU_TBREAK_1581   = 2,
+    CPU_TBREAK_1683   = 3,
+    CPU_EXTREME_TABLE = 4,
+} CpuTableConfig;
 // typedef enum {
 // 	PANEL_JDI_XXX062M     = 0x10,
 // 	PANEL_JDI_LAM062M109A = 0x0910, // SI.

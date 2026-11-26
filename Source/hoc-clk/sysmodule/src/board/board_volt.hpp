@@ -65,5 +65,6 @@ namespace board {
     void InitializeCpuLut(bool kip);
     void ApplyCpuMinVolt(u32 vmin, bool force);
     u32 GetMinimumCpuVmin(u32 freqMhz, u32 bracket);
-
+    void PrintCpuLut();
+    void AdjustMinLutIndex();
 }  // namespace board
