@@ -37,6 +37,7 @@
 #include <utility>
 #include <vector>
 #include "uart.hpp"
+#include <cstring>
 
 extern "C" void __libnx_init_time(void);
 
@@ -57,7 +58,9 @@ namespace file::utils {
 
         void EmitLine(u64 secs, const char *buff, int len) {
             if (g_uart_enabled) {
-                svcOutputDebugString(buff, len);
+                file::uart::SendUartPacket((void*)(buff), len);
+                /* wait for drain*/
+                svcSleepThread((u64)len * 10'000);
             }
 
             if (g_log_enabled) {
@@ -78,8 +81,12 @@ namespace file::utils {
 
     void InitializeLogging() {
         const bool logEnabled  = config::GetConfigValue(HocClkConfigValue_FileLogging);
+        #ifndef SYSMODULE_DEBUG
         const bool uartEnabled = config::GetConfigValue(HocClkConfigValue_UartLogging);
-
+        #else
+        #pragma message "DEBUG SYSMODULE - DO NOT RELEASE"
+        const bool uartEnabled = true;
+        #endif
         std::scoped_lock lock{ g_log_mutex };
         g_log_enabled  = logEnabled;
         g_uart_enabled = uartEnabled;
@@ -129,8 +136,10 @@ namespace file::utils {
         }
         // Leave room for the newline + NUL.
         if ((size_t)len >= sizeof(buff) - 1) {
-            len = sizeof(buff) - 2;
+            len = sizeof(buff) - 3;
         }
+        /* print out CR+LF for UART. Should not affect properly created text editors */
+        buff[len++] = '\r';
         buff[len++] = '\n';
         buff[len] = '\0';
 
@@ -234,8 +243,6 @@ namespace file::utils {
             rc = fsdevMountSdmc();
         }
         file::uart::InitializeUartLogging(UartPort_JoyConR, 1000000);
-        char pkt[0x1000] = "hello from uart";
-        file::uart::SendUartPacket(pkt, sizeof(pkt));
         if (R_SUCCEEDED(rc)) {
             g_has_initialized = true;
             LogLine("=== hoc-clk " TARGET_VERSION " ===");

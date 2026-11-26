@@ -37,11 +37,15 @@ LIBNAMES	:=	minIni
 TARGET_VERSION	:= 3.0.0
 KIP_VERSION :=  300
 CUST_REV    :=  7
+SYSMODULE_DEBUG ?= 0
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 DEFINES	:=	-DDISABLE_IPC -DKIP_VERSION=$(KIP_VERSION) -DCUST_REV=$(CUST_REV) -DTARGET="\"$(TARGET)\"" -DTARGET_VERSION="\"$(TARGET_VERSION)\"" -DCONFIG_DIR="\"$(CONFIG_DIR)\""
+ifeq ($(SYSMODULE_DEBUG),1)
+    DEFINES += -DSYSMODULE_DEBUG
+endif
 
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
