@@ -2398,7 +2398,7 @@ class CpuSubmenuGui : public MiscGui {
             addConfigButton(KipConfigValue_tableConf, "CPU UV Table", ValueRange(0, 12, 1, "", 0), "CPU UV Table", &thresholdsDisabled, {},
                             marikoTableConf, false, true);
 
-            addConfigButton(KipConfigValue_marikoCpuLowVmin, "CPU Low VMIN", ValueRange(450, 750, 5, "mV", 1), "CPU VMIN", &thresholdsDisabled, {},
+            addConfigButton(KipConfigValue_marikoCpuLowVmin, "CPU Low VMIN", ValueRange(490, 750, 5, "mV", 1), "CPU VMIN", &thresholdsDisabled, {},
                             {}, false, true);
 
             addConfigButton(KipConfigValue_marikoCpuHighVmin, "CPU High VMIN", ValueRange(650, 900, 5, "mV", 1), "CPU VMIN", &thresholdsDisabled, {},
