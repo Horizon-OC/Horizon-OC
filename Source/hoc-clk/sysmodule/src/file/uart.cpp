@@ -29,5 +29,23 @@ namespace file::uart {
         /* why? */
         ASSERT_RESULT_OK((Result)(!success), "uartPortSessionOpenPort");
 
+        /* we should be done here? */
+        return rc;
+    }
+
+    void SendUartPacket(void* pkt, u32 pkt_len) {
+        u32 out_sz = 0;
+        uartPortSessionSend(&uartSession, pkt, (size_t)pkt_len, out_sz);
+        (void)out_sz;
+    }
+
+    Result CloseUartLogging() {
+        Result rc = uartPortSessionClose(&uartSession);
+        ASSERT_RESULT_OK(rc, "uartPortSessionClose");
+
+        rc = uartExit();
+        ASSERT_RESULT_OK(rc, "uartExit");
+        
+        return rc;
     }
 }
