@@ -670,13 +670,46 @@ namespace board {
         void AdjustMinLutIndex() {
             constexpr u32 Shift = 8;
             constexpr u32 Mask  = 0x3F << Shift;
-            /* Index is always 0 for us. */
+
+            /* Nvidia/Nintendo don't actually update the LUT to apply HF/LF Vmin. What they do instead is update the LUT indices to reflect their new vmin*/
             u32 tbreak = board::CalculateTbreak(file::config::GetConfigValue(KipConfigValue_tableConf));
-            u32 MinLutIndex = GetLutCode(GetHz(HocClkModule_CPU) >= tbreak ? file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin) : file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin));
+            u32 vminMv = board::GetHz(HocClkModule_CPU) >= tbreak ? file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin) : file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin);
+
+            /* Convert vmin to a PMIC code, rounding up so we never pick a voltage below vmin. */
+            u32 targetCode = vminMv <= PmicVmin ? 0 : (vminMv - PmicVmin + (PmicStep - 1)) / PmicStep;
+
+            /* Find the LUT index holding the vmin voltage. If there is no exact
+               match, use the next entry with a higher voltage (ceiling). */
+            u32 minLutIndex = static_cast<u32>(LutSize - 1);
+            if (cpuVoltData.lut != nullptr && LutSize > 0) {
+                u32 bestIndex = static_cast<u32>(LutSize - 1);
+                u32 bestCode  = 0xFFFFFFFF;
+                bool found    = false;
+                for (u32 i = 0; i < LutSize; ++i) {
+                    const u32 code = cpuVoltData.lut[i];
+                    if (code == targetCode) {
+                        bestIndex = i;
+                        found = true;
+                        break;
+                    }
+                    if (code > targetCode && code < bestCode) {
+                        bestCode  = code;
+                        bestIndex = i;
+                        found     = true;
+                    }
+                }
+                /* If no entry is >= vmin (vmin above LUT max), clamp to the last entry. */
+                minLutIndex = found ? bestIndex : static_cast<u32>(LutSize - 1);
+            }
+
+            /* Clamp to 31 to avoid overflowing the register field. */
+            if (minLutIndex > 31) {
+                minLutIndex = 31;
+            }
 
             volatile u32 *reg = reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
 
-            *reg = (*reg & ~Mask) | ((MinLutIndex << Shift) & Mask);
+            *reg = (*reg & ~Mask) | ((minLutIndex << Shift) & Mask);
 
             static_cast<void>(*reg);
         }
@@ -688,8 +721,10 @@ namespace board {
         void RestoreCpuLut() {
             cpuVoltData.lastVmin = 0;
             VolatileCopyDwords(cpuVoltData.lut, cpuVoltData.table, LutSize);
-            RestoreMinLutIndex();
+            /* you want to do this twice to avoid any edge case with HFVmin*/
+            AdjustMinLutIndex();
             UnstuckFreqWar();
+            AdjustMinLutIndex();
         }
 
         u32 FloorLutTable(u32 *lut, u32 minCode) {
