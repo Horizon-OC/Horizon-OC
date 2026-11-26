@@ -55,12 +55,17 @@ namespace file::utils {
 
         constexpr size_t MaxPendingLines = 64;
         std::vector<std::pair<u64, std::string>> g_pending_lines;
+        UartLogPort uartPort = UartLogPort_Svc;
 
         void EmitLine(u64 secs, const char *buff, int len) {
             if (g_uart_enabled) {
-                file::uart::SendUartPacket((void*)(buff), len);
-                /* wait for drain*/
-                svcSleepThread((u64)len * 10'000);
+                if(uartPort == UartLogPort_Svc) {
+                    svcOutputDebugString(buff, len);
+                } else {
+                    file::uart::SendUartPacket((void*)(buff), len);
+                    /* wait for drain*/
+                    svcSleepThread((u64)len * 10'000);
+                }
             }
 
             if (g_log_enabled) {
@@ -87,6 +92,14 @@ namespace file::utils {
         #pragma message "DEBUG SYSMODULE - DO NOT RELEASE"
         const bool uartEnabled = true;
         #endif
+        uartPort = (UartLogPort)config::GetConfigValue(HocClkConfigValue_UartPort);
+        
+        /* 1MBPS is optimal */
+        if(uartPort != UartLogPort_Svc) {
+            file::uart::InitializeUartLogging((UartPort)(uartPort + 1), 1000000);
+        }
+
+
         std::scoped_lock lock{ g_log_mutex };
         g_log_enabled  = logEnabled;
         g_uart_enabled = uartEnabled;
@@ -242,9 +255,10 @@ namespace file::utils {
         if (R_SUCCEEDED(rc)) {
             rc = fsdevMountSdmc();
         }
-        file::uart::InitializeUartLogging(UartPort_JoyConR, 1000000);
+
         if (R_SUCCEEDED(rc)) {
             g_has_initialized = true;
+
             LogLine("=== hoc-clk " TARGET_VERSION " ===");
             LogLine("by m4xw, natinusala, p-sam, Souldbminer, Lightos_ and Dominatorul");
         }
@@ -256,11 +270,12 @@ namespace file::utils {
         if (!g_has_initialized) {
             return;
         }
-
+        if(uartPort != UartLogPort_Svc) {
+            file::uart::CloseUartLogging();
+        }
         g_has_initialized = false;
         g_log_enabled = false;
         g_uart_enabled = false;
-        file::uart::CloseUartLogging();
         fsdevUnmountAll();
         fsExit();
     }

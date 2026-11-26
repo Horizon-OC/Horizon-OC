@@ -207,6 +207,13 @@ typedef enum AulaColorMode {
     AulaDisplayColorMode_Night3 = 0x75,
 } AulaColorMode;
 
+typedef enum UartLogPort {
+    UartLogPort_Svc = 0,
+    UartLogPort_JoyconR,
+    UartLogPort_JoyconL,
+    UartLogPort_EnumMax,
+} UartLogPort;
+
 // typedef enum {
 // 	PANEL_JDI_XXX062M     = 0x10,
 // 	PANEL_JDI_LAM062M109A = 0x0910, // SI.

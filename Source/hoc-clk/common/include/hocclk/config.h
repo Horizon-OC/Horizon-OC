@@ -83,6 +83,7 @@ typedef enum {
 
     HocClkConfigValue_FileLogging,
     HocClkConfigValue_UartLogging,
+    HocClkConfigValue_UartPort,
 
     KipConfigValue_custRev,
     KipConfigValue_KipVersion,
@@ -349,6 +350,8 @@ static inline const char* hocclkFormatConfigValue(HocClkConfigValue val, bool pr
             return pretty ? "File Logging" : "file_logging";
         case HocClkConfigValue_UartLogging:
             return pretty ? "UART Logging" : "uart_logging";
+        case HocClkConfigValue_UartPort:
+        return pretty ? "UART Port" : "uart_port";         
         // KIP config values
         case KipConfigValue_custRev:
             return pretty ? "Custom Revision" : "kip_cust_rev";
@@ -603,6 +606,7 @@ static inline uint64_t hocclkDefaultConfigValue(HocClkConfigValue val)
         case HocClkConfigValue_LiveGpuVoltage:
         case HocClkConfigValue_FileLogging:
         case HocClkConfigValue_UartLogging:
+        case HocClkConfigValue_UartPort: /* svc */
             return 0ULL;
         case HocClkConfigValue_RamDisplayUnit:
             return (uint64_t)RamDisplayUnit_MHz;
