@@ -670,7 +670,7 @@ namespace board {
         void AdjustMinLutIndex() {
             /* Nvidia/Nintendo don't actually update the LUT to apply HF/LF Vmin. What they do instead is update the LUT indices to reflect their new vmin*/
             u32 tbreak = board::CalculateTbreak(file::config::GetConfigValue(KipConfigValue_tableConf));
-            u32 vminMv = board::GetHz(HocClkModule_CPU) >= tbreak ? file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin) : file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin);
+            u32 vminMv = board::GetHz(HocClkModule_CPU) > tbreak ? file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin) : file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin);
 
             /* Convert vmin to a PMIC code, rounding up so we never pick a voltage below vmin. */
             u32 targetCode = vminMv <= PmicVmin ? 0 : (vminMv - PmicVmin + (PmicStep - 1)) / PmicStep;
@@ -884,6 +884,10 @@ namespace board {
         UnstuckFreqWar();
 
         cpuVoltData.lastVmin = vmin;
+    }
+
+    u64 GetCldvfsVa() {
+        return cldvfs;
     }
 
 }

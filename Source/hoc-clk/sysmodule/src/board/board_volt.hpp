@@ -67,4 +67,5 @@ namespace board {
     u32 GetMinimumCpuVmin(u32 freqMhz, u32 bracket);
     void PrintCpuLut();
     void AdjustMinLutIndex();
+    u64 GetCldvfsVa();
 }  // namespace board
