@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #define EMC_INTSTATUS_0 0x0
 #define EMC_INTMASK_0 0x4
 #define EMC_DBG_0 0x8
@@ -519,16 +521,299 @@
 #define DVFS_DFLL_THROTTLE_MEDIUM_0 0x6C
 #define DVFS_DFLL_THROTTLE_HEAVY_0 0x70
 #define DVFS_CC4_HVC_0 0x74
-#define CL_DVFS_MONITOR_DATA_0 0x2C
-#define CL_DVFS_I2C_CFG_0 0x40
-#define CL_DVFS_I2C_VDD_REG_ADDR_0 0x44
-#define CL_DVFS_I2C_STS_0 0x48
-#define CL_DVFS_INTR_STS_0 0x5C
 #define CL_DVFS_I2C_CLK_DIVISOR_REGISTER_0 0x16C
 
 #define CLK_SOURCE_EMC 0x19c
 
 #define CL_DVFS_LUT_TABLE_0 0x200
+#define CL_DVFS_LUT_DEPTH 33 /* 33-deep x 8-bit RAM, DWORD aligned */
+
+/* CL-DVFS register bitfields, Tegra X1 TRM DP-07225-001 Ch.6 / Appendix B.2.4.
+ * All registers are 32-bit. Assumes little-endian LSB-first bitfield
+ * allocation (devkitA64 GCC/Clang). Reset values are noted per register. */
+
+typedef enum {
+    ClDvfsCtrlMode_Disabled = 0,        /* Ring oscillator does not run. */
+    ClDvfsCtrlMode_EnableOpenLoop = 1,  /* Oscillator runs, control loop inactive. */
+    ClDvfsCtrlMode_EnableClosedLoop = 2, /* Control loop drives I2C output to hold FREQ_REQ. */
+} ClDvfsCtrlMode;
+
+/* CL_DVFS_CTRL_0 (0x0), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t mode : 2; /* DFLL_CTRL_MODE */
+        uint32_t _reserved : 30;
+    };
+} ClDvfsCtrl;
+static_assert(sizeof(ClDvfsCtrl) == 4, "ClDvfsCtrl size");
+
+/* CL_DVFS_CONFIG_0 (0x4), reset 0x00000006. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t div_s : 8; /* DFLL_CONFIG_DIV_S: refclk divider, sample rate = refclk / (32 * div_s). */
+        uint32_t _reserved : 24;
+    };
+} ClDvfsConfig;
+static_assert(sizeof(ClDvfsConfig) == 4, "ClDvfsConfig size");
+
+typedef enum {
+    ClDvfsForceMode_Disabled = 0, /* I2C control value is never forced on frequency change. */
+    ClDvfsForceMode_Fixed = 1,    /* Force for a fixed number of sample periods. */
+    ClDvfsForceMode_Auto = 2,     /* Force for (output delta * cf_param / 16) sample periods. */
+} ClDvfsForceMode;
+
+/* CL_DVFS_PARAMS_0 (0x8), reset 0x000000F0. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t cg_param : 8;   /* DFLL_PARAMS_CG_PARAM: overall loop gain (SIGNED value). */
+        uint32_t ci_param : 3;   /* DFLL_PARAMS_CI_PARAM: integral gain (0=DISABLE, 1=DIV2, 2=DIV4, 3=DIV8, 4=DIV16, 5=DIV32, 6=DIV64, 7=DIV128). */
+        uint32_t _reserved0 : 5;
+        uint32_t cf_param : 6;   /* DFLL_PARAMS_CF_PARAM: forced-value window after a frequency change. */
+        uint32_t force_mode : 2; /* DFLL_PARAMS_FORCE_MODE */
+        uint32_t cg_scale : 1;   /* DFLL_PARAMS_CG_SCALE: if 1, loop gain / 8. */
+        uint32_t _reserved1 : 7;
+    };
+} ClDvfsParams;
+static_assert(sizeof(ClDvfsParams) == 4, "ClDvfsParams size");
+
+/* CL_DVFS_TUNE0_0 (0xC), reset 0x00000000. */
+/* NOTE: TRM labels both 31:16 and 15:8 as DLY_STK; 31:16 drives I_DLY_SPARE<15:0>. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t dly_inv : 8;   /* DFLL_TUNE0_DLY_INV: coarse (3) + fine (5) inverter-path delay, drives I_DLY_INV<7:0>. */
+        uint32_t dly_stk : 8;   /* DFLL_TUNE0_DLY_STK: coarse (4) + fine (4) stacked-gate delay, drives I_DLY_STK<7:0>. */
+        uint32_t dly_spare : 16; /* Drives I_DLY_SPARE<15:0>. */
+    };
+} ClDvfsTune0;
+static_assert(sizeof(ClDvfsTune0) == 4, "ClDvfsTune0 size");
+
+/* CL_DVFS_TUNE1_0 (0x10), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t dly_wire : 11;  /* DFLL_TUNE1_DLY_WIRE: coarse (2) + fine (9) wire-path delay, drives I_DLY_WIRE<10:0>. */
+        uint32_t dly_spare1 : 1; /* DFLL_TUNE1_DLY_SPARE1: drives I_DLY_SPARE<16>. */
+        uint32_t dly_sram : 11;  /* DFLL_TUNE1_DLY_SRAM: coarse (3) + fine (5) SRAM-path delay, drives I_DLY_SRAM<10:0>. */
+        uint32_t dly_fine : 9;   /* DFLL_TUNE1_DLY_FINE: 8 tune bits + 1 high/low select, drives I_DLY_FINE<8:0>. */
+    };
+} ClDvfsTune1;
+static_assert(sizeof(ClDvfsTune1) == 4, "ClDvfsTune1 size");
+
+/* CL_DVFS_FREQ_REQ_0 (0x14), reset 0x0000FF40. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t mult : 7;      /* DFLL_FREQ_REQ_MULT: ring freq = (REF_CLK/2) * F. */
+        uint32_t valid : 1;     /* DFLL_FREQ_REQ_VALID: 0 reverts to open loop at SAFE value. */
+        uint32_t scale : 8;     /* DFLL_FREQ_REQ_SCALE: cycles (+1) to NOT skip per 256 cycles. */
+        uint32_t force_val : 12; /* DFLL_FREQ_REQ_FORCE_VAL: integrator seed, (desired - safe) * 128 / Cg. */
+        uint32_t force_en : 1;  /* DFLL_FREQ_REQ_FORCE_EN */
+        uint32_t _reserved : 3;
+    };
+} ClDvfsFreqReq;
+static_assert(sizeof(ClDvfsFreqReq) == 4, "ClDvfsFreqReq size");
+
+/* CL_DVFS_SCALE_RAMP_0 (0x18), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t ramp_rate : 4; /* DFLL_OUTPUT_RAMP_RATE: cycles (+1) to wait per counter step. */
+        uint32_t _reserved : 28;
+    };
+} ClDvfsScaleRamp;
+static_assert(sizeof(ClDvfsScaleRamp) == 4, "ClDvfsScaleRamp size");
+
+/* CL_DVFS_DROOP_CTRL_0 (0x1C), reset 0x00000810. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t rate : 8;     /* DFLL_DROOP_CTRL_RATE: cycles (+1) to wait per re-introduced step. */
+        uint32_t cut : 4;      /* DFLL_DROOP_CTRL_CUT: CPU clock scaled by (cut+1)/16 at min freq. */
+        uint32_t _reserved0 : 4;
+        uint32_t min_freq : 8; /* DFLL_DROOP_CTRL_MIN_FREQ: Fmin = min_freq * (REF_CLK/4) over 4 refclk cycles. */
+        uint32_t _reserved1 : 8;
+    };
+} ClDvfsDroopCtrl;
+static_assert(sizeof(ClDvfsDroopCtrl) == 4, "ClDvfsDroopCtrl size");
+
+/* CL_DVFS_OUTPUT_CFG_0 (0x20), reset 0x50200000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t div_d : 6;    /* DFLL_OUTPUT_CONFIG_DIV_D: PWM divider (divides SOC clock). */
+        uint32_t clk_en : 1;   /* DFLL_OUTPUT_CONFIG_CLK_EN: PMIC control clock output enable. */
+        uint32_t delta_en : 1; /* DFLL_OUTPUT_CONFIG_DELTA_EN: with clk_en, PWM active 32 cycles only on change. */
+        uint32_t min : 6;      /* DFLL_OUTPUT_CONFIG_MIN: minimum LUT index on the OUTPUT interface. */
+        uint32_t _reserved0 : 2;
+        uint32_t max : 6;      /* DFLL_OUTPUT_CONFIG_MAX: maximum LUT index on the OUTPUT interface. */
+        uint32_t _reserved1 : 2;
+        uint32_t safe : 6;     /* DFLL_OUTPUT_CONFIG_SAFE: LUT index used when disabled / open loop. */
+        uint32_t i2c_enable : 1; /* DFLL_OUTPUT_CONFIG_I2C_ENABLE: master enable for I2C value updates. */
+        uint32_t _reserved2 : 1;
+    };
+} ClDvfsOutputCfg;
+static_assert(sizeof(ClDvfsOutputCfg) == 4, "ClDvfsOutputCfg size");
+
+/* CL_DVFS_OUTPUT_FORCE_0 (0x24), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t value : 6;  /* DFLL_OUTPUT_FORCE_VALUE */
+        uint32_t enable : 1; /* DFLL_OUTPUT_FORCE_ENABLE */
+        uint32_t _reserved : 25;
+    };
+} ClDvfsOutputForce;
+static_assert(sizeof(ClDvfsOutputForce) == 4, "ClDvfsOutputForce size");
+
+typedef enum {
+    ClDvfsMonitorSelect_Disabled = 0,
+    ClDvfsMonitorSelect_CycleInt = 1,
+    ClDvfsMonitorSelect_ProTerm = 2,
+    ClDvfsMonitorSelect_IntTerm = 3,
+    ClDvfsMonitorSelect_OutputInt = 4,
+    ClDvfsMonitorSelect_OutputValue = 5,
+    ClDvfsMonitorSelect_Freq = 6,
+} ClDvfsMonitorSelect;
+
+/* CL_DVFS_MONITOR_CTRL_0 (0x28), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t select : 3; /* DFLL_MONITOR_CTRL_SELECT */
+        uint32_t _reserved : 29;
+    };
+} ClDvfsMonitorCtrl;
+static_assert(sizeof(ClDvfsMonitorCtrl) == 4, "ClDvfsMonitorCtrl size");
+
+/* CL_DVFS_MONITOR_DATA_0 (0x2C), RO, reset 0x000XXXXX. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t val : 16;   /* DFLL_MONITOR_DATA_VAL: updated every sample period. */
+        uint32_t is_new : 1; /* DFLL_MONITOR_DATA_NEW: 1 on new sample, cleared on read. */
+        uint32_t _reserved : 15;
+    };
+} ClDvfsMonitorData;
+static_assert(sizeof(ClDvfsMonitorData) == 4, "ClDvfsMonitorData size");
+
+/* CL_DVFS_I2C_CFG_0 (0x40), reset 0x0010F000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t slave_id : 10; /* I2C_SLAVE_ID: external slave address. */
+        uint32_t addr_10bit : 1; /* I2C_ADDR_7BIT_10BIT: 0 = 7-bit, 1 = 10-bit. */
+        uint32_t _reserved0 : 1;
+        uint32_t size : 3;      /* I2C_SIZE: voltage value size, 1..7. */
+        uint32_t packet_mode : 1; /* I2C_PACKET_MODE: packet mode for high-speed transfers. */
+        uint32_t master_code : 3; /* I2C_MASTER_CODE: master code for high-speed transfers. */
+        uint32_t _reserved1 : 1;
+        uint32_t bus_arb : 1;   /* I2C_BUS_ARB: arbitration enable. */
+        uint32_t _reserved2 : 11;
+    };
+} ClDvfsI2cCfg;
+static_assert(sizeof(ClDvfsI2cCfg) == 4, "ClDvfsI2cCfg size");
+
+/* CL_DVFS_I2C_VDD_REG_ADDR_0 (0x44), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t addr_data : 8;   /* I2C_ADDR_DATA: address for voltage select. */
+        uint32_t default_data : 8; /* I2C_DEFAULT_DATA */
+        uint32_t _reserved : 16;
+    };
+} ClDvfsI2cVddRegAddr;
+static_assert(sizeof(ClDvfsI2cVddRegAddr) == 4, "ClDvfsI2cVddRegAddr size");
+
+/* CL_DVFS_I2C_STS_0 (0x48), RO, reset 0x000000XX. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t req_pending : 1; /* I2C_REQ_PENDING: outstanding I2C request. */
+        uint32_t last_value : 6;  /* I2C_LAST_VALUE: DFLL output of last completed request. */
+        uint32_t _reserved : 25;
+    };
+} ClDvfsI2cSts;
+static_assert(sizeof(ClDvfsI2cSts) == 4, "ClDvfsI2cSts size");
+
+/* CL_DVFS_INTR_STS_0 (0x5C, RO) / CL_DVFS_INTR_EN_0 (0x60, R/W), reset 0x00000000. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t min_vdd_limit : 1; /* MIN_VDD_LIMIT_INTR(_EN): DFLL hit OUTPUT_CONFIG_MIN floor. */
+        uint32_t max_vdd_limit : 1; /* MAX_VDD_LIMIT_INTR(_EN): DFLL hit OUTPUT_CONFIG_MAX ceiling. */
+        uint32_t _reserved : 30;
+    };
+} ClDvfsIntr;
+static_assert(sizeof(ClDvfsIntr) == 4, "ClDvfsIntr size");
+
+/* CL_DVFS_I2C_CLK_DIVISOR_REGISTER_0 (0x16C), reset 0x00190001. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t hsmode : 16;      /* I2C_CLK_DIVISOR_HSMODE: divide by N+1. */
+        uint32_t std_fast_mode : 16; /* I2C_CLK_DIVISOR_STD_FAST_MODE: divide by N+1. */
+    };
+} ClDvfsI2cClkDivisor;
+static_assert(sizeof(ClDvfsI2cClkDivisor) == 4, "ClDvfsI2cClkDivisor size");
+
+/* CL_DVFS_OUTPUT_LUT_0 (0x200): 33-deep x 8-bit PMIC VID RAM, DWORD aligned,
+ * monotonically increasing. Index selected by OUTPUT_CFG MIN/MAX/SAFE. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t code : 8; /* PMIC voltage ID for this LUT index. */
+        uint32_t _reserved : 24;
+    };
+} ClDvfsLutEntry;
+static_assert(sizeof(ClDvfsLutEntry) == 4, "ClDvfsLutEntry size");
+
+/* DVFS_DFLL_THROTTLE_CTRL_0 (0x64), reset 0x00000006. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t en : 1;                  /* DFLL_THROTTLE_EN */
+        uint32_t disable_output_force : 1; /* DFLL_THROTTLE_DISABLE_OUTPUT_FORCE */
+        uint32_t favor_hw_arb : 1;        /* DFLL_FAVOR_HW_ARB: prioritize HW I2C requests. */
+        uint32_t constrain_min : 1;       /* DFLL_THROTTLE_CONSTRAIN_MIN: throttle clamps MIN (negative-gain PMIC). */
+        uint32_t _reserved0 : 4;
+        uint32_t override_en : 1;         /* DFLL_THROTTLE_OVERRIDE_EN: SW direct control of index. */
+        uint32_t override_index : 3;      /* DFLL_THROTTLE_OVERRIDE_INDEX */
+        uint32_t _reserved1 : 20;
+    };
+} DfllThrottleCtrl;
+static_assert(sizeof(DfllThrottleCtrl) == 4, "DfllThrottleCtrl size");
+
+/* DVFS_DFLL_THROTTLE_LIGHT_0 (0x68) / MEDIUM (0x6C) / HEAVY (0x70),
+ * reset 0xFF402000 each. Shared layout; prefix field names per level. */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t override : 1;  /* LIGHT/MEDIUM/HEAVY_OVERRIDE: use SW mult/scale/vsel_max. */
+        uint32_t _reserved0 : 7;
+        uint32_t vsel_max : 7;  /* LIGHT/MEDIUM/HEAVY_VSEL_MAX: max voltage limit while throttling. */
+        uint32_t _reserved1 : 1;
+        uint32_t mult : 7;      /* LIGHT/MEDIUM/HEAVY_MULT: frequency multiplier while throttling. */
+        uint32_t _reserved2 : 1;
+        uint32_t scale : 8;     /* LIGHT/MEDIUM/HEAVY_SCALE: skipper-2 control while throttling. */
+    };
+} DfllThrottleLevel;
+static_assert(sizeof(DfllThrottleLevel) == 4, "DfllThrottleLevel size");
+
+/* DVFS_CC4_HVC_0 (0x74), reset 0x00000101. HVC is now CC3 (see CPU Complex). */
+typedef union {
+    uint32_t raw;
+    struct {
+        uint32_t ctrl_mode : 2;  /* CC4_HVC_DFLL_CTRL_MODE: same encoding as ClDvfsCtrlMode. */
+        uint32_t force_value : 6; /* CC4_HVC_FORCE_VALUE */
+        uint32_t force_enable : 1; /* CC4_HVC_FORCE_ENABLE */
+        uint32_t _reserved : 23;
+    };
+} DfllCc4Hvc;
+static_assert(sizeof(DfllCc4Hvc) == 4, "DfllCc4Hvc size");
 
 #define PLLC_BASE 0x080
 #define PLLM_BASE 0x090

@@ -668,9 +668,6 @@ namespace board {
         }
 
         void AdjustMinLutIndex() {
-            constexpr u32 Shift = 8;
-            constexpr u32 Mask  = 0x3F << Shift;
-
             /* Nvidia/Nintendo don't actually update the LUT to apply HF/LF Vmin. What they do instead is update the LUT indices to reflect their new vmin*/
             u32 tbreak = board::CalculateTbreak(file::config::GetConfigValue(KipConfigValue_tableConf));
             u32 vminMv = board::GetHz(HocClkModule_CPU) >= tbreak ? file::config::GetConfigValue(KipConfigValue_marikoCpuHighVmin) : file::config::GetConfigValue(KipConfigValue_marikoCpuLowVmin);
@@ -686,7 +683,7 @@ namespace board {
                 u32 bestCode  = 0xFFFFFFFF;
                 bool found    = false;
                 for (u32 i = 0; i < LutSize; ++i) {
-                    const u32 code = cpuVoltData.lut[i];
+                    const u32 code = cpuVoltData.lut[i] & 0xFF;
                     if (code == targetCode) {
                         bestIndex = i;
                         found = true;
@@ -708,8 +705,10 @@ namespace board {
             }
 
             volatile u32 *reg = reinterpret_cast<volatile u32 *>(cldvfs + CL_DVFS_OUTPUT_CFG_0);
-
-            *reg = (*reg & ~Mask) | ((minLutIndex << Shift) & Mask);
+            ClDvfsOutputCfg cfg;
+            cfg.raw = *reg;
+            cfg.min = minLutIndex;
+            *reg = cfg.raw;
 
             static_cast<void>(*reg);
         }
